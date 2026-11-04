@@ -139,67 +139,292 @@ function miniGrid(cells) {
   );
 }
 
+/* ---------- 3×3 칸 모양 ---------- */
+// 칸 번호:  0 1 2 / 3 4 5 / 6 7 8
+// 이어진 모양이라 흩어진 칸보다 기억하기 쉬움
+const GRID_SHAPES = {
+  2: [[0, 1]],
+  3: [[0, 1, 2], [0, 3, 4], [0, 4, 8], [0, 1, 4]],
+  4: [[2, 5, 7, 8], [0, 1, 2, 4], [0, 1, 3, 4], [1, 2, 3, 4], [0, 2, 4, 6], [0, 3, 6, 7]],
+  5: [[0, 2, 4, 6, 8], [1, 3, 4, 5, 7], [0, 3, 6, 7, 8], [0, 1, 2, 4, 7], [0, 1, 2, 3, 6]],
+};
+
+// 모양을 무작위로 돌리고 뒤집은 뒤, 3×3 안의 아무 자리에 놓기
+function randomShape(count) {
+  let pts = pick(GRID_SHAPES[count]).map((k) => [Math.floor(k / 3), k % 3]);
+  for (let t = rand(4); t > 0; t--) pts = pts.map(([r, c]) => [c, 2 - r]);
+  if (rand(2)) pts = pts.map(([r, c]) => [r, 2 - c]);
+  const minR = Math.min(...pts.map((p) => p[0]));
+  const minC = Math.min(...pts.map((p) => p[1]));
+  pts = pts.map(([r, c]) => [r - minR, c - minC]);
+  const offR = rand(3 - Math.max(...pts.map((p) => p[0])));
+  const offC = rand(3 - Math.max(...pts.map((p) => p[1])));
+  return pts.map(([r, c]) => (r + offR) * 3 + (c + offC)).sort((a, b) => a - b);
+}
+
+// 눌러서 칠하는 3×3 판
+function paintGrid(size, onChange) {
+  const selected = new Set();
+  const cells = [...Array(9)].map((_, k) =>
+    el('button', { class: 'mcell', 'aria-label': `${k + 1}번 칸`, onclick: () => toggle(k) }));
+  function toggle(k) {
+    if (selected.has(k)) selected.delete(k);
+    else selected.add(k);
+    cells[k].classList.toggle('on', selected.has(k));
+    tone([selected.has(k) ? 620 : 440], 0.06);
+    onChange(selected);
+  }
+  return {
+    node: el('div', { class: `mgrid ${size}` }, cells),
+    cells,
+    answer: () => [...selected].sort((a, b) => a - b),
+  };
+}
+
+function gridReview(rec) {
+  return el('div', { class: 'compare' },
+    el('div', { class: 'compare-col' }, '원본', miniGrid(rec.original)),
+    el('div', { class: 'compare-col' }, '내 답', miniGrid(rec.answer)),
+  );
+}
+
 /* ---------- 놀이 1: 모양 기억하기 ---------- */
+// 단계별 [앞 5문제, 뒤 5문제] 칸 수
+const MEMORY_COUNTS = [[2, 3], [3, 3], [3, 4]];
+
 const memoryGame = {
   id: 'memory',
   title: '모양 기억하기',
-  desc: '칠해진 칸을 기억해요',
+  desc: '칠해진 모양을 기억해요',
   skill: '작업 기억',
   icon: '🧠',
   color: '#f3d6cf',
 
   round(i, ctx) {
-    const count = [2, 3, 4][ctx.level] + (i >= 5 ? 1 : 0);
-    const original = sample([...Array(9).keys()], count).sort((a, b) => a - b);
+    const count = MEMORY_COUNTS[ctx.level][i < 5 ? 0 : 1];
+    const original = randomShape(count);
     const rec = { original, answer: [] };
-    const selected = new Set();
 
     const title = el('div');
-    const cells = [...Array(9)].map((_, k) =>
-      el('button', { class: 'mcell', disabled: true, 'aria-label': `${k + 1}번 칸`, onclick: () => toggle(k) }));
-    const grid = el('div', { class: 'mgrid big' }, cells);
+    const board = paintGrid('big', (selected) => { doneBtn.disabled = selected.size === 0; });
+    board.cells.forEach((c) => { c.disabled = true; });
     const timerFill = el('div', { class: 'timer-fill' });
     const timer = el('div', { class: 'timer' }, timerFill);
     const doneBtn = el('button', { class: 'btn-main', disabled: true, onclick: submit }, '다 했어요');
     doneBtn.hidden = true;
-    ctx.stage.append(title, grid, timer, doneBtn);
+    ctx.stage.append(title, board.node, timer, doneBtn);
 
     // 1단계: 보여주기
     title.replaceChildren(prompt('잘 보고 기억해요!'));
-    original.forEach((k) => cells[k].classList.add('on'));
-    const showMs = 2500 + count * 500;
+    original.forEach((k) => board.cells[k].classList.add('on'));
+    const showMs = 3000 + count * 700;
     timerFill.style.animationDuration = `${showMs}ms`;
     timer.classList.add('run');
 
     // 2단계: 따라 칠하기
     ctx.later(() => {
-      original.forEach((k) => cells[k].classList.remove('on'));
-      cells.forEach((c) => { c.disabled = false; });
+      original.forEach((k) => board.cells[k].classList.remove('on'));
+      board.cells.forEach((c) => { c.disabled = false; });
       timer.hidden = true;
       doneBtn.hidden = false;
       title.replaceChildren(prompt('똑같이 칠해 보세요'));
     }, showMs);
 
-    function toggle(k) {
-      if (selected.has(k)) selected.delete(k);
-      else selected.add(k);
-      cells[k].classList.toggle('on', selected.has(k));
-      doneBtn.disabled = selected.size === 0;
-      tone([selected.has(k) ? 620 : 440], 0.06);
-    }
-
     function submit() {
-      rec.answer = [...selected].sort((a, b) => a - b);
+      rec.answer = board.answer();
       ctx.finish(sameSet(rec.answer, original));
     }
 
     return rec;
   },
 
+  review: gridReview,
+};
+
+/* ---------- 놀이: 똑같이 칠하기 ---------- */
+const COPY_COUNTS = [[2, 3], [3, 4], [4, 5]];
+
+const copyGame = {
+  id: 'copy',
+  title: '똑같이 칠하기',
+  desc: '보면서 똑같이 칠해요',
+  skill: '공간 지각',
+  icon: '🎨',
+  color: '#f9d9c4',
+
+  round(i, ctx) {
+    const original = randomShape(COPY_COUNTS[ctx.level][i < 5 ? 0 : 1]);
+    const rec = { original, answer: [] };
+
+    const board = paintGrid('mid', (selected) => { doneBtn.disabled = selected.size === 0; });
+    const doneBtn = el('button', { class: 'btn-main', disabled: true, onclick: submit }, '다 했어요');
+    ctx.stage.append(
+      prompt('왼쪽과 똑같이 칠해요'),
+      el('div', { class: 'compare' },
+        el('div', { class: 'compare-col' }, '원본',
+          el('div', { class: 'mgrid mid' },
+            [...Array(9)].map((_, k) => el('div', { class: `mcell${original.includes(k) ? ' on' : ''}` })))),
+        el('div', { class: 'compare-col' }, '내 답', board.node)),
+      doneBtn,
+    );
+
+    function submit() {
+      rec.answer = board.answer();
+      ctx.finish(sameSet(rec.answer, original));
+    }
+
+    return rec;
+  },
+
+  review: gridReview,
+};
+
+/* ---------- 놀이: 선 따라 긋기 ---------- */
+// 네모 테두리 위 점 12개 (4×4 격자의 바깥 줄)
+const DOTS = [];
+for (let r = 0; r < 4; r++) {
+  for (let c = 0; c < 4; c++) {
+    if (r === 0 || r === 3 || c === 0 || c === 3) DOTS.push({ r, c });
+  }
+}
+const dotXY = (k) => [30 + DOTS[k].c * 80, 30 + DOTS[k].r * 80];
+// 같은 변 위의 두 점은 테두리와 겹치므로 선으로 쓰지 않음
+const shareSide = (a, b) => {
+  const [p, q] = [DOTS[a], DOTS[b]];
+  return (p.r === q.r && (p.r === 0 || p.r === 3)) || (p.c === q.c && (p.c === 0 || p.c === 3));
+};
+const isStraight = (a, b) => DOTS[a].r === DOTS[b].r || DOTS[a].c === DOTS[b].c;
+const lineKey = ([a, b]) => (a < b ? `${a}-${b}` : `${b}-${a}`);
+// 단계별 [앞 5문제, 뒤 5문제] 선 개수
+const LINE_COUNTS = [[1, 2], [2, 3], [3, 4]];
+
+function randomLines(n, straightOnly) {
+  const lines = [];
+  const keys = new Set();
+  for (let guard = 0; lines.length < n && guard < 500; guard++) {
+    const a = rand(DOTS.length);
+    const b = rand(DOTS.length);
+    if (a === b || shareSide(a, b) || (straightOnly && !isStraight(a, b))) continue;
+    const key = lineKey([a, b]);
+    if (keys.has(key)) continue;
+    keys.add(key);
+    lines.push([a, b]);
+  }
+  return lines;
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs = {}, ...kids) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  node.append(...kids);
+  return node;
+}
+
+function dotBoard(size, onTap) {
+  const lineLayer = svg('g');
+  const dots = DOTS.map((_, k) => {
+    const [x, y] = dotXY(k);
+    const g = svg('g', { class: 'dl-dot' }, svg('circle', { cx: x, cy: y, r: 10, class: 'dl-point' }));
+    if (onTap) {
+      // 손가락으로 누르기 쉽도록 보이지 않는 큰 원을 덧댐
+      g.append(svg('circle', { cx: x, cy: y, r: 36, class: 'dl-hit' }));
+      g.addEventListener('click', () => onTap(k));
+    }
+    return g;
+  });
+  const node = svg('svg', { viewBox: '0 0 300 300', class: `dl-board ${size}` },
+    svg('rect', { x: 30, y: 30, width: 240, height: 240, class: 'dl-frame' }),
+    lineLayer,
+    svg('g', {}, ...dots));
+  return {
+    node,
+    dots,
+    draw(lines, kind) {
+      lineLayer.replaceChildren(...lines.map(([a, b]) => {
+        const [x1, y1] = dotXY(a);
+        const [x2, y2] = dotXY(b);
+        return svg('line', { x1, y1, x2, y2, class: `dl-line ${kind}` });
+      }));
+    },
+  };
+}
+
+const linesGame = {
+  id: 'lines',
+  title: '선 따라 긋기',
+  desc: '점을 이어 똑같이 그려요',
+  skill: '시지각 · 소근육',
+  icon: '✏️',
+  color: '#f5e3c8',
+
+  round(i, ctx) {
+    const original = randomLines(LINE_COUNTS[ctx.level][i < 5 ? 0 : 1], ctx.level === 0 && i < 5);
+    const rec = { original, answer: [] };
+    const mine = [];
+    let selected = null;
+
+    const left = dotBoard('mid');
+    left.draw(original, 'orig');
+    const right = dotBoard('mid', tap);
+    const undoBtn = el('button', { class: 'btn-main alt', disabled: true, onclick: undo }, '지우기');
+    const doneBtn = el('button', { class: 'btn-main', disabled: true, onclick: submit }, '다 했어요');
+
+    ctx.stage.append(
+      prompt('왼쪽과 똑같이 선을 그어요'),
+      el('div', { class: 'compare' },
+        el('div', { class: 'compare-col' }, '원본', left.node),
+        el('div', { class: 'compare-col' }, '내 답', right.node)),
+      el('div', { class: 'hint' }, '점 두 개를 차례로 누르면 선이 생겨요'),
+      el('div', { class: 'btn-row' }, undoBtn, doneBtn),
+    );
+
+    function refresh() {
+      right.draw(mine, 'mine');
+      right.dots.forEach((d, k) => d.classList.toggle('sel', k === selected));
+      undoBtn.disabled = mine.length === 0;
+      doneBtn.disabled = mine.length === 0;
+    }
+
+    function tap(k) {
+      if (selected == null || selected === k || shareSide(selected, k)) {
+        // 첫 점 고르기 / 다시 누르면 취소 / 같은 변 위 점이면 고른 점만 옮김
+        selected = selected === k ? null : k;
+        tone([600], 0.05);
+      } else {
+        const key = lineKey([selected, k]);
+        const found = mine.findIndex((l) => lineKey(l) === key);
+        if (found >= 0) mine.splice(found, 1);
+        else mine.push([selected, k]);
+        selected = null;
+        tone([760], 0.06);
+      }
+      refresh();
+    }
+
+    function undo() {
+      mine.pop();
+      selected = null;
+      refresh();
+    }
+
+    function submit() {
+      rec.answer = [...mine];
+      ctx.finish(sameSet(mine.map(lineKey), original.map(lineKey)));
+    }
+
+    return rec;
+  },
+
   review(rec) {
+    const board = (lines, kind) => {
+      const b = dotBoard('mini');
+      b.draw(lines, kind);
+      return b.node;
+    };
     return el('div', { class: 'compare' },
-      el('div', { class: 'compare-col' }, '원본', miniGrid(rec.original)),
-      el('div', { class: 'compare-col' }, '내 답', miniGrid(rec.answer)),
+      el('div', { class: 'compare-col' }, '원본', board(rec.original, 'orig')),
+      el('div', { class: 'compare-col' }, '내 답', board(rec.answer, 'mine')),
     );
   },
 };
@@ -216,14 +441,14 @@ const AB = [0, 1];
 const AAB = [0, 0, 1];
 const ABB = [0, 1, 1];
 const ABC = [0, 1, 2];
-const AABB = [0, 0, 1, 1];
-const ABAC = [0, 1, 0, 2];
 // 단계별 · 문제 번호별 규칙
 const PATTERN_UNITS = [
   [AB, AB, AB, AB, AB, AB, AB, AB, AB, AB],
-  [AB, AB, AB, AB, AAB, ABB, AAB, ABB, ABC, ABC],
-  [AAB, ABB, ABC, AAB, ABC, ABB, ABC, AABB, ABAC, ABC],
+  [AB, AB, AB, AB, AB, AB, AAB, ABB, AAB, ABB],
+  [AB, AB, AB, AAB, ABB, AAB, ABB, ABC, AAB, ABC],
 ];
+// 단계별 보기 개수
+const PATTERN_CHOICES = [2, 3, 3];
 const PATTERN_GROUPS = 4;
 const PATTERN_TILE = {
   2: 'clamp(52px, 15vw, 76px)',
@@ -262,7 +487,7 @@ const patternGame = {
     // 첫 묶음은 규칙을 보여주기 위해 비워두지 않음
     const blank = unit.length + rand(seq.length - unit.length);
     const answer = seq[blank];
-    const choiceCount = ctx.level === 2 ? 4 : 3;
+    const choiceCount = PATTERN_CHOICES[ctx.level];
     const choices = shuffle([
       answer,
       ...shuffle(kinds.filter((k) => k !== answer)),
@@ -311,9 +536,9 @@ const patternGame = {
 const COUNT_ITEMS = ['🍎', '🍓', '🐥', '⭐', '🎈', '🐟', '🌸', '🍪', '🚗', '🦋'];
 // 단계별 [앞 5문제, 뒤 5문제] 개수 범위
 const COUNT_RANGES = [
-  [[1, 3], [1, 5]],
-  [[2, 5], [3, 7]],
-  [[4, 8], [5, 10]],
+  [[1, 3], [1, 4]],
+  [[1, 4], [2, 5]],
+  [[2, 6], [3, 8]],
 ];
 
 const countGame = {
@@ -369,7 +594,7 @@ const countGame = {
 const ODD_EASY = [['🐶', '🐱'], ['🍎', '🍌'], ['🌞', '🌙'], ['🚗', '✈️'], ['🌷', '🍄'], ['⚽', '🎈']];
 const ODD_HARD = [['🍎', '🍅'], ['🐥', '🐔'], ['🚗', '🚕'], ['🐟', '🐠'], ['🌷', '🌹'], ['⚽', '🏀'], ['🐻', '🐼'], ['🍊', '🍋']];
 // 단계별 [앞 5문제, 뒤 5문제] 칸 수
-const ODD_SIZES = [[4, 4], [6, 6], [6, 9]];
+const ODD_SIZES = [[4, 4], [4, 6], [6, 6]];
 
 function oddGrid(items, cols, extra = {}) {
   return el('div', { class: `ogrid${extra.mini ? ' mini' : ''}`, style: `grid-template-columns:repeat(${cols},1fr)` },
@@ -391,7 +616,7 @@ const oddGame = {
   round(i, ctx) {
     const size = ODD_SIZES[ctx.level][i < 5 ? 0 : 1];
     const cols = size === 4 ? 2 : 3;
-    const hard = ctx.level === 2 || (ctx.level === 1 && i >= 5);
+    const hard = ctx.level === 2 && i >= 5;
     const [same, diff] = shuffle(pick(hard ? ODD_HARD : ODD_EASY));
     const odd = rand(size);
     const items = Array.from({ length: size }, (_, k) => (k === odd ? diff : same));
@@ -421,9 +646,9 @@ const oddGame = {
 /* ---------- 놀이 5: 짝 맞추기 ---------- */
 const FLIP_ITEMS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🐸', '🦁', '🐷', '🐵', '🐧', '🐥', '🐳'];
 // 단계별 · 판별 짝 개수
-const FLIP_PAIRS = [[2, 2, 3, 3, 3], [3, 3, 4, 4, 4], [4, 4, 5, 5, 6]];
+const FLIP_PAIRS = [[2, 2, 2, 3, 3], [2, 3, 3, 3, 4], [3, 3, 4, 4, 5]];
 // 시작할 때 카드를 미리 보여주는 시간
-const FLIP_PEEK = [2500, 1800, 1200];
+const FLIP_PEEK = [3000, 2500, 2000];
 
 const flipGame = {
   id: 'flip',
@@ -532,11 +757,11 @@ const shadowGame = {
   round(i, ctx) {
     const group = pick(SHADOW_GROUPS);
     const answer = pick(group);
-    const similar = ctx.level === 2 || (ctx.level === 1 && i >= 5);
+    const similar = ctx.level === 2 && i >= 5;
     const pool = similar
       ? group.filter((x) => x !== answer)
       : SHADOW_GROUPS.filter((g) => g !== group).flat();
-    const choices = shuffle([answer, ...sample(pool, ctx.level === 2 ? 3 : 2)]);
+    const choices = shuffle([answer, ...sample(pool, ctx.level === 0 ? 1 : 2)]);
     const rec = { answer, chosen: null };
 
     const buttons = choices.map((c) =>
@@ -578,8 +803,8 @@ const ORDER_STORIES = [
 ];
 const ORDER_SIZE_ITEMS = ['🎈', '🍎', '🐻', '⭐', '🌸', '🐟', '🍩'];
 // 단계별 [앞 5문제, 뒤 5문제] 개수
-const ORDER_LENGTHS = [[3, 3], [3, 4], [4, 5]];
-const ORDER_MAX_NUMBER = [3, 9, 20];
+const ORDER_LENGTHS = [[2, 3], [3, 3], [3, 4]];
+const ORDER_MAX_NUMBER = [3, 5, 9];
 
 function makeOrderPuzzle(level, len) {
   const stories = ORDER_STORIES.filter((s) => s.level <= level && s.items.length >= len);
@@ -675,7 +900,7 @@ const orderGame = {
   },
 };
 
-const GAMES = [memoryGame, patternGame, countGame, oddGame, flipGame, shadowGame, orderGame];
+const GAMES = [copyGame, linesGame, memoryGame, patternGame, countGame, oddGame, flipGame, shadowGame, orderGame];
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
 
