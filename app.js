@@ -1334,6 +1334,46 @@ const daysAgo = (n) => {
 };
 const dailyKey = (date) => `daily:${date}`;
 
+/* ---------- 학습 기록 ---------- */
+// 문제마다 결과를 날짜·놀이별로 모아 둠: stats[날짜][놀이] = { first, retry, pass }
+//   first: 처음에 맞힘 / retry: 다시 해서 맞음 / pass: 패스
+const STATS_KEY = 'stats';
+const STATS_KEEP_DAYS = 120;
+const OUTCOMES = [
+  { id: 'first', name: '처음에 맞힘' },
+  { id: 'retry', name: '다시 해서 맞음' },
+  { id: 'pass', name: '패스' },
+];
+
+function recordStat(gameId, outcome) {
+  const stats = store.get(STATS_KEY, {});
+  const day = dateKey(new Date());
+  const counts = ((stats[day] ??= {})[gameId] ??= { first: 0, retry: 0, pass: 0 });
+  counts[outcome]++;
+  const cutoff = dateKey(daysAgo(STATS_KEEP_DAYS));
+  for (const d of Object.keys(stats)) if (d < cutoff) delete stats[d];
+  store.set(STATS_KEY, stats);
+}
+
+// 최근 days일 동안의 놀이별 합계와 학습한 날
+function statsSince(days) {
+  const cutoff = dateKey(daysAgo(days - 1));
+  const perGame = {};
+  const activeDays = new Set();
+  for (const [day, games] of Object.entries(store.get(STATS_KEY, {}))) {
+    if (day < cutoff) continue;
+    activeDays.add(day);
+    for (const [id, c] of Object.entries(games)) {
+      const t = (perGame[id] ??= { first: 0, retry: 0, pass: 0 });
+      for (const o of OUTCOMES) t[o.id] += c[o.id] ?? 0;
+    }
+  }
+  return { perGame, activeDays };
+}
+
+const totalOf = (c) => c.first + c.retry + c.pass;
+const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
+
 // 놀이를 골고루 돌리기: 모든 놀이를 한 번씩 섞은 '한 바퀴'를 이어 붙이고,
 // 날마다 그 줄에서 차례로 4개씩 가져감 → 한 바퀴(9가지)를 다 돌아야 같은 놀이가 다시 나옴
 const ROTATION_START = Date.UTC(2026, 0, 1);
@@ -1518,28 +1558,133 @@ function gamesTab() {
   ];
 }
 
-// 간단한 기록 (자세한 정답률·어려운 놀이 분석은 다음 단계)
+// 놀이 하나의 결과 비율 막대 (처음에 맞힘 / 다시 해서 맞음 / 패스)
+function outcomeBar(c) {
+  const total = totalOf(c);
+  return el('div', { class: 'obar', role: 'img',
+    'aria-label': OUTCOMES.map((o) => `${o.name} ${c[o.id]}개`).join(', ') },
+  OUTCOMES.filter((o) => c[o.id] > 0).map((o) => el('span', {
+    class: `obar-seg ${o.id}`,
+    style: `flex-grow:${c[o.id]}`,
+    title: `${o.name} ${c[o.id]}개 (${pct(c[o.id], total)}%)`,
+  })));
+}
+
+// 최근 4주 달력: ⭐ 오늘의 학습 완료, 초록 바탕 놀이를 한 날
+function recordCalendar(activeDays) {
+  const start = daysAgo(27);
+  const lead = start.getDay(); // 첫 줄을 일요일부터 맞춤
+  const cells = [];
+  for (let k = 0; k < lead; k++) cells.push(el('span', { class: 'cal-cell blank' }));
+  for (let n = 27; n >= 0; n--) {
+    const d = daysAgo(n);
+    const key = dateKey(d);
+    const daily = store.get(dailyKey(key), null);
+    cells.push(el('span', {
+      class: `cal-cell${activeDays.has(key) || daily ? ' played' : ''}${n === 0 ? ' today' : ''}`,
+      title: daily ? `${d.getMonth() + 1}월 ${d.getDate()}일 오늘의 학습 ${daily.score}점` : null,
+    }, el('span', { class: 'cal-date' }, String(d.getDate())), daily ? el('span', { class: 'cal-mark' }, '⭐') : null));
+  }
+  return el('div', { class: 'calendar' },
+    [...WEEKDAYS].map((w) => el('span', { class: 'cal-head' }, w)),
+    cells);
+}
+
+// 어려워하는 놀이 / 잘하는 놀이 알림 (놀이마다 5문제 이상 풀었을 때만)
+const ALERT_MIN = 5;
+function recordAlerts(perGame) {
+  const rows = GAMES.map((g) => ({ g, c: perGame[g.id] })).filter((x) => x.c && totalOf(x.c) >= ALERT_MIN);
+  const hard = rows.filter((x) => pct(x.c.first, totalOf(x.c)) < 50)
+    .sort((a, b) => a.c.first / totalOf(a.c) - b.c.first / totalOf(b.c));
+  const good = rows.filter((x) => totalOf(x.c) >= 8 && pct(x.c.first, totalOf(x.c)) >= 90);
+  if (!hard.length && !good.length) {
+    return el('p', { class: 'empty' }, `아직 알림이 없어요. 한 놀이를 ${ALERT_MIN}문제 넘게 풀면 알려 드려요.`);
+  }
+  return el('div', { class: 'alerts' },
+    hard.map(({ g, c }) => el('div', { class: 'alert hard' },
+      el('div', { class: 'alert-icon' }, '🌱'),
+      el('div', { class: 'alert-body' },
+        el('b', {}, `${g.title} 놀이를 어려워해요`),
+        el('span', {}, `처음에 맞힌 문제가 ${pct(c.first, totalOf(c))}%예요. 조금 더 연습해 보세요.`)),
+      el('button', { class: 'alert-btn', onclick: () => playGame(g) }, '해 보기'))),
+    good.map(({ g, c }) => el('div', { class: 'alert good' },
+      el('div', { class: 'alert-icon' }, '🌟'),
+      el('div', { class: 'alert-body' },
+        el('b', {}, `${g.title} 놀이를 잘해요`),
+        el('span', {}, settings.level < 2
+          ? `처음에 맞힌 문제가 ${pct(c.first, totalOf(c))}%예요. 난이도를 올려 봐도 좋아요.`
+          : `처음에 맞힌 문제가 ${pct(c.first, totalOf(c))}%예요. 정말 잘하고 있어요!`)))),
+  );
+}
+
 function recordsTab() {
-  const days = range(0, 13)
+  const range7 = store.get('recRange', 7);
+  const { perGame, activeDays } = statsSince(range7);
+  const sum = Object.values(perGame).reduce((t, c) => ({
+    first: t.first + c.first, retry: t.retry + c.retry, pass: t.pass + c.pass,
+  }), { first: 0, retry: 0, pass: 0 });
+  const total = totalOf(sum);
+  const played = GAMES.filter((g) => perGame[g.id] && totalOf(perGame[g.id]) > 0)
+    .sort((a, b) => totalOf(perGame[b.id]) - totalOf(perGame[a.id]));
+  const notPlayed = GAMES.filter((g) => !played.includes(g));
+  const dailies = range(0, 13)
     .map((n) => ({ d: daysAgo(n), rec: store.get(dailyKey(dateKey(daysAgo(n))), null) }))
     .filter((x) => x.rec);
-  const bests = GAMES.map((g) => ({ g, best: store.get(bestKey(g, settings.level), null) })).filter((x) => x.best != null);
+  const { activeDays: calendarDays } = statsSince(28);
+
   return [
     ...tabHeader('기록', '이 기기에서 한 학습이 저장돼요'),
+    el('div', { class: 'level-seg range-seg', role: 'radiogroup', 'aria-label': '기간' },
+      [7, 30].map((n) => el('button', {
+        class: `seg${n === range7 ? ' on' : ''}`,
+        role: 'radio',
+        'aria-checked': String(n === range7),
+        onclick: () => {
+          store.set('recRange', n);
+          showHome('records');
+        },
+      }, `최근 ${n}일`))),
+    el('div', { class: 'stat-tiles' },
+      el('div', { class: 'stat-tile' }, el('b', {}, `${activeDays.size}일`), el('span', {}, '학습한 날')),
+      el('div', { class: 'stat-tile' }, el('b', {}, `${total}개`), el('span', {}, '푼 문제')),
+      el('div', { class: 'stat-tile' }, el('b', {}, total ? `${pct(sum.first, total)}%` : '-'), el('span', {}, '처음에 맞힘'))),
     el('section', { class: 'panel' },
-      el('h2', { class: 'panel-title' }, '📅 최근 2주 오늘의 학습'),
-      days.length
-        ? el('ul', { class: 'rec-list' }, days.map(({ d, rec }) => el('li', {},
+      el('h2', { class: 'panel-title' }, '💡 알림'),
+      recordAlerts(perGame)),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '🧩 놀이별 결과'),
+      played.length
+        ? [
+          el('div', { class: 'obar-legend' },
+            OUTCOMES.map((o) => el('span', {}, el('i', { class: `swatch ${o.id}` }), o.name))),
+          el('ul', { class: 'obar-list' }, played.map((g) => {
+            const c = perGame[g.id];
+            const t = totalOf(c);
+            return el('li', {},
+              el('div', { class: 'obar-head' },
+                el('span', {}, `${g.icon} ${g.title}`),
+                el('span', { class: 'obar-num' }, `${t}문제 · 처음에 맞힘 ${pct(c.first, t)}%`)),
+              outcomeBar(c),
+              el('div', { class: 'obar-detail' },
+                OUTCOMES.map((o) => `${o.name} ${c[o.id]}`).join(' · ')));
+          })),
+        ]
+        : el('p', { class: 'empty' }, '아직 기록이 없어요. 놀이를 해 보세요!'),
+      notPlayed.length && played.length
+        ? el('p', { class: 'not-played' }, `아직 안 한 놀이: ${notPlayed.map((g) => g.title).join(', ')}`)
+        : null),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '📅 최근 4주'),
+      recordCalendar(calendarDays),
+      el('p', { class: 'cal-legend' }, '⭐ 오늘의 학습을 끝낸 날 · 초록색 놀이를 한 날')),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '📋 오늘의 학습 점수 (최근 2주)'),
+      dailies.length
+        ? el('ul', { class: 'rec-list' }, dailies.map(({ d, rec }) => el('li', {},
           el('span', {}, `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`),
           el('span', { class: 'rec-meta' }, `${LEVELS[rec.level]?.name ?? ''} · ${rec.correct}/${rec.total} 맞음`),
           el('b', {}, `${rec.score}점`))))
         : el('p', { class: 'empty' }, '아직 기록이 없어요. 오늘의 학습을 해 보세요!')),
-    el('section', { class: 'panel' },
-      el('h2', { class: 'panel-title' }, `🏆 놀이별 최고 점수 (${LEVELS[settings.level].name})`),
-      bests.length
-        ? el('ul', { class: 'rec-list' }, bests.map(({ g, best }) => el('li', {},
-          el('span', {}, `${g.icon} ${g.title}`), el('b', {}, `${best}점`))))
-        : el('p', { class: 'empty' }, '아직 끝까지 한 놀이가 없어요.')),
   ];
 }
 
@@ -1743,6 +1888,8 @@ function playSession(session) {
     const retried = correct && !!rec.missed;
     correct = correct && !rec.missed;
     state.records.push({ ...rec, correct, retried, passed });
+    // 짝 맞추기의 '완성'(실수가 많았지만 끝까지 함)은 다시 해서 맞음으로 셈
+    recordStat(rec.game.id, passed ? 'pass' : correct ? 'first' : 'retry');
     if (correct) {
       state.correct++;
       state.score = Math.min(100, state.score + points);
@@ -1796,7 +1943,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 17;
+const APP_VERSION = 18;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

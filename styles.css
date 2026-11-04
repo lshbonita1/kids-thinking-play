@@ -709,3 +709,63 @@ button:disabled { cursor: default; }
 .switch.on { background: var(--accent); color: #fff; }
 .guide-list { margin: 0; padding-left: 20px; color: #6f604b; font-size: 17px; line-height: 1.6; }
 .guide-list li + li { margin-top: 6px; }
+
+/* ---------- 기록 자세히 ---------- */
+/* 결과 색: 처음에 맞힘 / 다시 해서 맞음 / 패스 (색약 구분 검사 통과, 숫자·범례 글자를 함께 표시) */
+:root { --o-first: #3f8f5a; --o-retry: #e0913a; --o-pass: #8c8577; }
+.range-seg { grid-template-columns: repeat(2, 1fr); }
+.stat-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 6px;
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+}
+.stat-tile b { font-weight: 400; font-size: 28px; color: var(--ink); }
+.stat-tile span { color: #8a7a62; font-size: 15px; }
+
+.alerts { display: flex; flex-direction: column; gap: 10px; }
+.alert { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; }
+.alert.hard { background: #fdf1e2; }
+.alert.good { background: var(--good-bg); }
+.alert-icon { flex: none; font-size: 30px; }
+.alert-body { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 15px; color: #6f604b; }
+.alert-body b { font-weight: 400; font-size: 19px; color: var(--ink); }
+.alert-btn { flex: none; padding: 10px 14px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 16px; }
+
+.obar-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 12px; color: #6f604b; font-size: 15px; }
+.obar-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.swatch.first, .obar-seg.first { background: var(--o-first); }
+.swatch.retry, .obar-seg.retry { background: var(--o-retry); }
+.swatch.pass, .obar-seg.pass { background: var(--o-pass); }
+.obar-list { display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.obar-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 18px; }
+.obar-num { flex: none; color: #6f604b; font-size: 15px; }
+.obar { display: flex; gap: 2px; height: 16px; border-radius: 4px; overflow: hidden; background: var(--card); }
+.obar-seg { min-width: 6px; }
+.obar-detail { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.not-played { margin: 14px 0 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
+
+.calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-head { text-align: center; color: var(--muted); font-size: 14px; }
+.cal-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: var(--card);
+  color: #8a7a62;
+  font-size: 14px;
+}
+.cal-cell.blank { background: none; }
+.cal-cell.played { background: var(--good-bg); color: var(--good); }
+.cal-cell.today { outline: 2px solid var(--ink); outline-offset: -2px; }
+.cal-mark { font-size: 13px; line-height: 1; }
+.cal-legend { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
