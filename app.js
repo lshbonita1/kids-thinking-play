@@ -173,6 +173,8 @@ const PHOTOS = {
   '🚗': 'car', '🎈': 'balloon', '🦋': 'butterfly', '✈️': 'airplane', '🐶': 'dog', '🍯': 'honey', '🥛': 'milk',
   '✏️': 'pencil', '🪥': 'toothbrush', '📒': 'notebook', '🐝': 'bee', '🐒': 'monkey', '🐥': 'chick',
   '🐄': 'cow', '🥚': 'egg', '🐘': 'elephant', '🥅': 'goal', '☂️': 'umbrella',
+  // 기분 알기 얼굴 (무서운 얼굴은 알맞은 사진을 찾을 때까지 그림으로)
+  '😄': 'face_happy', '😭': 'face_sad', '😡': 'face_angry',
 };
 
 function pic(e) {
@@ -2049,7 +2051,7 @@ function guideAbout() {
         el('li', {}, '쑥쑥 생각놀이는 집에서 하는 연습 도구예요. 진단이나 치료를 대신하지 않아요.'),
         el('li', {}, '아이를 맡고 계신 치료사 · 특수교사 선생님과 목표를 함께 정하면 더 좋아요.'),
         el('li', {}, '로그인이 없고, 기록은 이 기기의 브라우저에만 저장돼요. 다른 곳으로 보내지 않아요.'),
-        el('li', {}, '실사 사진은 누구나 무료로 쓸 수 있는 사진(CC0 · 퍼블릭 도메인)이에요. ',
+        el('li', {}, '실사 사진은 누구나 무료로 쓸 수 있는 사진(CC0 · 퍼블릭 도메인, 일부 얼굴 사진은 출처 표시 조건)이에요. ',
           el('a', { href: 'https://github.com/lshbonita1/kids-thinking-play/blob/main/photos/CREDITS.md', target: '_blank', rel: 'noopener' }, '사진 출처 보기')))),
   ];
 }
@@ -2336,7 +2338,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 28;
+const APP_VERSION = 29;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

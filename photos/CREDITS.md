@@ -1,6 +1,6 @@
 # 사진 출처
 
-쑥쑥 생각놀이의 실사 사진은 [Openverse](https://openverse.org)에서 찾은 **CC0(저작권 포기) 또는 퍼블릭 도메인** 사진이에요.
+물건·동물 실사 사진은 [Openverse](https://openverse.org)에서 찾은 **CC0(저작권 포기) 또는 퍼블릭 도메인** 사진이에요.
 출처 표시 의무는 없지만, 찍어 주신 분께 감사하는 마음으로 남겨 둬요. 사이트에 맞게 정사각형으로 자르고 크기를 줄였어요.
 
 | 파일 | 그림 | 원본 | 찍은 분 | 라이선스 |
@@ -30,3 +30,14 @@
 | `toothbrush.jpg` | 칫솔 | [Toothbrush Toothpaste](https://stocksnap.io/photo/toothbrush-toothpaste-UD9953XS1H) | WDnet Studio | CC0 1.0 |
 | `umbrella.jpg` | 우산 | [Red Umbrella](https://stocksnap.io/photo/red-umbrella-45JIYYO371) | Gabriel Santiago | CC0 1.0 |
 | `whale.jpg` | 고래 | [Whale Fish](https://stocksnap.io/photo/whale-fish-46JV8KAX2S) | Thomas Kelley | CC0 1.0 |
+
+## 얼굴 사진 (출처 표시 필요)
+
+아래 사진은 [위키미디어 공용](https://commons.wikimedia.org)의 사진이에요. 라이선스에 따라 찍은 분과 출처를 밝혀요.
+사이트에 맞게 얼굴이 가운데 오도록 정사각형으로 자르고 크기를 줄였어요. 바꾼 사진도 원본과 같은 라이선스를 따라요.
+
+| 파일 | 그림 | 원본 | 찍은 분 | 라이선스 |
+|---|---|---|---|---|
+| `face_happy.jpg` | 웃는 얼굴 | [Toddler, little girl, blue eyes, curls, big smile](https://commons.wikimedia.org/wiki/File:Toddler,_little_girl,_blue_eyes,_curls,_big_smile_(23591131192).jpg) | Tammy Anthony Baker from Louisiana | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) |
+| `face_sad.jpg` | 우는 얼굴 | [Crying-girl.jpg](https://commons.wikimedia.org/wiki/File:Crying-girl.jpg) | Crimfants | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) |
+| `face_angry.jpg` | 화난 얼굴 | [Child's Angry Face.jpg](https://commons.wikimedia.org/wiki/File:Child%27s_Angry_Face.jpg) | Babyaimeesmom | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
