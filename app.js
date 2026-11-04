@@ -160,6 +160,10 @@ function feedback(kind, done) {
   }, 1100);
 }
 
+// 보기 개수별 보기 칸 크기 (적을수록 크게)
+const CHOICE_SIZE = { 2: 'clamp(110px, 36vw, 150px)', 3: 'clamp(90px, 28vw, 112px)', 4: 'clamp(70px, 20vw, 96px)' };
+const choicesStyle = (count) => `--choice-t:${CHOICE_SIZE[count] ?? CHOICE_SIZE[4]}`;
+
 // 문제 그림과 보기를 헷갈리지 않도록 보기 위에 다는 안내
 function choiceLabel(count) {
   const word = ['', '한', '두', '세', '네'][count] ?? String(count);
@@ -549,8 +553,8 @@ const PATTERN_CHOICES = [2, 3, 3];
 // 규칙 길이별 묶음 수: 규칙을 보여주는 묶음 1개 + 빈칸이 있는 묶음 1개 (한눈에 보이도록 최소로)
 const PATTERN_GROUPS = { 2: 2, 3: 2 };
 const PATTERN_TILE = {
-  2: 'clamp(84px, 27vw, 112px)',
-  3: 'clamp(70px, 22vw, 96px)',
+  2: 'clamp(110px, 38vw, 150px)',
+  3: 'clamp(84px, 26vw, 104px)',
 };
 
 function patternBoard(seq, unitLen, blankTile, tileSize) {
@@ -594,7 +598,7 @@ const patternGame = {
 
     const blankNode = el('div', { class: 'tile blank' }, '?');
     const board = patternBoard(seq, unit.length, { index: blank, node: blankNode }, PATTERN_TILE[unit.length]);
-    const choiceRow = el('div', { class: 'choices' },
+    const choiceRow = el('div', { class: 'choices', style: choicesStyle(choices.length) },
       choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c)));
 
     ctx.stage.append(prompt('빈칸에 들어갈 것은?'), board, choiceLabel(choices.length), choiceRow);
@@ -691,7 +695,7 @@ function oddGrid(items, cols, extra = {}) {
   return el('div', { class: `ogrid${extra.mini ? ' mini' : ''}`, style: `grid-template-columns:repeat(${cols},1fr)` },
     items.map((item, k) => el(extra.mini ? 'div' : 'button', {
       class: `otile ${extra.classOf?.(k) ?? ''}`,
-      style: `font-size:${extra.mini ? '22px' : cols === 2 ? 'min(22vw, 110px)' : 'min(15vw, 76px)'};animation-delay:${k * 0.04}s`,
+      style: `font-size:${extra.mini ? '22px' : cols === 2 ? 'min(30vw, 140px)' : 'min(20vw, 96px)'};animation-delay:${k * 0.04}s`,
       onclick: extra.onPick && (() => extra.onPick(k)),
     }, item)));
 }
@@ -766,7 +770,7 @@ const flipGame = {
       el('button', { class: 'card open', 'aria-label': '카드', onclick: () => flip(k) }, el('span', {}, face)));
     const grid = el('div', {
       class: 'card-grid',
-      style: `grid-template-columns:repeat(${cols},1fr);font-size:${{ 2: 'min(24vw, 110px)', 3: 'min(18vw, 84px)', 4: 'min(13vw, 62px)' }[cols] ?? 'min(10vw, 48px)'}`,
+      style: `grid-template-columns:repeat(${cols},1fr);font-size:${{ 2: 'min(30vw, 130px)', 3: 'min(21vw, 96px)', 4: 'min(15vw, 72px)' }[cols] ?? 'min(10vw, 48px)'}`,
     }, cards);
     ctx.stage.append(title, grid);
 
@@ -855,7 +859,7 @@ const shadowGame = {
       prompt('알맞은 그림자를 찾아요!'),
       el('div', { class: 'tile shadow-target' }, answer),
       choiceLabel(choices.length),
-      el('div', { class: 'choices' }, buttons),
+      el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
     );
 
     function choose(c, btn) {
@@ -928,7 +932,7 @@ const orderGame = {
     while (order.every((v, k) => v === k));
     const placed = Array(len).fill(null); // 칸 → 조각 번호
     const rec = { items: puzzle.items, chosen: placed };
-    const tileSize = len >= 4 ? 'clamp(64px, 19vw, 86px)' : 'clamp(72px, 24vw, 100px)';
+    const tileSize = len >= 4 ? 'clamp(66px, 20vw, 86px)' : len === 3 ? 'clamp(84px, 28vw, 108px)' : 'clamp(110px, 36vw, 150px)';
 
     const slotNodes = placed.map((_, s) =>
       el('button', { class: 'tile blank slot', 'aria-label': `${s + 1}번째 자리`, onclick: () => unplace(s) },
@@ -1253,7 +1257,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 11;
+const APP_VERSION = 12;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
