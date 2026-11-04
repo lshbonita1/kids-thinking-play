@@ -1522,14 +1522,30 @@ function tabHeader(title, sub) {
   return [el('header', { class: 'home-top' }, el('h1', {}, title)), sub ? el('p', { class: 'sub' }, sub) : null];
 }
 
+// 오늘의 학습에 없는 놀이 중 4가지를 예시로 (날마다 바뀜)
+function gamePicks() {
+  const today = dateKey(new Date());
+  const inDaily = new Set(dailyPlan(today).map((r) => r.game));
+  const picks = withRng(`picks:${today}`, () => sample(GAMES.filter((g) => !inDaily.has(g)), 4));
+  return el('section', { class: 'pick-section' },
+    el('div', { class: 'pick-head' },
+      el('h2', {}, '🧩 이런 놀이도 있어요'),
+      el('button', { class: 'pick-all', onclick: () => showHome('games') }, `전체 ${GAMES.length}가지 ›`)),
+    el('div', { class: 'pick-grid' }, picks.map((g) =>
+      el('button', { class: 'pick-card', style: `--c:${g.color}`, onclick: () => playGame(g) },
+        el('span', { class: 'pick-icon' }, g.icon),
+        el('b', {}, g.title),
+        el('span', {}, g.desc)))));
+}
+
 function todayTab() {
   return [
     ...tabHeader('쑥쑥 생각놀이', '오늘은 어떤 놀이를 해볼까요?'),
     el('div', { class: 'level-label' }, '난이도'),
     levelPicker(),
     dailyCard(),
-    el('button', { class: 'more-games', onclick: () => showHome('games') },
-      el('span', {}, '🧩 놀이 골라서 더 하기'), el('span', {}, '›')),
+    gamePicks(),
+    el('button', { class: 'guide-link', onclick: () => showGuide('howto') }, '📖 처음이신가요? 사용 방법 보기'),
   ];
 }
 
@@ -1709,13 +1725,102 @@ function settingsTab() {
       levelPicker()),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '👪 보호자 안내'),
-      el('ul', { class: 'guide-list' },
-        el('li', {}, '매일 ‘오늘의 학습’으로 여러 놀이를 10문제씩 풀어요(약 5분). 모든 놀이가 날마다 골고루 돌아가며 나와요.'),
-        el('li', {}, '시작할 때와 놀이가 바뀔 때 일정표가 나와서, 아이가 다음에 할 일을 미리 알 수 있어요.'),
-        el('li', {}, '틀리면 정답이 반짝이고 다시 해 볼 수 있어요. 처음에 맞힌 문제만 점수에 들어가요.'),
-        el('li', {}, '아이 옆에서 함께 소리 내어 이야기하며 풀고, 끝까지 해 본 과정을 칭찬해 주세요.'),
-        el('li', {}, '너무 쉬워하거나 어려워하면 난이도를 바꿔 주세요. 기록은 이 기기에만 저장돼요.'))),
+      el('button', { class: 'more-games', onclick: () => showGuide('about') },
+        el('span', {}, '🌱 쑥쑥 생각놀이 소개'), el('span', {}, '›')),
+      el('button', { class: 'more-games', onclick: () => showGuide('howto') },
+        el('span', {}, '📖 사용 방법'), el('span', {}, '›'))),
   ];
+}
+
+/* ---------- 화면: 소개 · 사용 방법 ---------- */
+// 만든 원칙 (실제로 사이트에 들어간 기능만 적음)
+const PRINCIPLES = [
+  { icon: '🔍', title: '한눈에 구분되는 큰 그림', text: '색과 모양이 확실히 다른 그림만 크게 보여 줘요. 비슷해서 헷갈리는 그림은 함께 나오지 않아요.' },
+  { icon: '🔊', title: '소리로 읽어 주는 문제', text: '글을 몰라도 할 수 있도록 문제를 읽어 줘요. 🔊 버튼으로 몇 번이고 다시 들을 수 있어요.' },
+  { icon: '💡', title: '틀려도 괜찮아요', text: '틀리면 정답이 반짝이고 직접 눌러서 끝내요. 실패로 끝나지 않고 맞힌 경험이 쌓여요.' },
+  { icon: '📋', title: '미리 아는 순서', text: '오늘 할 놀이를 일정표로 먼저 보여 주고, 하나 끝날 때마다 ✔ 표시해요.' },
+  { icon: '⏱️', title: '하루 5분, 매일 조금씩', text: '오늘의 학습은 10문제예요. 날마다 놀이가 골고루 바뀌어서 여러 능력을 고르게 연습해요.' },
+];
+
+const HOWTO_STEPS = [
+  { icon: '🎚️', title: '난이도 고르기', text: '처음에는 ‘쉬움’으로 시작하세요. 기록 탭에서 ‘잘해요’ 알림이 나오면 한 단계 올려 보세요.' },
+  { icon: '📅', title: '오늘의 학습 시작', text: '오늘 탭의 ‘오늘의 학습’을 누르면 일정표가 나와요. 아이와 함께 순서를 보고 ‘시작하기’를 눌러요.' },
+  { icon: '👆', title: '문제 풀기', text: '그림을 눌러 답해요. 🔊는 다시 듣기, ‘패스’는 넘어가기예요. 틀리면 반짝이는 정답을 눌러 끝내요.' },
+  { icon: '⭐', title: '결과 보기', text: '끝나면 별과 함께 문제마다 정답 · 다시 해서 맞음 · 패스가 나와요. 다시 하거나 처음으로 갈 수 있어요.' },
+  { icon: '🧩', title: '놀이 골라 하기', text: '놀이 탭에서 영역별로 원하는 놀이를 골라 10문제씩 할 수 있어요.' },
+  { icon: '📊', title: '기록 확인', text: '기록 탭에서 놀이별 결과와 달력을 보고, 어려워하는 놀이는 ‘해 보기’로 바로 연습해요.' },
+];
+
+const PARENT_TIPS = [
+  '아이 옆에 앉아 함께 해 주세요. 그림 이름을 소리 내어 말해 주면 더 좋아요.',
+  '맞혔을 때뿐 아니라 끝까지 해 본 것도 칭찬해 주세요.',
+  '매일 비슷한 시간에 하면 아이가 순서를 예상하기 쉬워요.',
+  '힘들어하면 바로 멈추세요. 오늘의 학습은 다음에 다시 열어도 같은 문제가 나와요.',
+  '소리에 예민하면 설정에서 소리를 끌 수 있어요.',
+];
+
+function guideAbout() {
+  return [
+    el('section', { class: 'guide-hero' },
+      el('div', { class: 'guide-hero-icon' }, '🌱'),
+      el('h2', {}, '쑥쑥 생각놀이는'),
+      el('p', {}, '자폐 스펙트럼 아이, 또래보다 천천히 배우는 아이가 집에서 놀이하듯 기초 인지를 연습하는 무료 학습 놀이예요. 짧고 쉬운 문제를 매일 조금씩, 아이의 속도에 맞춰 해요.')),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '이렇게 만들었어요'),
+      el('ul', { class: 'feature-list' }, PRINCIPLES.map((p) => el('li', {},
+        el('span', { class: 'feature-icon' }, p.icon),
+        el('div', {}, el('b', {}, p.title), el('span', {}, p.text)))))),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, `놀이 ${GAMES.length}가지, 6가지 영역`),
+      CATEGORIES.map((c) => el('div', { class: 'guide-cat' },
+        el('div', { class: 'guide-cat-name' }, `${c.icon} ${c.name}`, el('small', {}, c.desc)),
+        el('div', { class: 'guide-cat-games' }, c.games.map((g) => el('span', { style: `--c:${g.color}` }, `${g.icon} ${g.title}`)))))),
+    el('section', { class: 'panel note-panel' },
+      el('h2', { class: 'panel-title' }, '꼭 알아 두세요'),
+      el('ul', { class: 'guide-list' },
+        el('li', {}, '쑥쑥 생각놀이는 집에서 하는 연습 도구예요. 진단이나 치료를 대신하지 않아요.'),
+        el('li', {}, '아이를 맡고 계신 치료사 · 특수교사 선생님과 목표를 함께 정하면 더 좋아요.'),
+        el('li', {}, '로그인이 없고, 기록은 이 기기의 브라우저에만 저장돼요. 다른 곳으로 보내지 않아요.'))),
+  ];
+}
+
+function guideHowto() {
+  return [
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '이렇게 해요'),
+      el('ol', { class: 'step-list' }, HOWTO_STEPS.map((st, k) => el('li', {},
+        el('span', { class: 'step-num' }, String(k + 1)),
+        el('span', { class: 'feature-icon' }, st.icon),
+        el('div', {}, el('b', {}, st.title), el('span', {}, st.text)))))),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '👪 보호자 도움말'),
+      el('ul', { class: 'guide-list' }, PARENT_TIPS.map((t) => el('li', {}, t)))),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '📱 휴대폰 홈 화면에 추가하기'),
+      el('p', { class: 'guide-p' }, '앱처럼 아이콘을 눌러 바로 열 수 있어요.'),
+      el('ul', { class: 'guide-list' },
+        el('li', {}, '아이폰(사파리): 아래 공유 버튼 → ‘홈 화면에 추가’'),
+        el('li', {}, '안드로이드(크롬): 오른쪽 위 ⋮ → ‘홈 화면에 추가’'))),
+    el('button', { class: 'btn-main', onclick: () => { store.set('homeTab', 'today'); showHome('today'); } }, '📅 오늘의 학습 하러 가기'),
+  ];
+}
+
+function showGuide(section) {
+  window.speechSynthesis?.cancel();
+  const tabs = [{ id: 'about', name: '소개' }, { id: 'howto', name: '사용 방법' }];
+  mount(el('div', { class: 'screen guide' },
+    el('header', { class: 'guide-top' },
+      el('button', { class: 'icon-btn', 'aria-label': '돌아가기', onclick: () => showHome() }, '←'),
+      el('h1', {}, '쑥쑥 생각놀이 안내')),
+    el('div', { class: 'level-seg range-seg', role: 'tablist' },
+      tabs.map((t) => el('button', {
+        class: `seg${t.id === section ? ' on' : ''}`,
+        role: 'tab',
+        'aria-selected': String(t.id === section),
+        onclick: () => showGuide(t.id),
+      }, t.name))),
+    ...(section === 'howto' ? guideHowto() : guideAbout()),
+  ));
 }
 
 function tabBar(current) {
@@ -1943,7 +2048,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 18;
+const APP_VERSION = 19;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
