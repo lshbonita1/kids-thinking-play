@@ -926,3 +926,11 @@ path.dl-line { fill: none; stroke-linejoin: round; }
 .tile.choice.place { font-size: calc(var(--t) * .26); }
 .place-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; line-height: 1; }
 .place-btn b { font-weight: 400; font-size: 1.9em; }
+
+/* ---------- 실사 사진 ---------- */
+img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.tile img.photo { width: 86%; height: 86%; border-radius: 18%; }
+.shadow-target img.photo { width: 90%; height: 90%; }
+.count-item img.photo { width: 1.15em; height: 1.15em; border-radius: 22%; box-shadow: 0 1px 3px rgba(0, 0, 0, .15); }
+.review-items { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.review-items img.photo { width: 30px; height: 30px; border-radius: 8px; }

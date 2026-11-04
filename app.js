@@ -165,6 +165,22 @@ function tone(freqs, dur = 0.14) {
   } catch {}
 }
 
+/* ---------- 실사 사진 ---------- */
+// 사진이 있는 그림은 사진으로 보여 줌 (photos/이름.jpg, 출처는 photos/CREDITS.md)
+// 사진이 아직 없는 그림은 지금처럼 그림 글자로
+const PHOTOS = {
+  '🍎': 'apple', '🍌': 'banana', '🐸': 'frog', '🐳': 'whale', '🍇': 'grapes', '🌸': 'flower', '🥕': 'carrot',
+  '🚗': 'car', '🎈': 'balloon', '🦋': 'butterfly', '✈️': 'airplane', '🐶': 'dog', '🍯': 'honey', '🥛': 'milk',
+  '✏️': 'pencil', '🪥': 'toothbrush', '📒': 'notebook', '🐝': 'bee', '🐒': 'monkey', '🐥': 'chick',
+  '🐄': 'cow', '🥚': 'egg', '🐘': 'elephant', '🥅': 'goal', '☂️': 'umbrella',
+};
+
+function pic(e) {
+  const name = PHOTOS[e];
+  if (!name) return e;
+  return el('img', { class: 'photo', src: `photos/${name}.jpg`, alt: '', draggable: 'false' });
+}
+
 /* ---------- 공통 UI ---------- */
 function prompt(text, say = true) {
   if (say) speak(text);
@@ -769,13 +785,13 @@ const countGame = {
         const left = ((s % 4) + 0.5) / 4 * 100 + (Math.random() * 8 - 4);
         const top = (Math.floor(s / 4) + 0.5) / 3 * 100 + (Math.random() * 10 - 5);
         return el('div', { class: 'count-item', style: `left:${left}%;top:${top}%` },
-          el('span', { style: `animation-delay:${k * 0.06}s` }, emoji));
+          el('span', { style: `animation-delay:${k * 0.06}s` }, pic(emoji)));
       }));
 
     const buttons = choices.map((c) =>
       el('button', { class: 'num-btn', onclick: () => choose(c, buttons[choices.indexOf(c)]) }, String(c)));
 
-    ctx.stage.append(prompt(`${emoji} 몇 개일까요?`, false), board, choiceLabel(choices.length),
+    ctx.stage.append(prompt('몇 개일까요?', false), board, choiceLabel(choices.length),
       el('div', { class: 'num-choices' }, buttons));
     speak('몇 개일까요?');
 
@@ -794,7 +810,7 @@ const countGame = {
 
   review(rec) {
     return el('div', {},
-      el('div', { class: 'review-items' }, rec.emoji.repeat(rec.n)),
+      el('div', { class: 'review-items' }, range(1, rec.n).map(() => pic(rec.emoji))),
       el('div', { class: 'review-note' }, `정답 ${rec.n}개 · 내 답 ${rec.chosen == null ? '-' : `${rec.chosen}개`}`),
     );
   },
@@ -1164,7 +1180,7 @@ const listenGame = {
     const choices = shuffle(picked.map(([, e]) => e));
     const rec = { word, answer, chosen: null };
 
-    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c));
+    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, pic(c)));
     ctx.stage.append(
       prompt(`${word}${objectParticle(word)} 찾아요`),
       el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
@@ -1187,7 +1203,7 @@ const listenGame = {
     return el('div', { class: 'compare' },
       el('div', { class: 'compare-col' }, '들은 말', el('div', { class: 'review-word' }, rec.word)),
       el('div', { class: 'compare-col' }, '고른 그림',
-        el('div', { class: `tile ${rec.chosen == null ? 'blank' : 'good'}`, style: '--t:64px' }, rec.chosen ?? '?')),
+        el('div', { class: `tile ${rec.chosen == null ? 'blank' : 'good'}`, style: '--t:64px' }, rec.chosen ? pic(rec.chosen) : '?')),
     );
   },
 };
@@ -1236,7 +1252,7 @@ const feelGame = {
     const rec = { feel, situation, choices, chosen: null };
 
     const buttons = choices.map((f) =>
-      el('button', { class: 'tile choice face', 'aria-label': FEELINGS[f].word, onclick: () => choose(f) }, FEELINGS[f].face));
+      el('button', { class: 'tile choice face', 'aria-label': FEELINGS[f].word, onclick: () => choose(f) }, pic(FEELINGS[f].face)));
     const row = el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons);
 
     if (situation) {
@@ -1274,7 +1290,7 @@ const feelGame = {
       el('div', { class: 'compare-col' }, '문제', question),
       el('div', { class: 'compare-col' }, FEELINGS[rec.feel].word,
         el('div', { class: `tile ${rec.chosen == null ? 'blank' : 'good'}`, style: '--t:64px' },
-          rec.chosen ? FEELINGS[rec.chosen].face : '?')),
+          rec.chosen ? pic(FEELINGS[rec.chosen].face) : '?')),
     );
   },
 };
@@ -1352,10 +1368,10 @@ const matchGame = {
     const choices = shuffle([pair.a, ...sample(others, MATCH_CHOICES[ctx.level][i < 5 ? 0 : 1] - 1)]);
     const rec = { pair, chosen: null };
 
-    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c));
+    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, pic(c)));
     ctx.stage.append(
       prompt(`${withParticle(pair.name)} 어울리는 것은?`),
-      el('div', { class: 'tile shadow-target' }, pair.q),
+      el('div', { class: 'tile shadow-target' }, pic(pair.q)),
       choiceLabel(choices.length),
       el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
     );
@@ -1375,9 +1391,9 @@ const matchGame = {
 
   review(rec) {
     return el('div', { class: 'compare' },
-      el('div', { class: 'compare-col' }, rec.pair.name, el('div', { class: 'tile', style: '--t:64px' }, rec.pair.q)),
+      el('div', { class: 'compare-col' }, rec.pair.name, el('div', { class: 'tile', style: '--t:64px' }, pic(rec.pair.q))),
       el('div', { class: 'compare-col' }, '짝',
-        el('div', { class: `tile ${rec.chosen == null ? 'blank' : 'good'}`, style: '--t:64px' }, rec.chosen ?? rec.pair.a)),
+        el('div', { class: `tile ${rec.chosen == null ? 'blank' : 'good'}`, style: '--t:64px' }, pic(rec.chosen ?? rec.pair.a))),
     );
   },
 };
@@ -2032,7 +2048,9 @@ function guideAbout() {
       el('ul', { class: 'guide-list' },
         el('li', {}, '쑥쑥 생각놀이는 집에서 하는 연습 도구예요. 진단이나 치료를 대신하지 않아요.'),
         el('li', {}, '아이를 맡고 계신 치료사 · 특수교사 선생님과 목표를 함께 정하면 더 좋아요.'),
-        el('li', {}, '로그인이 없고, 기록은 이 기기의 브라우저에만 저장돼요. 다른 곳으로 보내지 않아요.'))),
+        el('li', {}, '로그인이 없고, 기록은 이 기기의 브라우저에만 저장돼요. 다른 곳으로 보내지 않아요.'),
+        el('li', {}, '실사 사진은 누구나 무료로 쓸 수 있는 사진(CC0 · 퍼블릭 도메인)이에요. ',
+          el('a', { href: 'https://github.com/lshbonita1/kids-thinking-play/blob/main/photos/CREDITS.md', target: '_blank', rel: 'noopener' }, '사진 출처 보기')))),
   ];
 }
 
@@ -2318,7 +2336,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 26;
+const APP_VERSION = 28;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
