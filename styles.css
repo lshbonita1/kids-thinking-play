@@ -1072,3 +1072,82 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .logo svg { max-width: 300px; }
 @media (min-width: 700px) { .logo svg { max-width: 380px; } }
 .guide-btn { width: 46px; height: 46px; padding: 0; border-radius: 50%; font-size: 22px; display: grid; place-items: center; }
+
+/* ---------- 손 놀이: 길 따라 그리기 ---------- */
+.trace-board {
+  position: relative;
+  width: min(100%, calc(560px * var(--k)), 62vh);
+  aspect-ratio: 3 / 2;
+  margin: 0 auto;
+  border-radius: 24px;
+  background: #f1f8ec;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.trace-board svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.trace-board path, .trace-board polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.trace-edge { stroke: #d9b07c; }
+.trace-road { stroke: #fbefd9; }
+.trace-mid { stroke: #e6cfa6; stroke-width: 3; stroke-dasharray: 6 9; }
+.trace-trail { stroke: #8fd19e; }
+.trace-mover, .trace-goal {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  font-size: min(11vw, 7vh, calc(58px * var(--k)));
+  line-height: 1;
+  pointer-events: none;
+}
+.trace-goal img.photo { width: 1.25em; height: 1.25em; border-radius: 22%; box-shadow: 0 2px 6px rgba(0, 0, 0, .18); }
+.trace-goal.reached { filter: drop-shadow(0 0 10px #ffd76e); }
+.trace-mover { z-index: 1; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
+.trace-mover.held { font-size: min(13vw, 8.5vh, calc(68px * var(--k))); }
+.trace-mover.wiggle { animation: trace-wiggle 1.2s ease-in-out infinite; }
+@keyframes trace-wiggle {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.18); }
+}
+.trace-board.mini { width: 180px; border-radius: 14px; }
+.trace-board.mini .trace-mover, .trace-board.mini .trace-goal { font-size: 20px; }
+
+/* ---------- 손 놀이: 바구니에 쏙 ---------- */
+.sort-pieces {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  min-height: var(--t);
+  max-width: calc(560px * var(--k));
+  margin: 0 auto;
+}
+.sort-piece { touch-action: none; cursor: grab; transition: box-shadow .15s; }
+.sort-piece.dragging { position: relative; z-index: 5; cursor: grabbing; box-shadow: 0 10px 22px rgba(0, 0, 0, .2); transition: none; }
+.sort-piece.sel { border: 3px solid var(--orange); background: #fff4e3; }
+.sort-piece.used { visibility: hidden; }
+.sort-tip { margin: 6px 0 0; }
+.baskets { display: grid; gap: 12px; width: 100%; max-width: calc(560px * var(--k)); margin: 0 auto; }
+.basket {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: clamp(150px, 26vh, calc(210px * var(--k)));
+  padding: 12px 8px;
+  border: 3px solid #d9b07c;
+  border-radius: 18px 18px 34px 34px;
+  background: repeating-linear-gradient(45deg, #f6e2c4 0 10px, #f1d8b2 10px 20px);
+}
+.basket.over { border-color: var(--good); background: var(--good-bg); }
+.basket-label {
+  display: grid;
+  place-items: center;
+  width: clamp(60px, 16vw, calc(80px * var(--k)));
+  aspect-ratio: 1;
+  border-radius: 16px;
+  background: #fff;
+}
+.basket-label img.photo { width: 86%; height: 86%; border-radius: 18%; }
+.basket-in { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.basket-got img.photo { width: clamp(30px, 8vw, calc(40px * var(--k))); height: clamp(30px, 8vw, calc(40px * var(--k))); border-radius: 8px; }

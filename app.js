@@ -1552,6 +1552,279 @@ const spaceGame = {
   },
 };
 
+/* ---------- 놀이: 길 따라 그리기 (소근육 · 눈과 손 협응) ---------- */
+// 길 모양: 300×200 판 위의 꺾은선. 단계가 오를수록 굽은 곳이 많아짐
+const traceCurve = (f) => range(0, 24).map((k) => [30 + k * 10, f(k / 24)]);
+const TRACE_SHAPES = {
+  straight: [[35, 100], [265, 100]],
+  hill: traceCurve((t) => 140 - 80 * Math.sin(Math.PI * t)),
+  wave: traceCurve((t) => 100 - 50 * Math.sin(2 * Math.PI * t)),
+  zigzag: [[35, 55], [112, 150], [188, 55], [265, 150]],
+  turn: [[45, 45], [255, 45], [255, 155], [45, 155]],
+};
+// 단계별 [앞 5문제, 뒤 5문제]에 나오는 길 모양
+const TRACE_LEVELS = [
+  [['straight'], ['straight', 'hill']],
+  [['hill', 'wave'], ['wave', 'zigzag']],
+  [['wave', 'zigzag'], ['zigzag', 'turn']],
+];
+// 단계별 길 폭 (넓을수록 쉬움)
+const TRACE_ROAD = [56, 46, 38];
+// [움직이는 친구, 도착할 곳]
+const TRACE_PAIRS = [['🐛', '🍎'], ['🐝', '🌸'], ['🐰', '🥕'], ['🐶', '🎈'], ['🐸', '🍇']];
+
+function tracePoints(shape, flip) {
+  return TRACE_SHAPES[shape].map(([x, y]) => [flip & 1 ? 300 - x : x, flip & 2 ? 200 - y : y]);
+}
+
+// 꺾은선을 4칸 간격의 점으로 나눔 (손가락이 길 어디쯤 있는지 찾는 데 씀)
+function traceSamples(pts, step = 4) {
+  const out = [{ x: pts[0][0], y: pts[0][1] }];
+  for (let k = 1; k < pts.length; k++) {
+    const [ax, ay] = pts[k - 1];
+    const [bx, by] = pts[k];
+    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / step));
+    for (let j = 1; j <= n; j++) out.push({ x: ax + ((bx - ax) * j) / n, y: ay + ((by - ay) * j) / n });
+  }
+  return out;
+}
+
+const tracePos = (p) => `left:${(p.x / 300) * 100}%;top:${(p.y / 200) * 100}%`;
+
+function traceBoard(rec, mini = false) {
+  const d = `M${rec.points.map((p) => p.join(',')).join(' L')}`;
+  const board = el('div', { class: `trace-board${mini ? ' mini' : ''}` });
+  board.innerHTML = `<svg viewBox="0 0 300 200" aria-hidden="true">
+    <path class="trace-edge" d="${d}" stroke-width="${rec.road + 6}"/>
+    <path class="trace-road" d="${d}" stroke-width="${rec.road}"/>
+    <path class="trace-mid" d="${d}"/>
+    <polyline class="trace-trail" stroke-width="${rec.road * 0.42}" points=""/>
+  </svg>`;
+  const samples = traceSamples(rec.points);
+  const goal = el('span', { class: 'trace-goal', style: tracePos(samples[samples.length - 1]) }, pic(rec.pair[1]));
+  const mover = el('span', { class: 'trace-mover', style: tracePos(samples[0]) }, rec.pair[0]);
+  board.append(goal, mover);
+  return { board, samples, goal, mover, trail: board.querySelector('.trace-trail') };
+}
+
+const traceGame = {
+  id: 'trace',
+  title: '길 따라 그리기',
+  desc: '친구를 끌어서 길을 따라가요',
+  skill: '소근육 · 눈과 손 협응',
+  icon: '🐛',
+  color: '#dcefd2',
+
+  round(i, ctx) {
+    const shape = pick(TRACE_LEVELS[ctx.level][i < 5 ? 0 : 1]);
+    const flip = rand(4);
+    const pair = pick(TRACE_PAIRS);
+    const road = TRACE_ROAD[ctx.level];
+    const rec = { shape, flip, pair, road, points: tracePoints(shape, flip), done: false };
+    const { board, samples, goal, mover, trail } = traceBoard(rec);
+    let at = 0; // 친구가 지금까지 간 곳 (samples 번호)
+    let dragging = false;
+    mover.classList.add('wiggle');
+
+    ctx.stage.append(
+      prompt('길을 따라 끌어 가요'),
+      board,
+      el('div', { class: 'draw-tip' }, '손가락으로 꾹 누르고 천천히 끌어요'),
+    );
+
+    const toBoard = (e) => {
+      const r = board.getBoundingClientRect();
+      return [((e.clientX - r.left) / r.width) * 300, ((e.clientY - r.top) / r.height) * 200];
+    };
+
+    function move(x, y) {
+      // 지금 위치 근처의 길에서만 찾음 (길이 굽어 가까이 붙은 곳으로 건너뛰지 않게)
+      let best = -1;
+      let bestDist = Infinity;
+      for (let k = Math.max(0, at - 10); k <= Math.min(samples.length - 1, at + 15); k++) {
+        const dist = Math.hypot(samples[k].x - x, samples[k].y - y);
+        if (dist < bestDist) { bestDist = dist; best = k; }
+      }
+      if (bestDist > road / 2 + 18) {
+        // 길을 벗어나면 친구는 그 자리에 멈추고, 다시 친구를 잡아서 가면 됨
+        stop();
+        mover.classList.add('wiggle');
+        ctx.miss('길을 따라 천천히 가 봐요');
+        return;
+      }
+      if (best <= at) return;
+      at = best;
+      mover.setAttribute('style', tracePos(samples[at]));
+      trail.setAttribute('points', samples.slice(0, at + 1).map((p) => `${p.x},${p.y}`).join(' '));
+      if (at >= samples.length - 3) {
+        stop();
+        rec.done = true;
+        mover.setAttribute('style', tracePos(samples[samples.length - 1]));
+        goal.classList.add('pop', 'reached');
+        ctx.finish(true);
+      }
+    }
+
+    function stop() {
+      dragging = false;
+      mover.classList.remove('held');
+    }
+
+    board.addEventListener('pointerdown', (e) => {
+      if (rec.done) return;
+      const [x, y] = toBoard(e);
+      if (Math.hypot(samples[at].x - x, samples[at].y - y) > Math.max(45, road)) return;
+      e.preventDefault();
+      board.setPointerCapture(e.pointerId);
+      dragging = true;
+      mover.classList.remove('wiggle');
+      mover.classList.add('held');
+      tone([600], 0.05);
+    });
+    board.addEventListener('pointermove', (e) => dragging && move(...toBoard(e)));
+    board.addEventListener('pointerup', () => {
+      if (!dragging) return;
+      stop();
+      mover.classList.add('wiggle');
+    });
+    board.addEventListener('pointercancel', stop);
+
+    return rec;
+  },
+
+  review(rec) {
+    const { board, samples, trail } = traceBoard(rec, true);
+    if (rec.done) trail.setAttribute('points', samples.map((p) => `${p.x},${p.y}`).join(' '));
+    return el('div', { class: 'review-center' },
+      el('div', {}, board,
+        el('div', { class: 'review-note' },
+          !rec.done ? '끝까지 가지 못했어요' : rec.missed ? '길을 벗어났다가 다시 갔어요' : '길을 따라 끝까지 갔어요')));
+  },
+};
+
+/* ---------- 놀이: 바구니에 쏙 (소근육 · 분류) ---------- */
+// 색과 모양이 서로 확실히 다른 사진만
+const SORT_ITEMS = ['🍎', '🍌', '🐸', '🐳', '🍇', '🥕', '🚗', '🎈'];
+// 단계별 바구니 수
+const SORT_BASKETS = [2, 2, 3];
+// 단계별 [앞 5문제, 뒤 5문제] 옮길 그림 수
+const SORT_COUNTS = [[3, 4], [4, 5], [5, 6]];
+const SORT_TILE = 'clamp(calc(70px * var(--k)), 22vw, calc(92px * var(--k)))';
+
+const sortGame = {
+  id: 'sort',
+  title: '바구니에 쏙',
+  desc: '같은 그림 바구니에 옮겨요',
+  skill: '소근육 · 분류',
+  icon: '🧺',
+  color: '#f6e2c4',
+
+  round(i, ctx) {
+    const kinds = sample(SORT_ITEMS, SORT_BASKETS[ctx.level]);
+    const n = SORT_COUNTS[ctx.level][i < 5 ? 0 : 1];
+    const items = shuffle([...kinds, ...range(1, n - kinds.length).map(() => pick(kinds))]);
+    const rec = { kinds, items, misses: 0, done: false };
+    let selected = null;
+    let drag = null;
+    let placed = 0;
+
+    const pieces = items.map((it) => el('button', { class: 'tile sort-piece', 'aria-label': '그림' }, pic(it)));
+    const baskets = kinds.map((kd) => el('button', { class: 'basket', 'aria-label': '바구니' },
+      el('div', { class: 'basket-label' }, pic(kd)),
+      el('div', { class: 'basket-in' })));
+
+    ctx.stage.append(
+      prompt('같은 그림 바구니에 넣어요'),
+      el('div', { class: 'sort-pieces', style: `--t:${SORT_TILE}` }, pieces),
+      el('div', { class: 'draw-tip sort-tip' }, '👇 그림을 끌어서 바구니에 쏙!'),
+      el('div', { class: 'baskets', style: `grid-template-columns:repeat(${kinds.length},1fr)` }, baskets),
+    );
+
+    const hit = (node, e) => {
+      const r = node.getBoundingClientRect();
+      return e.clientX >= r.left - 10 && e.clientX <= r.right + 10 && e.clientY >= r.top - 10 && e.clientY <= r.bottom + 10;
+    };
+
+    function select(k) {
+      selected = selected === k ? null : k;
+      pieces.forEach((p, j) => p.classList.toggle('sel', j === selected));
+    }
+
+    function drop(k, b) {
+      selected = null;
+      pieces.forEach((p) => p.classList.remove('sel'));
+      if (items[k] !== kinds[b]) {
+        // 맞는 바구니를 반짝여 알려주고 다시 옮기게 함
+        rec.misses++;
+        baskets.forEach((bn, j) => bn.classList.toggle('hint', kinds[j] === items[k]));
+        ctx.miss('같은 그림 바구니에 넣어 볼까요?');
+        return;
+      }
+      pieces[k].classList.add('used');
+      baskets.forEach((bn) => bn.classList.remove('hint'));
+      baskets[b].querySelector('.basket-in').append(el('span', { class: 'basket-got pop' }, pic(items[k])));
+      tone([520 + placed * 70], 0.07);
+      if (++placed === items.length) {
+        rec.done = true;
+        ctx.finish(true);
+      }
+    }
+
+    pieces.forEach((p, k) => {
+      const reset = () => {
+        drag = null;
+        p.classList.remove('dragging');
+        p.style.transform = '';
+        baskets.forEach((b) => b.classList.remove('over'));
+      };
+      p.addEventListener('pointerdown', (e) => {
+        if (p.classList.contains('used') || rec.done) return;
+        e.preventDefault();
+        p.setPointerCapture(e.pointerId);
+        drag = { k, x0: e.clientX, y0: e.clientY, moved: false };
+        p.classList.add('dragging');
+        tone([600], 0.04);
+      });
+      p.addEventListener('pointermove', (e) => {
+        if (drag?.k !== k) return;
+        const dx = e.clientX - drag.x0;
+        const dy = e.clientY - drag.y0;
+        if (Math.hypot(dx, dy) > 8) drag.moved = true;
+        p.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+        baskets.forEach((b) => b.classList.toggle('over', hit(b, e)));
+      });
+      p.addEventListener('pointerup', (e) => {
+        if (drag?.k !== k) return;
+        const { moved } = drag;
+        reset();
+        // 끌지 않고 톡 누르면 고르기만 하고, 바구니를 눌러서 넣을 수도 있음
+        if (!moved) { select(k); return; }
+        const b = baskets.findIndex((bn) => hit(bn, e));
+        if (b >= 0) drop(k, b);
+      });
+      p.addEventListener('pointercancel', reset);
+    });
+    baskets.forEach((b, j) => b.addEventListener('click', () => selected != null && drop(selected, j)));
+
+    return rec;
+  },
+
+  review(rec) {
+    const note = !rec.done ? '끝까지 하지 못했어요'
+      : rec.misses === 0 ? '한 번도 안 틀리고 다 넣었어요'
+      : `${rec.misses}번 틀리고 다 넣었어요`;
+    return el('div', {},
+      el('div', { class: 'review-items' }, rec.items.map((it) => pic(it))),
+      el('div', { class: 'review-note' }, note),
+    );
+  },
+
+  badge(rec) {
+    if (rec.passed) return null;
+    return rec.correct ? ['good', '잘 넣었어요'] : ['pass', '완성'];
+  },
+};
+
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
   memory: (r) => r.original.join(),
@@ -1567,13 +1840,15 @@ const QUESTION_KEYS = {
   match: (r) => r.pair.q,
   order: (r) => `${r.items.map((it) => `${it.label}${it.scale ?? ''}`).join()}|${r.order.join()}`,
   routine: (r) => `${r.items.map((it) => it.label).join()}|${r.order.join()}`,
+  trace: (r) => `${r.shape}|${r.flip}|${r.pair.join('')}`,
+  sort: (r) => `${[...r.kinds].sort().join()}|${r.items.length}`,
   space: (r) => `${r.furniture}|${Object.entries(r.placed).map(([pl, t]) => pl + t.e).join()}|${r.ask}|${r.whereType}`,
 };
 const questionKey = (game, r) => `${game.id}:${(QUESTION_KEYS[game.id] ?? JSON.stringify)(r)}`;
 
 const GAMES = [
   copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, spaceGame, memoryGame, patternGame,
-  countGame, oddGame, flipGame, shadowGame, orderGame,
+  countGame, oddGame, flipGame, shadowGame, orderGame, traceGame, sortGame,
 ];
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
@@ -1690,7 +1965,7 @@ function dailyCard() {
   const games = [...new Set(dailyPlan(date).map((r) => r.game))];
   const done = store.get(dailyKey(date), null);
   const streak = dailyStreak();
-  const info = done ? `✅ 오늘 완료 · ${done.score}점` : `${DAILY_TOTAL}문제 · 약 5분`;
+  const info = done ? `✅ 오늘 완료 · ${done.score}점` : `${DAILY_TOTAL}문제`;
 
   return el('section', { class: `daily-card${done ? ' finished' : ''}` },
     el('div', { class: 'daily-top' },
@@ -1727,7 +2002,8 @@ function playDaily() {
 /* ---------- 화면: 홈 ---------- */
 // 놀이를 영역별로 묶음 (보호자가 이해하기 쉬운 말로)
 const CATEGORIES = [
-  { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, linesGame, shadowGame, oddGame] },
+  { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame] },
+  { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame] },
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
   { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame] },
@@ -2109,7 +2385,7 @@ function guideAbout() {
         el('span', { class: 'feature-icon' }, p.icon),
         el('div', {}, el('b', {}, p.title), el('span', {}, p.text)))))),
     el('section', { class: 'panel' },
-      el('h2', { class: 'panel-title' }, `놀이 ${GAMES.length}가지, 6가지 영역`),
+      el('h2', { class: 'panel-title' }, `놀이 ${GAMES.length}가지, ${CATEGORIES.length}가지 영역`),
       CATEGORIES.map((c) => el('div', { class: 'guide-cat' },
         el('div', { class: 'guide-cat-name' }, `${c.icon} ${c.name}`, el('small', {}, c.desc)),
         el('div', { class: 'guide-cat-games' }, c.games.map((g) => el('span', { style: `--c:${g.color}` }, `${g.icon} ${g.title}`)))))),
@@ -2439,7 +2715,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 45;
+const APP_VERSION = 46;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
