@@ -94,16 +94,31 @@ const store = {
 const settings = {
   sound: store.get('sound', true),
   level: store.get('level', 0), // 처음엔 쉬움부터
+  voice: store.get('voice', ''), // 고른 목소리 이름 (없으면 자동)
+  pitch: store.get('pitch', 1.4), // 목소리 높이: 높을수록 밝고 어린 느낌
+  rate: store.get('rate', 0.85), // 빠르기: 아이가 알아듣기 쉽게 조금 천천히
 };
+
+// 목소리 높이 · 빠르기 선택지
+const PITCH_OPTIONS = [{ v: 1.1, name: '보통' }, { v: 1.4, name: '밝게' }, { v: 1.7, name: '아주 밝게' }];
+const RATE_OPTIONS = [{ v: 0.7, name: '느리게' }, { v: 0.85, name: '조금 느리게' }, { v: 1, name: '보통' }];
 
 /* ---------- 소리 ---------- */
 // 한국어 음성을 골라 둠 (태블릿에 따라 기본 음성이 영어라 한국어를 이상하게 읽는 경우가 있음)
 let koVoice = null;
+// 이 기기에 있는 한국어 목소리 목록
+function koreanVoices() {
+  if (!('speechSynthesis' in window)) return [];
+  return speechSynthesis.getVoices().filter((v) => v.lang?.replace('_', '-').toLowerCase().startsWith('ko'));
+}
+// 고른 목소리 → 없으면 여성 목소리(이름으로 추정) → 기기 안 목소리 → 아무 한국어 목소리
+const SOFT_VOICE_HINTS = ['yuna', '유나', 'sora', 'female', 'heami', 'sunhi', 'jimin', 'seoyeon', 'google 한국'];
 function pickKoreanVoice() {
-  if (!('speechSynthesis' in window)) return;
-  const voices = speechSynthesis.getVoices();
-  koVoice = voices.find((v) => v.lang === 'ko-KR' && v.localService)
-    ?? voices.find((v) => v.lang?.replace('_', '-').startsWith('ko'))
+  const voices = koreanVoices();
+  koVoice = voices.find((v) => v.name === settings.voice)
+    ?? voices.find((v) => SOFT_VOICE_HINTS.some((h) => v.name.toLowerCase().includes(h)))
+    ?? voices.find((v) => v.localService)
+    ?? voices[0]
     ?? null;
 }
 if ('speechSynthesis' in window) {
@@ -116,8 +131,8 @@ function speak(text) {
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ko-KR';
   if (koVoice) u.voice = koVoice;
-  u.rate = 0.9;
-  u.pitch = 1.2;
+  u.rate = settings.rate;
+  u.pitch = settings.pitch;
   // 아이패드에서 음성이 '일시 정지' 상태로 멈춰 있는 경우가 있어 풀어 줌
   speechSynthesis.resume();
   if (speechSynthesis.speaking || speechSynthesis.pending) {
@@ -1972,6 +1987,51 @@ function recordsTab() {
   ];
 }
 
+// 목소리 고르기 · 높이 · 빠르기 · 들어 보기
+function voiceSettings() {
+  const voices = koreanVoices();
+  const preview = () => {
+    unlockSound();
+    speak('안녕! 나는 쑥쑥이야. 같이 놀자!');
+  };
+  const optionSeg = (options, current, key) => el('div', { class: 'level-seg voice-seg', role: 'radiogroup' },
+    options.map((o) => el('button', {
+      class: `seg${o.v === current ? ' on' : ''}`,
+      role: 'radio',
+      'aria-checked': String(o.v === current),
+      onclick: () => {
+        settings[key] = o.v;
+        store.set(key, o.v);
+        preview();
+        showHome('settings');
+      },
+    }, el('span', { class: 'seg-name' }, o.name))));
+  const select = el('select', {
+    id: 'voice-select',
+    class: 'voice-select',
+    'aria-label': '목소리',
+    onchange: (e) => {
+      settings.voice = e.target.value;
+      store.set('voice', settings.voice);
+      pickKoreanVoice();
+      preview();
+    },
+  },
+  el('option', { value: '' }, '자동으로 고르기'),
+  voices.map((v) => el('option', { value: v.name, selected: v.name === settings.voice }, v.name)));
+  return el('div', { class: 'voice-box' },
+    el('div', { class: 'setting-name' }, '🗣️ 목소리'),
+    voices.length > 1 ? select : el('p', { class: 'setting-desc' },
+      voices.length ? `이 기기의 한국어 목소리: ${voices[0].name}` : '이 기기에서 한국어 목소리를 찾지 못했어요.'),
+    el('div', { class: 'setting-desc voice-label' }, '목소리 높이'),
+    optionSeg(PITCH_OPTIONS, settings.pitch, 'pitch'),
+    el('div', { class: 'setting-desc voice-label' }, '빠르기'),
+    optionSeg(RATE_OPTIONS, settings.rate, 'rate'),
+    el('button', { class: 'more-games', disabled: !settings.sound, onclick: preview },
+      el('span', {}, '▶ 목소리 들어 보기'), el('span', {}, '🔊')),
+  );
+}
+
 function settingsTab() {
   const soundBtn = el('button', {
     class: `switch${settings.sound ? ' on' : ''}`,
@@ -2000,6 +2060,7 @@ function settingsTab() {
       }, el('span', {}, '🔈 소리 시험하기'), el('span', {}, '▶')),
       el('p', { class: 'setting-desc sound-help' },
         '소리가 안 나면: 무음 모드를 끄고 볼륨을 올려 주세요. 효과음만 나고 말소리가 안 나면 기기 설정의 ‘텍스트 음성 변환’에서 한국어 음성을 받아 주세요.'),
+      voiceSettings(),
       el('div', { class: 'setting-name' }, '난이도'),
       levelPicker()),
     el('section', { class: 'panel' },
@@ -2347,7 +2408,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 36;
+const APP_VERSION = 37;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

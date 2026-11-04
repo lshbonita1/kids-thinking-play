@@ -978,3 +978,22 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
   .strip-name { font-size: 13px; white-space: nowrap; }
   .home-top h1.logo .logo svg, .logo svg { max-width: 200px; }
 }
+
+/* ---------- 설정: 목소리 ---------- */
+.voice-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 2px dashed var(--line); }
+.voice-box .setting-name { margin-bottom: 0; }
+.voice-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 18px;
+}
+.voice-label { margin-top: 4px; }
+.voice-seg { margin-bottom: 4px; }
+.voice-seg .seg { padding: 10px 4px; }
+.voice-seg .seg-name { font-size: 18px; }
+.voice-box .more-games:disabled { opacity: .45; }
