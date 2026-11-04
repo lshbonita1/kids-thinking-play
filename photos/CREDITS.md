@@ -8,7 +8,7 @@
 | `airplane.jpg` | 비행기 | [Airplane Blue](https://stocksnap.io/photo/airplane-blue-7YY0E14ENJ) | Tomasz Gawłowski | CC0 1.0 |
 | `apple.jpg` | 사과 | [Red Apple](https://stocksnap.io/photo/red-apple-OQGVJXG77S) | Mali Maeder | CC0 1.0 |
 | `balloon.jpg` | 풍선 | [Red Balloon](https://stocksnap.io/photo/red-balloon-V7HYCPZTHB) | Pawel Kadysz | CC0 1.0 |
-| `banana.jpg` | 바나나 | [Banana Fruits](https://stocksnap.io/photo/banana-fruits-OMQF6YE2VC) | Krzysztof Puszczyński | CC0 1.0 |
+| `banana.jpg` | 바나나 | [Banana Fruit on White Background](https://www.rawpixel.com/image/5968637/banana-fruit-white-background) | - | CC0 1.0 |
 | `bee.jpg` | 벌 | [2014-08-life-of-pix-free-stock-photos-be](https://www.flickr.com/photos/98337688@N05/45506273821) | Allan Casilao | PDM 1.0 |
 | `butterfly.jpg` | 나비 | [Butterfly in the Brush-footed Family on ](https://www.flickr.com/photos/51986662@N05/52390827133) | USFWS Mountain Prairie | PDM 1.0 |
 | `car.jpg` | 자동차 | [Red Car](https://stocksnap.io/photo/red-car-77BA6D52D0) | Jay Mantri | CC0 1.0 |
