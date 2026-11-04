@@ -540,11 +540,11 @@ const PATTERN_UNITS = [
 ];
 // 단계별 보기 개수
 const PATTERN_CHOICES = [2, 3, 3];
-const PATTERN_GROUPS = 4;
+// 규칙 길이별 묶음 수: 규칙을 보여주는 묶음 1개 + 빈칸이 있는 묶음 1개 (한눈에 보이도록 최소로)
+const PATTERN_GROUPS = { 2: 2, 3: 2 };
 const PATTERN_TILE = {
-  2: 'clamp(52px, 15vw, 76px)',
-  3: 'clamp(36px, 10vw, 58px)',
-  4: 'clamp(44px, 13vw, 64px)',
+  2: 'clamp(84px, 27vw, 112px)',
+  3: 'clamp(70px, 22vw, 96px)',
 };
 
 function patternBoard(seq, unitLen, blankTile, tileSize) {
@@ -556,8 +556,8 @@ function patternBoard(seq, unitLen, blankTile, tileSize) {
         return idx === blankTile.index ? blankTile.node : el('div', { class: 'tile' }, item);
       })));
   }
-  // 4칸짜리 규칙은 한 줄에 한 묶음씩
-  const cols = unitLen >= 4 ? 1 : 2;
+  // 그림을 크게 보여주려고 한 줄에 한 묶음씩
+  const cols = 1;
   return el('div', { class: 'pgroups', style: `--t:${tileSize};grid-template-columns:repeat(${cols},auto)` }, groups);
 }
 
@@ -574,7 +574,7 @@ const patternGame = {
     const set = pick(PATTERN_SETS);
     const kinds = sample(set, Math.max(...shape) + 1);
     const unit = shape.map((k) => kinds[k]);
-    const seq = Array.from({ length: PATTERN_GROUPS }, () => unit).flat();
+    const seq = Array.from({ length: PATTERN_GROUPS[unit.length] }, () => unit).flat();
     // 첫 묶음은 규칙을 보여주기 위해 비워두지 않음
     const blank = unit.length + rand(seq.length - unit.length);
     const answer = seq[blank];
@@ -684,7 +684,7 @@ function oddGrid(items, cols, extra = {}) {
   return el('div', { class: `ogrid${extra.mini ? ' mini' : ''}`, style: `grid-template-columns:repeat(${cols},1fr)` },
     items.map((item, k) => el(extra.mini ? 'div' : 'button', {
       class: `otile ${extra.classOf?.(k) ?? ''}`,
-      style: `font-size:${extra.mini ? 22 : cols === 2 ? 64 : 46}px;animation-delay:${k * 0.04}s`,
+      style: `font-size:${extra.mini ? '22px' : cols === 2 ? 'min(22vw, 110px)' : 'min(15vw, 76px)'};animation-delay:${k * 0.04}s`,
       onclick: extra.onPick && (() => extra.onPick(k)),
     }, item)));
 }
@@ -748,7 +748,7 @@ const flipGame = {
     const pairs = FLIP_PAIRS[ctx.level][i];
     const faces = sample(FLIP_ITEMS, pairs);
     const deck = shuffle([...faces, ...faces]);
-    const cols = deck.length <= 4 ? 2 : deck.length === 6 ? 3 : deck.length === 10 ? 5 : 4;
+    const cols = deck.length <= 4 ? 2 : deck.length === 6 ? 3 : 4;
     const rec = { faces, misses: 0, done: false };
     let opened = [];
     let matched = 0;
@@ -759,7 +759,7 @@ const flipGame = {
       el('button', { class: 'card open', 'aria-label': '카드', onclick: () => flip(k) }, el('span', {}, face)));
     const grid = el('div', {
       class: 'card-grid',
-      style: `grid-template-columns:repeat(${cols},1fr);font-size:${cols <= 3 ? 50 : 38}px`,
+      style: `grid-template-columns:repeat(${cols},1fr);font-size:${{ 2: 'min(24vw, 110px)', 3: 'min(18vw, 84px)', 4: 'min(13vw, 62px)' }[cols] ?? 'min(10vw, 48px)'}`,
     }, cards);
     ctx.stage.append(title, grid);
 
@@ -920,7 +920,7 @@ const orderGame = {
     while (order.every((v, k) => v === k));
     const placed = Array(len).fill(null); // 칸 → 조각 번호
     const rec = { items: puzzle.items, chosen: placed };
-    const tileSize = len >= 5 ? 'clamp(44px, 14vw, 62px)' : 'clamp(56px, 17vw, 76px)';
+    const tileSize = len >= 4 ? 'clamp(64px, 19vw, 86px)' : 'clamp(72px, 24vw, 100px)';
 
     const slotNodes = placed.map((_, s) =>
       el('button', { class: 'tile blank slot', 'aria-label': `${s + 1}번째 자리`, onclick: () => unplace(s) },
@@ -1245,7 +1245,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 9;
+const APP_VERSION = 10;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
