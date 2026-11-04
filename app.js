@@ -1567,10 +1567,32 @@ function gamePicks() {
         el('span', {}, g.desc)))));
 }
 
+// 사이트 로고: 새싹 친구 '쑥쑥이'와 글자 (icons/icon.svg와 같은 캐릭터)
+const LOGO_SVG = `
+<svg viewBox="0 0 360 96" aria-hidden="true" focusable="false">
+  <g transform="translate(6 4)">
+    <path d="M44 34 V18" stroke="#4fa86f" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <ellipse cx="31" cy="16" rx="15" ry="8" fill="#6cc08a" transform="rotate(-28 31 16)"/>
+    <ellipse cx="57" cy="16" rx="15" ry="8" fill="#4fa86f" transform="rotate(28 57 16)"/>
+    <circle cx="44" cy="58" r="32" fill="#a9dea1"/>
+    <circle cx="33" cy="54" r="4.5" fill="#3b3226"/><circle cx="55" cy="54" r="4.5" fill="#3b3226"/>
+    <circle cx="34.5" cy="52.5" r="1.4" fill="#fff"/><circle cx="56.5" cy="52.5" r="1.4" fill="#fff"/>
+    <circle cx="25" cy="65" r="5" fill="#f4a9a0" opacity=".8"/><circle cx="63" cy="65" r="5" fill="#f4a9a0" opacity=".8"/>
+    <path d="M36 66 Q44 74 52 66" stroke="#3b3226" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  </g>
+  <text x="104" y="64" font-family="Jua, sans-serif" font-size="40"><tspan fill="#3f8f5a">쑥쑥</tspan><tspan fill="#5e4f3c"> 생각놀이</tspan></text>
+</svg>`;
+
+function logoTitle() {
+  const h1 = el('h1', { class: 'logo', 'aria-label': '쑥쑥 생각놀이' });
+  h1.innerHTML = LOGO_SVG;
+  return h1;
+}
+
 function todayTab() {
   return [
     el('header', { class: 'home-top' },
-      el('h1', {}, '쑥쑥 생각놀이'),
+      logoTitle(),
       el('button', { class: 'pill-btn', onclick: () => showGuide('howto') }, '📖 사용 방법')),
     el('p', { class: 'sub' }, '오늘은 어떤 놀이를 해볼까요?'),
     el('div', { class: 'level-label' }, '난이도'),
@@ -2094,7 +2116,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 22;
+const APP_VERSION = 23;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

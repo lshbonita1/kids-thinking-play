@@ -1,0 +1,16 @@
+{
+  "name": "쑥쑥 생각놀이",
+  "short_name": "쑥쑥 생각놀이",
+  "description": "또래보다 천천히 배우는 아이를 위한 기초 인지 학습 놀이",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf8f2",
+  "theme_color": "#fbf8f2",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

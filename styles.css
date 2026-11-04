@@ -842,3 +842,7 @@ button:disabled { cursor: default; }
 }
 .pick-card b { font-weight: 400; font-size: 19px; color: var(--ink); }
 .pick-card span:last-child { color: #8a7a62; font-size: 14px; line-height: 1.4; }
+
+/* ---------- 로고 (쑥쑥이) ---------- */
+.home-top h1.logo { flex: 1; min-width: 0; margin: 0; line-height: 0; }
+.logo svg { display: block; width: 100%; max-width: 250px; height: auto; }
