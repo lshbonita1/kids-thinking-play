@@ -1056,3 +1056,14 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
   .bubble { font-size: 16px; white-space: nowrap; }
   .daily-icon { width: 40px; height: 40px; font-size: 21px; }
 }
+
+/* 시작하기 버튼: 아이 눈에 밝고 눌러 보고 싶은 노란 장난감 버튼 */
+.daily-go {
+  background: #ffd76e;
+  color: #5b4320;
+  box-shadow: 0 5px 0 #e9b44c;
+  margin-bottom: 5px;
+}
+.daily-go:active { transform: translateY(4px); box-shadow: 0 1px 0 #e9b44c; }
+.daily-card.finished .daily-go { background: #bfe7c9; color: #2f6e44; box-shadow: 0 5px 0 #8fcfa1; }
+.daily-card.finished .daily-go:active { box-shadow: 0 1px 0 #8fcfa1; }
