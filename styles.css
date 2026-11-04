@@ -934,3 +934,10 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .count-item img.photo { width: 1.15em; height: 1.15em; border-radius: 22%; box-shadow: 0 1px 3px rgba(0, 0, 0, .15); }
 .review-items { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 .review-items img.photo { width: 30px; height: 30px; border-radius: 8px; }
+.card > span:has(img.photo) { display: grid; place-items: center; width: 100%; height: 100%; }
+.card img.photo { width: 84%; height: 84%; border-radius: 16%; }
+.otile { display: grid; place-items: center; }
+.otile img.photo { width: 84%; height: 84%; border-radius: 18%; }
+.order-face img.photo { width: calc(var(--t) * .8); height: calc(var(--t) * .8); border-radius: 18%; }
+.answer-note { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.answer-note img.photo { width: 36px; height: 36px; border-radius: 8px; }

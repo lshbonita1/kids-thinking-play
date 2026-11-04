@@ -183,6 +183,12 @@ function pic(e) {
   return el('img', { class: 'photo', src: `photos/${name}.jpg`, alt: '', draggable: 'false' });
 }
 
+// 그림 여러 개를 함께 보여 줄 때: 모두 사진이 있으면 사진으로, 하나라도 없으면 모두 그림 글자로
+// (사진과 그림이 섞이면 모양 차이만 보고 답을 고를 수 있어서)
+function photoRenderer(items) {
+  return items.every((e) => PHOTOS[e]) ? pic : String;
+}
+
 /* ---------- 공통 UI ---------- */
 function prompt(text, say = true) {
   if (say) speak(text);
@@ -661,9 +667,9 @@ const linesGame = {
 
 /* ---------- 놀이 2: 규칙 찾기 ---------- */
 // 아이가 한눈에 구분하도록 색과 모양이 모두 확실히 다른 그림만 씀
-// (빨강 동그라미 사과 · 노랑 바나나 · 초록 개구리 · 파랑 고래 · 보라 포도 · 분홍 꽃 · 검정 펭귄 · 주황 당근)
+// (빨강 사과 · 노랑 바나나 · 초록 개구리 · 파랑 고래 · 보라 포도 · 분홍 꽃 · 회색 코끼리 · 주황 당근, 모두 실사 사진)
 const PATTERN_SETS = [
-  ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🐧', '🥕'],
+  ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🐘', '🥕'],
 ];
 // 숫자가 같으면 같은 그림
 const AB = [0, 1];
@@ -691,7 +697,7 @@ function patternBoard(seq, unitLen, blankTile, tileSize) {
     groups.push(el('div', { class: 'pgroup' },
       seq.slice(g * unitLen, (g + 1) * unitLen).map((item, k) => {
         const idx = g * unitLen + k;
-        return idx === blankTile.index ? blankTile.node : el('div', { class: 'tile' }, item);
+        return idx === blankTile.index ? blankTile.node : el('div', { class: 'tile' }, pic(item));
       })));
   }
   // 그림을 크게 보여주려고 한 줄에 한 묶음씩
@@ -726,7 +732,7 @@ const patternGame = {
 
     const blankNode = el('div', { class: 'tile blank' }, '?');
     const board = patternBoard(seq, unit.length, { index: blank, node: blankNode }, PATTERN_TILE[unit.length]);
-    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c));
+    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, pic(c)));
     const choiceRow = el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons);
 
     ctx.stage.append(prompt('빈칸에 들어갈 것은?'), board, choiceLabel(choices.length), choiceRow);
@@ -737,7 +743,7 @@ const patternGame = {
         return;
       }
       rec.chosen = c;
-      blankNode.textContent = c;
+      blankNode.replaceChildren(pic(c));
       blankNode.className = 'tile pop good';
       ctx.finish(true);
     }
@@ -747,10 +753,10 @@ const patternGame = {
 
   review(rec) {
     const ok = rec.chosen === rec.answer;
-    const blankNode = el('div', { class: `tile ${rec.chosen == null ? 'blank' : ok ? 'good' : 'bad'}` }, rec.chosen ?? '?');
+    const blankNode = el('div', { class: `tile ${rec.chosen == null ? 'blank' : ok ? 'good' : 'bad'}` }, rec.chosen == null ? '?' : pic(rec.chosen));
     return el('div', {},
       patternBoard(rec.seq, rec.unitLen, { index: rec.blank, node: blankNode }, rec.unitLen === 2 ? '40px' : '30px'),
-      ok ? null : el('div', { class: 'review-note' }, `정답: ${rec.answer}`),
+      ok ? null : el('div', { class: 'review-note answer-note' }, '정답: ', pic(rec.answer)),
     );
   },
 };
@@ -837,7 +843,7 @@ function oddGrid(items, cols, extra = {}) {
       class: `otile ${extra.classOf?.(k) ?? ''}`,
       style: `font-size:${extra.mini ? '22px' : cols === 2 ? 'min(30vw, calc(140px * var(--k)))' : 'min(20vw, calc(96px * var(--k)))'};animation-delay:${k * 0.04}s`,
       onclick: extra.onPick && (() => extra.onPick(k)),
-    }, item)));
+    }, (extra.render ?? String)(item))));
 }
 
 const oddGame = {
@@ -857,7 +863,7 @@ const oddGame = {
     const items = Array.from({ length: size }, (_, k) => (k === odd ? diff : same));
     const rec = { items, cols, odd, chosen: null };
 
-    const grid = oddGrid(items, cols, { onPick: choose });
+    const grid = oddGrid(items, cols, { onPick: choose, render: photoRenderer(items) });
     ctx.stage.append(prompt('다른 하나를 찾아요!'), grid);
 
     function choose(k) {
@@ -877,6 +883,7 @@ const oddGame = {
     return el('div', { class: 'review-center' },
       oddGrid(rec.items, rec.cols, {
         mini: true,
+        render: photoRenderer(rec.items),
         classOf: (k) => (k === rec.odd ? 'good' : k === rec.chosen ? 'bad' : ''),
       }));
   },
@@ -884,7 +891,7 @@ const oddGame = {
 
 /* ---------- 놀이 5: 짝 맞추기 ---------- */
 // 동물 얼굴끼리는 헷갈리므로 색과 모양이 다른 그림으로 섞음
-const FLIP_ITEMS = ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🚗', '⭐'];
+const FLIP_ITEMS = ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🚗', '🥕'];
 // 단계별 · 판별 짝 개수
 const FLIP_PAIRS = [[2, 2, 2, 3, 3], [2, 3, 3, 3, 4], [3, 3, 4, 4, 5]];
 // 시작할 때 카드를 미리 보여주는 시간
@@ -911,7 +918,7 @@ const flipGame = {
 
     const title = el('div');
     const cards = deck.map((face, k) =>
-      el('button', { class: 'card open', 'aria-label': '카드', onclick: () => flip(k) }, el('span', {}, face)));
+      el('button', { class: 'card open', 'aria-label': '카드', onclick: () => flip(k) }, el('span', {}, pic(face))));
     const grid = el('div', {
       class: 'card-grid',
       style: `grid-template-columns:repeat(${cols},1fr);font-size:${{ 2: 'min(30vw, calc(130px * var(--k)))', 3: 'min(21vw, calc(96px * var(--k)))', 4: 'min(15vw, calc(72px * var(--k)))' }[cols] ?? 'min(10vw, calc(48px * var(--k)))'}`,
@@ -1061,7 +1068,7 @@ function makeOrderPuzzle(level, len) {
 
 function orderTile(item, props = {}) {
   return el('div', { class: 'tile', ...props },
-    el('span', { class: 'order-face', style: item.scale ? `transform:scale(${item.scale})` : '' }, item.label));
+    el('span', { class: 'order-face', style: item.scale ? `transform:scale(${item.scale})` : '' }, PHOTOS[item.label] ? pic(item.label) : item.label));
 }
 
 const orderGame = {
@@ -1089,7 +1096,7 @@ const orderGame = {
     const pieceNodes = order.map((p) =>
       el('button', { class: `tile choice${puzzle.items[p].text ? ' captioned' : ''}`, onclick: () => place(p) },
         el('span', { class: 'order-face', style: puzzle.items[p].scale ? `transform:scale(${puzzle.items[p].scale})` : '' },
-          puzzle.items[p].label),
+          puzzle.items.every((it) => PHOTOS[it.label]) ? pic(puzzle.items[p].label) : puzzle.items[p].label),
         puzzle.items[p].text ? el('span', { class: 'order-caption' }, puzzle.items[p].text) : null));
 
     ctx.stage.append(
@@ -2338,7 +2345,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 29;
+const APP_VERSION = 30;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
