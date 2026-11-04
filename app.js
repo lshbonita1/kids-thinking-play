@@ -2113,6 +2113,7 @@ const SHARE_TEXT = '아이와 함께하는 그림 생각놀이, 쑥쑥 생각놀
 
 function shareCard() {
   return el('section', { class: 'share-card' },
+    el('span', { class: 'share-icon', 'aria-hidden': 'true' }, '💌'),
     el('div', { class: 'share-text' },
       el('b', {}, '친구에게 알려 주세요'),
       el('span', {}, '함께 하면 더 즐거워요')),
@@ -2760,7 +2761,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 48;
+const APP_VERSION = 50;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

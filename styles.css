@@ -1196,3 +1196,42 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
   .share-text b { font-size: 16px; }
   .share-btn { padding: 10px 12px; font-size: 15px; }
 }
+
+/* 공유하기: 실선 테두리 · 연분홍 카드 · 분홍 장난감 버튼 */
+.share-card {
+  justify-content: flex-start;
+  border: 2px solid #f7c6d3;
+  background: #fff1f5;
+}
+.share-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 26px;
+}
+.share-text { flex: 1; min-width: 0; }
+.share-text b { color: var(--ink); font-size: 19px; }
+.share-text span { color: #9b6475; font-size: 15px; }
+.share-btn {
+  padding: 13px 16px;
+  background: #ffc4d4;
+  color: #8f2b4b;
+  font-size: 18px;
+  box-shadow: 0 4px 0 #f29bb3;
+}
+.share-btn:active { box-shadow: 0 1px 0 #f29bb3; }
+@media (max-width: 360px) {
+  .share-card { gap: 8px; padding: 14px 12px; }
+  .share-icon { width: 38px; height: 38px; font-size: 21px; }
+  .share-text b { font-size: 16px; }
+  .share-text span { font-size: 13px; }
+  .share-btn { padding: 10px 11px; font-size: 15px; }
+}
+/* 글자가 꺾이지 않게: 위에 그림 · 글, 아래에 큰 공유 버튼 */
+.share-card { flex-wrap: wrap; row-gap: 14px; }
+.share-btn { width: 100%; padding: 14px; font-size: 20px; }
+@media (max-width: 360px) { .share-btn { padding: 12px; font-size: 18px; } }
