@@ -2120,7 +2120,9 @@ function guideAbout() {
       el('ul', { class: 'guide-list' },
         el('li', {}, '쑥쑥 생각놀이는 집에서 하는 연습 도구예요. 진단이나 치료를 대신하지 않아요.'),
         el('li', {}, '아이를 맡고 계신 치료사 · 특수교사 선생님과 목표를 함께 정하면 더 좋아요.'),
-        el('li', {}, '로그인이 없고, 기록은 이 기기의 브라우저에만 저장돼요. 다른 곳으로 보내지 않아요.'),
+        el('li', {}, '로그인이 없어요. 아이의 학습 기록(점수 · 달력)은 이 기기의 브라우저에만 저장돼요.'),
+        el('li', {}, '사이트 운영을 위해 접속 정보(접속 시간 · IP 주소 · 기기 종류)를 모아요. ',
+          el('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, '개인정보처리방침 보기')),
         el('li', {}, '실사 사진은 누구나 무료로 쓸 수 있는 사진(CC0 · 퍼블릭 도메인, 일부 얼굴 사진은 출처 표시 조건)이에요. ',
           el('a', { href: 'https://github.com/lshbonita1/kids-thinking-play/blob/main/photos/CREDITS.md', target: '_blank', rel: 'noopener' }, '사진 출처 보기')))),
   ];
@@ -2293,6 +2295,7 @@ function playSession(session) {
   function next() {
     if (state.index >= total) {
       session.save(state);
+      sendLog({ t: 'play', game: session.schedule ? 'daily' : rounds[0].game.id, level, score: state.score });
       showResult(session, state);
       return;
     }
@@ -2406,9 +2409,39 @@ function showResult(session, state) {
   ));
 }
 
+/* ---------- 방문 기록 (관리자 통계용, api/visit.js) ---------- */
+// 기기마다 무작위 번호를 하나 만들어 둠 (이름 · 연락처 같은 정보는 보내지 않음)
+function visitorId() {
+  let id = store.get('vid', null);
+  if (!id) {
+    id = window.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+    store.set('vid', id);
+  }
+  return id;
+}
+
+function sendLog(data) {
+  // 실제 사이트에서만 보냄 (내 컴퓨터에서 시험할 때는 안 보냄)
+  if (!/(^|\.)ssukssuknori\.app$|\.vercel\.app$/.test(location.hostname)) return;
+  try {
+    const body = JSON.stringify({ vid: visitorId(), admin: store.get('isAdminDevice', false), ...data });
+    const sent = navigator.sendBeacon?.('/api/visit', new Blob([body], { type: 'text/plain' }));
+    if (!sent) fetch('/api/visit', { method: 'POST', body, keepalive: true }).catch(() => {});
+  } catch {}
+}
+
+function logVisit() {
+  let ref = null;
+  try {
+    const r = document.referrer ? new URL(document.referrer) : null;
+    if (r && r.hostname !== location.hostname) ref = `${r.hostname}${r.pathname}`.slice(0, 120);
+  } catch {}
+  sendLog({ t: 'visit', page: 'home', ref });
+}
+
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 38;
+const APP_VERSION = 39;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
@@ -2426,6 +2459,7 @@ async function checkForUpdate() {
 }
 
 showHome();
+logVisit();
 checkForUpdate();
 // 휴대폰에서 다른 앱을 쓰다가 돌아왔을 때도 확인
 document.addEventListener('visibilitychange', () => {

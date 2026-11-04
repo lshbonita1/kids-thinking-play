@@ -1,0 +1,3 @@
+supabase
+*.md
+!photos/CREDITS.md

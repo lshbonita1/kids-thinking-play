@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>쑥쑥 생각놀이 관리자</title>
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+  <style>
+    /* 관리자 페이지: 사이트와 같은 색, 표는 읽기 쉽게 고딕 글꼴 */
+    :root {
+      --bg: #fbf8f2; --card: #fff; --soft: #f6f2ea; --line: #ebe4d6; --ink: #4a3f31; --muted: #9a8c76;
+      --good: #3f8a55; --bad: #c0564a; --accent: #5fb97f; --bar: #8fc9a3;
+      --display: 'Jua', 'Apple SD Gothic Neo', sans-serif; --body: 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; }
+    .wrap { max-width: 860px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 16px; }
+    h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 28px; }
+    h2 { margin: 0 0 12px; font-family: var(--display); font-weight: 400; font-size: 21px; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .card { background: var(--card); border: 2px solid var(--line); border-radius: 22px; padding: 18px 20px; }
+    button { font: inherit; cursor: pointer; }
+    .btn { padding: 12px 16px; border: 2px solid var(--line); border-radius: 16px; background: var(--card); color: var(--ink); font-family: var(--display); font-size: 18px; }
+    .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th { text-align: left; color: var(--muted); font-weight: 400; font-size: 14px; padding: 6px 4px; border-bottom: 2px solid var(--line); }
+    td { padding: 12px 4px; border-bottom: 1px solid var(--line); }
+    tr:last-child td { border-bottom: 0; }
+    .num { text-align: right; font-family: var(--display); font-size: 19px; white-space: nowrap; }
+    .delta { text-align: right; font-size: 15px; white-space: nowrap; }
+    .up { color: var(--good); } .down { color: var(--bad); } .same { color: var(--muted); }
+    .kv { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .kv:last-of-type { border-bottom: 0; }
+    .kv b { font-family: var(--display); font-weight: 400; font-size: 19px; text-align: right; }
+    details { margin-top: 8px; color: var(--muted); font-size: 15px; line-height: 1.7; }
+    summary { cursor: pointer; }
+    .chart { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; align-items: end; height: 150px; padding-top: 18px; }
+    .col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
+    .bar { width: min(22px, 80%); background: var(--bar); border-radius: 4px 4px 0 0; min-height: 2px; }
+    .col.today .bar { background: var(--good); }
+    .col small { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .col .v { font-size: 12px; color: var(--ink); }
+    .scroll { overflow-x: auto; }
+    .log td, .log th { font-size: 14px; padding: 8px 6px; white-space: nowrap; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--soft); font-size: 13px; }
+    .tag.play { background: #e3f3e6; color: var(--good); }
+    .muted { color: var(--muted); font-size: 14px; }
+    .login { display: flex; flex-direction: column; gap: 12px; max-width: 420px; }
+    .login input { padding: 14px; border: 2px solid var(--line); border-radius: 14px; font: inherit; font-size: 18px; background: #fff; color: var(--ink); }
+    .error { color: var(--bad); }
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    @media (max-width: 480px) { .chart small { display: none; } .chart .col:nth-child(odd) small { display: block; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h1>🌱 쑥쑥 생각놀이 관리자</h1>
+      <button class="btn" id="refresh" hidden>🔄 새로고침</button>
+    </div>
+
+    <section class="card login" id="login">
+      <h2>관리자 비밀번호</h2>
+      <input id="token" type="password" autocomplete="current-password" placeholder="비밀번호를 입력해 주세요">
+      <button class="btn primary" id="enter">들어가기</button>
+      <p class="error" id="login-error" hidden></p>
+    </section>
+
+    <main id="dash" hidden style="display:flex;flex-direction:column;gap:16px">
+      <section class="card">
+        <h2>📈 오늘의 핵심 지표</h2>
+        <table>
+          <thead><tr><th>지표</th><th class="num" style="font-size:14px">오늘</th><th class="delta">전일 대비</th></tr></thead>
+          <tbody id="kpi"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>📊 최근 2주 방문</h2>
+        <div class="chart" id="chart" role="img" aria-label="최근 14일 날짜별 방문 로그 수"></div>
+        <p class="muted" id="chart-note"></p>
+      </section>
+
+      <section class="card">
+        <h2>🗂️ 원본 로그 (내 접속 제외)</h2>
+        <div id="totals"></div>
+        <details>
+          <summary>용어 설명 더보기</summary>
+          <p><b>방문 로그</b>: 사이트를 한 번 열 때마다 1건이에요. 같은 사람이 여러 번 열면 여러 건이에요.<br>
+          <b>고유 방문자(기기 번호)</b>: 기기마다 무작위로 만든 번호로 센 사람 수예요. 브라우저 기록을 지우면 새 사람으로 세요.<br>
+          <b>고유 방문자(IP 기준)</b>: 접속한 인터넷 주소의 수예요. 집 와이파이를 함께 쓰면 한 곳으로, 와이파이와 LTE를 오가면 여러 곳으로 세요.<br>
+          <b>놀이 완료</b>: 놀이나 오늘의 학습을 끝까지 해서 결과 화면까지 간 횟수예요.<br>
+          <b>내 접속 제외</b>: 아래에서 '이 기기 제외'를 켠 기기의 접속은 통계에서 빠져요.</p>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2>🧩 놀이별 완료 (최근 2주)</h2>
+        <table><thead><tr><th>놀이</th><th class="num" style="font-size:14px">완료</th><th class="delta">평균 점수</th></tr></thead><tbody id="games"></tbody></table>
+      </section>
+
+      <section class="card">
+        <h2>🔗 들어온 경로 (최근 2주)</h2>
+        <table><tbody id="referrers"></tbody></table>
+      </section>
+
+      <section class="card">
+        <h2>📱 기기 · 브라우저 (최근 2주)</h2>
+        <table><tbody id="devices"></tbody></table>
+      </section>
+
+      <section class="card">
+        <h2>📜 최근 로그 50건</h2>
+        <div class="scroll"><table class="log"><thead><tr><th>시간</th><th>종류</th><th>기기</th><th>내용</th><th>IP</th><th>기기 번호</th></tr></thead><tbody id="recent"></tbody></table></div>
+      </section>
+
+      <section class="card">
+        <h2>⚙️ 이 기기</h2>
+        <div class="switch-row">
+          <div>이 기기 접속은 통계에서 제외<div class="muted" id="admin-note"></div></div>
+          <button class="btn" id="exclude"></button>
+        </div>
+        <div class="switch-row" style="margin-top:12px">
+          <div>관리자에서 나가기<div class="muted">이 기기에 저장된 비밀번호를 지워요.</div></div>
+          <button class="btn" id="logout">나가기</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    'use strict';
+    const API = '/api';
+    const GAME_NAMES = {
+      daily: '📅 오늘의 학습', copy: '🎨 똑같이 칠하기', lines: '✏️ 선 따라 긋기', listen: '👂 이름 듣고 찾기',
+      feel: '😊 기분 알기', match: '🔗 어울리는 짝 찾기', routine: '🧼 생활 순서', space: '🪑 어디에 있을까?',
+      memory: '🧠 모양 기억하기', pattern: '🍎 규칙 찾기', count: '🔢 몇 개일까?', odd: '🔍 다른 하나 찾기',
+      flip: '🃏 짝 맞추기', shadow: '👤 그림자 찾기', order: '🪜 순서 맞추기',
+    };
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const fmt = (n) => Number(n || 0).toLocaleString('ko-KR');
+    // 사이트(app.js)의 저장 방식과 같게 JSON으로 저장
+    const local = {
+      get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+      set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    };
+    const getToken = () => { try { return sessionStorage.getItem('adminToken') || ''; } catch { return ''; } };
+    const setToken = (t) => { try { t ? sessionStorage.setItem('adminToken', t) : sessionStorage.removeItem('adminToken'); } catch {} };
+
+    function delta(a, b, unit) {
+      const d = (a || 0) - (b || 0);
+      if (!d) return `<span class="same">0${unit}</span>`;
+      return `<span class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${fmt(d)}${unit}</span>`;
+    }
+
+    function render(s) {
+      const t = s.todayM, y = s.yesterdayM;
+      $('kpi').innerHTML = [
+        ['오늘 방문 로그', t.visits, y.visits, '건'],
+        ['서로 다른 IP 수', t.ips, y.ips, '개'],
+        ['서로 다른 기기 수', t.visitors, y.visitors, '개'],
+        ['놀이 완료', t.plays, y.plays, '번'],
+      ].map(([name, a, b, u]) => `<tr><td>${name}</td><td class="num">${fmt(a)}${u}</td><td class="delta">${delta(a, b, u)}</td></tr>`).join('');
+
+      // 최근 14일 막대 (빈 날도 0으로)
+      const byDay = Object.fromEntries(s.daily.map((d) => [d.day, d]));
+      const days = Array.from({ length: 14 }, (_, k) => {
+        const d = new Date(`${s.today}T00:00:00+09:00`); d.setDate(d.getDate() - (13 - k));
+        const key = new Date(d.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+        return { key, label: `${Number(key.slice(5, 7))}/${Number(key.slice(8))}`, visits: byDay[key]?.visits || 0 };
+      });
+      const max = Math.max(1, ...days.map((d) => d.visits));
+      $('chart').innerHTML = days.map((d) => `<div class="col${d.key === s.today ? ' today' : ''}" title="${d.label} 방문 ${d.visits}건">
+        <span class="v">${d.visits || ''}</span><div class="bar" style="height:${(d.visits / max) * 100}%"></div><small>${d.label}</small></div>`).join('');
+      $('chart-note').textContent = `가장 많은 날 ${fmt(max)}건 · 진한 막대가 오늘이에요.`;
+
+      const tot = s.totals;
+      $('totals').innerHTML = [
+        ['전체 방문 로그', `${fmt(tot.visits)}건`],
+        ['오늘 방문 로그', `${fmt(t.visits)}건`],
+        ['놀이 완료', `${fmt(tot.plays)}번`],
+        ['고유 방문자(기기 번호)', `${fmt(tot.visitors)}명`],
+        ['고유 방문자(IP 기준)', `${fmt(tot.ips)}개`],
+        ['기록 시작', tot.since ? new Date(tot.since).toLocaleDateString('ko-KR') : '-'],
+      ].map(([k, v]) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`).join('');
+
+      $('games').innerHTML = s.games.length
+        ? s.games.map((g) => `<tr><td>${esc(GAME_NAMES[g.game] || g.game)}</td><td class="num">${fmt(g.plays)}번</td><td class="delta">${g.avgScore ?? '-'}점</td></tr>`).join('')
+        : '<tr><td class="muted" colspan="3">아직 끝까지 한 놀이가 없어요.</td></tr>';
+      $('devices').innerHTML = s.devices.length
+        ? s.devices.map((d) => `<tr><td>${esc(d.device)}</td><td class="num">${fmt(d.visits)}건</td></tr>`).join('')
+        : '<tr><td class="muted">아직 기록이 없어요.</td></tr>';
+      $('referrers').innerHTML = s.referrers.length
+        ? s.referrers.map((r) => `<tr><td>${esc(r.host)}</td><td class="num">${fmt(r.visits)}건</td></tr>`).join('')
+        : '<tr><td class="muted">주소를 직접 입력했거나 홈 화면 아이콘으로 들어온 방문만 있어요.</td></tr>';
+      $('recent').innerHTML = s.recent.length
+        ? s.recent.map((r) => {
+          const time = new Date(r.ts).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          const what = r.type === 'play' ? `${esc(GAME_NAMES[r.game] || r.game)} · ${r.score ?? '-'}점` : esc(r.page || '');
+          return `<tr><td>${time}</td><td><span class="tag ${r.type}">${r.type === 'play' ? '놀이 완료' : '방문'}</span></td><td>${esc(r.device)}</td><td>${what}</td><td>${esc(r.ip || '-')}</td><td>${esc(r.visitor || '-')}</td></tr>`;
+        }).join('')
+        : '<tr><td class="muted" colspan="6">아직 기록이 없어요.</td></tr>';
+      $('admin-note').textContent = `오늘 제외된 내 접속 ${fmt(s.adminToday)}건 · 기록은 ${s.keepDays}일 동안 보관해요.`;
+    }
+
+    async function load() {
+      const token = getToken();
+      if (!token) return showLogin();
+      $('refresh').disabled = true;
+      try {
+        const res = await fetch(`${API}/admin-stats`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+        const data = await res.json();
+        if (res.status === 401) { setToken(''); return showLogin(data.error); }
+        if (!res.ok) throw new Error(data.error || res.status);
+        $('login').hidden = true; $('dash').hidden = false; $('refresh').hidden = false;
+        render(data);
+      } catch (e) {
+        showLogin(`통계를 불러오지 못했어요. 잠시 뒤 다시 해 주세요. (${e.message})`);
+      } finally {
+        $('refresh').disabled = false;
+      }
+    }
+
+    function showLogin(message) {
+      $('login').hidden = false; $('dash').hidden = true; $('refresh').hidden = true;
+      $('login-error').hidden = !message; $('login-error').textContent = message || '';
+    }
+
+    function renderExclude() {
+      const on = local.get('isAdminDevice', false);
+      $('exclude').textContent = on ? '✅ 제외 중' : '제외하기';
+      $('exclude').classList.toggle('primary', on);
+    }
+
+    $('enter').addEventListener('click', () => { setToken($('token').value.trim()); $('token').value = ''; load(); });
+    $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('enter').click(); });
+    $('refresh').addEventListener('click', load);
+    $('exclude').addEventListener('click', () => { local.set('isAdminDevice', !local.get('isAdminDevice', false)); renderExclude(); });
+    $('logout').addEventListener('click', () => { setToken(''); showLogin(); });
+    // 관리자 페이지를 연 기기는 처음부터 '내 접속 제외'로
+    if (local.get('isAdminDevice', null) === null) local.set('isAdminDevice', true);
+    renderExclude();
+    load();
+  </script>
+</body>
+</html>

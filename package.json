@@ -1,0 +1,6 @@
+{
+  "name": "ssukssuknori",
+  "private": true,
+  "type": "module",
+  "description": "쑥쑥 생각놀이 — 사이트(정적 파일)와 방문 기록 서버 함수(api/)"
+}
