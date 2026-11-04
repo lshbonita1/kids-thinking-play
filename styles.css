@@ -227,12 +227,13 @@ button:disabled { cursor: default; }
 .dl-board.mini { width: 130px; }
 .dl-frame { fill: none; stroke: #3d3a36; stroke-width: 3; }
 .dl-point { fill: #1f1d1b; }
-.dl-hit { fill: transparent; cursor: pointer; }
+.dl-board.drawable { touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
 .dl-dot .dl-point { transform-box: fill-box; transform-origin: center; transition: transform .12s, fill .12s; }
 .dl-dot.sel .dl-point { fill: var(--orange); transform: scale(1.7); }
 .dl-line { stroke-width: 7; stroke-linecap: round; }
 .dl-line.orig { stroke: #c9534a; }
 .dl-line.mine { stroke: #4f5b8a; }
+.dl-line.preview { stroke: #4f5b8a; opacity: .45; stroke-dasharray: 2 14; }
 .hint { margin-top: -12px; color: var(--muted); font-size: 17px; text-align: center; }
 .btn-row { display: flex; gap: 12px; width: 100%; max-width: 420px; }
 .btn-row .btn-main { flex: 1; padding: 18px; font-size: 24px; }

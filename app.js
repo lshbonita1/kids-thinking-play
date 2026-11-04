@@ -321,21 +321,20 @@ function svg(tag, attrs = {}, ...kids) {
   return node;
 }
 
-function dotBoard(size, onTap) {
+// 손가락이 점에서 이만큼(보드 좌표) 안에 있으면 그 점을 누른 것으로 봄
+const DOT_REACH = 38;
+
+function dotBoard(size, drawable = false) {
   const lineLayer = svg('g');
+  const previewLayer = svg('g');
   const dots = DOTS.map((_, k) => {
     const [x, y] = dotXY(k);
-    const g = svg('g', { class: 'dl-dot' }, svg('circle', { cx: x, cy: y, r: 10, class: 'dl-point' }));
-    if (onTap) {
-      // 손가락으로 누르기 쉽도록 보이지 않는 큰 원을 덧댐
-      g.append(svg('circle', { cx: x, cy: y, r: 36, class: 'dl-hit' }));
-      g.addEventListener('click', () => onTap(k));
-    }
-    return g;
+    return svg('g', { class: 'dl-dot' }, svg('circle', { cx: x, cy: y, r: 10, class: 'dl-point' }));
   });
-  const node = svg('svg', { viewBox: '0 0 300 300', class: `dl-board ${size}` },
+  const node = svg('svg', { viewBox: '0 0 300 300', class: `dl-board ${size}${drawable ? ' drawable' : ''}` },
     svg('rect', { x: 30, y: 30, width: 240, height: 240, class: 'dl-frame' }),
     lineLayer,
+    previewLayer,
     svg('g', {}, ...dots));
   return {
     node,
@@ -346,6 +345,33 @@ function dotBoard(size, onTap) {
         const [x2, y2] = dotXY(b);
         return svg('line', { x1, y1, x2, y2, class: `dl-line ${kind}` });
       }));
+    },
+    // 긋는 중인 선 (from 점에서 손가락 위치까지)
+    preview(from, x, y) {
+      if (from == null) {
+        previewLayer.replaceChildren();
+        return;
+      }
+      const [x1, y1] = dotXY(from);
+      previewLayer.replaceChildren(svg('line', { x1, y1, x2: x, y2: y, class: 'dl-line preview' }));
+    },
+    // 화면 좌표 → 보드 좌표
+    toBoard(e) {
+      const rect = node.getBoundingClientRect();
+      return [(e.clientX - rect.left) * 300 / rect.width, (e.clientY - rect.top) * 300 / rect.height];
+    },
+    nearest(x, y) {
+      let best = null;
+      let bestDist = DOT_REACH;
+      DOTS.forEach((_, k) => {
+        const [dx, dy] = dotXY(k);
+        const dist = Math.hypot(dx - x, dy - y);
+        if (dist <= bestDist) {
+          best = k;
+          bestDist = dist;
+        }
+      });
+      return best;
     },
   };
 }
@@ -362,11 +388,12 @@ const linesGame = {
     const original = randomLines(LINE_COUNTS[ctx.level][i < 5 ? 0 : 1], ctx.level === 0 && i < 5);
     const rec = { original, answer: [] };
     const mine = [];
-    let selected = null;
+    let selected = null; // 눌러서 고른 점 (두 점을 차례로 눌러도 선이 생김)
+    let dragFrom = null; // 손가락으로 긋기 시작한 점
 
     const left = dotBoard('mid');
     left.draw(original, 'orig');
-    const right = dotBoard('mid', tap);
+    const right = dotBoard('mid', true);
     const undoBtn = el('button', { class: 'btn-main alt', disabled: true, onclick: undo }, '지우기');
     const doneBtn = el('button', { class: 'btn-main', disabled: true, onclick: submit }, '다 했어요');
 
@@ -375,32 +402,70 @@ const linesGame = {
       el('div', { class: 'compare' },
         el('div', { class: 'compare-col' }, '원본', left.node),
         el('div', { class: 'compare-col' }, '내 답', right.node)),
-      el('div', { class: 'hint' }, '점 두 개를 차례로 누르면 선이 생겨요'),
+      el('div', { class: 'hint' }, '점에서 점까지 손가락으로 쭉 그어요'),
       el('div', { class: 'btn-row' }, undoBtn, doneBtn),
     );
 
+    const canJoin = (a, b) => a != null && b != null && a !== b && !shareSide(a, b);
+
     function refresh() {
       right.draw(mine, 'mine');
-      right.dots.forEach((d, k) => d.classList.toggle('sel', k === selected));
+      right.dots.forEach((d, k) => d.classList.toggle('sel', k === selected || k === dragFrom));
       undoBtn.disabled = mine.length === 0;
       doneBtn.disabled = mine.length === 0;
     }
 
-    function tap(k) {
-      if (selected == null || selected === k || shareSide(selected, k)) {
-        // 첫 점 고르기 / 다시 누르면 취소 / 같은 변 위 점이면 고른 점만 옮김
-        selected = selected === k ? null : k;
-        tone([600], 0.05);
-      } else {
-        const key = lineKey([selected, k]);
-        const found = mine.findIndex((l) => lineKey(l) === key);
-        if (found >= 0) mine.splice(found, 1);
-        else mine.push([selected, k]);
+    function addLine(a, b) {
+      const key = lineKey([a, b]);
+      if (!mine.some((l) => lineKey(l) === key)) mine.push([a, b]);
+      tone([760], 0.06);
+    }
+
+    right.node.addEventListener('pointerdown', (e) => {
+      const k = right.nearest(...right.toBoard(e));
+      if (k == null) return;
+      e.preventDefault();
+      right.node.setPointerCapture(e.pointerId);
+      dragFrom = k;
+      tone([600], 0.05);
+      refresh();
+    });
+
+    right.node.addEventListener('pointermove', (e) => {
+      if (dragFrom == null) return;
+      const [x, y] = right.toBoard(e);
+      const k = right.nearest(x, y);
+      // 이을 수 있는 점 가까이 오면 그 점에 딱 붙여서 보여줌
+      if (canJoin(dragFrom, k)) right.preview(dragFrom, ...dotXY(k));
+      else right.preview(dragFrom, x, y);
+    });
+
+    right.node.addEventListener('pointerup', (e) => {
+      if (dragFrom == null) return;
+      const from = dragFrom;
+      const to = right.nearest(...right.toBoard(e));
+      dragFrom = null;
+      right.preview(null);
+      if (canJoin(from, to)) {
+        addLine(from, to);
         selected = null;
-        tone([760], 0.06);
+      } else if (to === from) {
+        // 긋지 않고 콕 누른 경우: 두 점을 차례로 눌러도 이어지게
+        if (canJoin(selected, from)) {
+          addLine(selected, from);
+          selected = null;
+        } else {
+          selected = selected === from ? null : from;
+        }
       }
       refresh();
-    }
+    });
+
+    right.node.addEventListener('pointercancel', () => {
+      dragFrom = null;
+      right.preview(null);
+      refresh();
+    });
 
     function undo() {
       mine.pop();
