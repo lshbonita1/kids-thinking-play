@@ -1,5 +1,6 @@
 // GET /api/admin-stats — 관리자 통계 (Authorization: Bearer <ADMIN_TOKEN>)
 import { sbSelectAll, VISITS_TABLE } from '../lib/supabase.js';
+import { EXCLUDED_VISIT_IPS, looksLikeBotIsp, fetchIpGeo, CITY_NAME_KO } from '../lib/geo.js';
 
 const DAY_MS = 86400000;
 const KEEP_DAYS = 180; // 통계에 쓰는 기간 (개인정보처리방침의 보관 기간과 같게)
@@ -36,7 +37,8 @@ export default async function handler(req, res) {
     const today = kstDay(now);
     const yesterday = kstDay(now - DAY_MS);
     const since = kstDay(now - 13 * DAY_MS);
-    const mine = rows.filter((r) => !r.is_admin); // 내 접속 제외
+    // 내 접속 제외: 관리자 기기에서 온 기록 + 환경 변수로 정한 IP
+    const mine = rows.filter((r) => !r.is_admin && !EXCLUDED_VISIT_IPS.includes(r.ip_address));
     const visits = mine.filter((r) => r.event === 'visit');
     const plays = mine.filter((r) => r.event === 'play');
 
@@ -50,6 +52,27 @@ export default async function handler(req, res) {
       return m;
     };
     const recent2w = (list) => list.filter((r) => r.day >= since);
+
+    // 지역별 접속 분포 (최근 2주, 서로 다른 IP 기준 · ip-api.com으로 추정)
+    const ipInfo = new Map(); // IP → { last, visits }
+    for (const r of recent2w(visits)) {
+      if (!r.ip_address) continue;
+      const cur = ipInfo.get(r.ip_address) || { last: 0, visits: 0 };
+      cur.visits += 1;
+      cur.last = Math.max(cur.last, r.ts);
+      ipInfo.set(r.ip_address, cur);
+    }
+    const geo = await fetchIpGeo([...ipInfo.keys()]);
+    const regionCount = new Map();
+    const ipList = [];
+    let botIps = 0;
+    for (const [ip, info] of ipInfo) {
+      const g = geo[ip];
+      if (looksLikeBotIsp(g)) { botIps += 1; continue; }
+      const region = !g ? '알 수 없음' : g.countryCode === 'KR' ? g.region : `해외 (${g.country})`;
+      regionCount.set(region, (regionCount.get(region) || 0) + 1);
+      ipList.push({ ip, region, city: g ? (CITY_NAME_KO[g.city] || g.city) : '', isp: g?.isp || '', last: info.last, visits: info.visits });
+    }
 
     res.status(200).json({
       today,
@@ -76,6 +99,9 @@ export default async function handler(req, res) {
         ts: r.ts, type: r.event, device: r.device, page: r.page, game: r.game, level: r.level, score: r.score,
         ip: r.ip_address, visitor: r.visitor_id ? r.visitor_id.slice(0, 6) : null,
       })),
+      regions: [...regionCount].map(([region, count]) => ({ region, count })).sort((a, b) => b.count - a.count),
+      ipList: ipList.sort((a, b) => b.last - a.last).slice(0, 100),
+      botIps,
       adminToday: rows.filter((r) => r.is_admin && r.day === today).length,
       keepDays: KEEP_DAYS,
     });

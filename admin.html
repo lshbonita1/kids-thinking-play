@@ -55,6 +55,11 @@
     .login input { padding: 14px; border: 2px solid var(--line); border-radius: 14px; font: inherit; font-size: 18px; background: #fff; color: var(--ink); }
     .error { color: var(--bad); }
     .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .map-info { margin: 12px 0 4px; text-align: center; font-family: var(--display); font-size: 18px; min-height: 24px; }
+    #map svg { display: block; width: 100%; max-width: 280px; height: auto; margin: 0 auto 12px; }
+    .province { cursor: pointer; transition: opacity .15s; }
+    .province:hover { opacity: .85; }
+    .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; border-radius: 3px; border: 1px solid var(--line); vertical-align: -1px; }
     @media (max-width: 480px) { .chart small { display: none; } .chart .col:nth-child(odd) small { display: block; } }
   </style>
 </head>
@@ -97,6 +102,19 @@
           <b>고유 방문자(IP 기준)</b>: 접속한 인터넷 주소의 수예요. 집 와이파이를 함께 쓰면 한 곳으로, 와이파이와 LTE를 오가면 여러 곳으로 세요.<br>
           <b>놀이 완료</b>: 놀이나 오늘의 학습을 끝까지 해서 결과 화면까지 간 횟수예요.<br>
           <b>내 접속 제외</b>: 아래에서 '이 기기 제외'를 켠 기기의 접속은 통계에서 빠져요.</p>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2>🗺️ 지역별 접속 분포 (IP 기준 추정)</h2>
+        <p class="muted">최근 2주 동안 서로 다른 IP를 지역별로 묶은 비중이에요. 휴대폰 통신사 IP는 실제 위치가 아니라 통신사 기지국 위치로 잡히는 경우가 많아 참고용으로만 봐 주세요.</p>
+        <div class="map-info" id="map-info">지역을 눌러 보세요</div>
+        <div id="map"></div>
+        <table><tbody id="regions"></tbody></table>
+        <p class="muted" id="bot-note"></p>
+        <details>
+          <summary>IP별로 자세히 보기</summary>
+          <div class="scroll"><table class="log"><thead><tr><th>지역</th><th>통신사</th><th>IP</th><th>방문</th><th>마지막 방문</th></tr></thead><tbody id="ip-list"></tbody></table></div>
         </details>
       </section>
 
@@ -160,7 +178,53 @@
       return `<span class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${fmt(d)}${unit}</span>`;
     }
 
+    // ip-api.com의 지역 영문 이름을 지도 파일(korea-provinces.json)의 이름과 맞추기 (뉴스런과 같은 별칭 표)
+    const REGION_ALIASES = {
+      sejong: 'sejongsi', sejongsi: 'sejongsi', gyeonggi: 'gyeonggido', gangwon: 'gangwondo',
+      northchungcheong: 'chungcheongbukdo', chungcheongbuk: 'chungcheongbukdo', chungbuk: 'chungcheongbukdo',
+      southchungcheong: 'chungcheongnamdo', chungcheongnam: 'chungcheongnamdo', chungnam: 'chungcheongnamdo',
+      northjeolla: 'jeollabukdo', jeollabuk: 'jeollabukdo', jeonbuk: 'jeollabukdo', jeonbukstate: 'jeollabukdo',
+      southjeolla: 'jeollanamdo', jeollanam: 'jeollanamdo', jeonnam: 'jeollanamdo',
+      northgyeongsang: 'gyeongsangbukdo', gyeongsangbuk: 'gyeongsangbukdo', gyeongbuk: 'gyeongsangbukdo',
+      southgyeongsang: 'gyeongsangnamdo', gyeongsangnam: 'gyeongsangnamdo', gyeongnam: 'gyeongsangnamdo',
+      jeju: 'jejudo', jejuspecialselfgoverningprovince: 'jejudo', gangwonstate: 'gangwondo',
+    };
+    const regionKey = (s) => { const k = String(s || '').toLowerCase().replace(/[\s-]+/g, ''); return REGION_ALIASES[k] || k; };
+    function mix(a, b, t) {
+      const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
+      const c = [16, 8, 0].map((sh) => Math.round(((x >> sh) & 255) + ((((y >> sh) & 255) - ((x >> sh) & 255)) * t)));
+      return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+    }
+    const regionColor = (n, max) => (n > 0 ? mix('#e3f3e6', '#3f8a55', Math.max(0.2, n / max)) : '#f1ede4');
+    let mapData = null;
+    async function renderRegions(s) {
+      try { mapData = mapData || await (await fetch('korea-provinces.json')).json(); } catch { mapData = null; }
+      const byKey = {};
+      for (const r of s.regions) byKey[regionKey(r.region)] = (byKey[regionKey(r.region)] || 0) + r.count;
+      const max = Math.max(1, ...Object.values(byKey));
+      const korName = (region) => mapData?.provinces.find((p) => regionKey(p.nameEng) === regionKey(region))?.name || region;
+      $('map').innerHTML = mapData
+        ? `<svg viewBox="${mapData.viewBox}" role="img" aria-label="시도별 접속 지도">${mapData.provinces.map((p) => {
+          const n = byKey[regionKey(p.nameEng)] || 0;
+          return `<path class="province" data-name="${esc(p.name)}" data-count="${n}" d="${p.d}" fill="${regionColor(n, max)}" stroke="#fff" stroke-width="1.2"><title>${esc(p.name)} ${n}개</title></path>`;
+        }).join('')}</svg>`
+        : '<p class="muted">지도를 불러오지 못했어요.</p>';
+      $('map').querySelectorAll('.province').forEach((el) => el.addEventListener('click', () => {
+        $('map').querySelectorAll('.province').forEach((o) => { o.setAttribute('stroke', '#fff'); o.setAttribute('stroke-width', '1.2'); });
+        el.setAttribute('stroke', '#4a3f31'); el.setAttribute('stroke-width', '2.4');
+        $('map-info').textContent = `${el.dataset.name} · ${el.dataset.count}개`;
+      }));
+      $('regions').innerHTML = s.regions.length
+        ? s.regions.map((r) => `<tr><td><span class="swatch" style="background:${regionColor(byKey[regionKey(r.region)] || 0, max)}"></span>${esc(korName(r.region))}</td><td class="num">${fmt(r.count)}개</td></tr>`).join('')
+        : '<tr><td class="muted">아직 지역 정보가 없어요.</td></tr>';
+      $('bot-note').textContent = s.botIps ? `클라우드 · 봇으로 보이는 IP ${fmt(s.botIps)}개는 뺐어요.` : '';
+      $('ip-list').innerHTML = s.ipList.length
+        ? s.ipList.map((r) => `<tr><td>${esc(korName(r.region))} ${esc(r.city)}</td><td>${esc(r.isp)}</td><td>${esc(r.ip)}</td><td>${fmt(r.visits)}건</td><td>${new Date(r.last).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td></tr>`).join('')
+        : '<tr><td class="muted" colspan="5">아직 기록이 없어요.</td></tr>';
+    }
+
     function render(s) {
+      renderRegions(s);
       const t = s.todayM, y = s.yesterdayM;
       $('kpi').innerHTML = [
         ['오늘 방문 로그', t.visits, y.visits, '건'],
