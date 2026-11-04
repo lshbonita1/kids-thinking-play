@@ -1252,4 +1252,28 @@ function showResult(session, state) {
   ));
 }
 
+/* ---------- 새 버전 확인 ---------- */
+// index.html의 ?v= 숫자와 항상 같게 맞춰야 함
+const APP_VERSION = 7;
+
+// 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
+async function checkForUpdate() {
+  try {
+    const res = await fetch(`./?check=${Date.now()}`, { cache: 'no-store' });
+    const latest = Number((await res.text()).match(/app\.js\?v=(\d+)/)?.[1]);
+    if (!(latest > APP_VERSION)) return;
+    // 혹시 숫자를 잘못 맞춰도 계속 새로고침되지 않도록 버전마다 한 번만
+    if (sessionStorage.getItem('reloadedTo') === String(latest)) return;
+    sessionStorage.setItem('reloadedTo', String(latest));
+    const url = new URL(location.href);
+    url.searchParams.set('v', latest);
+    location.replace(url);
+  } catch {}
+}
+
 showHome();
+checkForUpdate();
+// 휴대폰에서 다른 앱을 쓰다가 돌아왔을 때도 확인
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkForUpdate();
+});
