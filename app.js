@@ -165,7 +165,7 @@ const CHOICE_SIZE = { 2: 'clamp(110px, 36vw, 150px)', 3: 'clamp(88px, 27vw, 112p
 const choicesStyle = (count) => `--choice-t:${CHOICE_SIZE[count] ?? CHOICE_SIZE[4]}`;
 
 // 틀린 보기는 흐리게 막고 정답 보기를 반짝여 알려준 뒤 다시 고르게 함
-// (자폐 아동 학습에서 쓰는 '오류 없는 학습': 실패로 끝나지 않고 정답을 직접 눌러 보게)
+// ('오류 없는 학습': 실패로 끝나지 않고 정답을 직접 눌러 보게)
 function retryChoice(ctx, wrong, right) {
   wrong.classList.add('bad', 'tried');
   wrong.disabled = true;
@@ -583,7 +583,7 @@ const linesGame = {
 };
 
 /* ---------- 놀이 2: 규칙 찾기 ---------- */
-// 자폐 아동도 한눈에 구분하도록 색과 모양이 모두 확실히 다른 그림만 씀
+// 아이가 한눈에 구분하도록 색과 모양이 모두 확실히 다른 그림만 씀
 // (빨강 동그라미 사과 · 노랑 바나나 · 초록 개구리 · 파랑 고래 · 보라 포도 · 분홍 꽃 · 검정 펭귄 · 주황 당근)
 const PATTERN_SETS = [
   ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🐧', '🥕'],
@@ -1795,7 +1795,7 @@ function guideAbout() {
     el('section', { class: 'guide-hero' },
       el('div', { class: 'guide-hero-icon' }, '🌱'),
       el('h2', {}, '쑥쑥 생각놀이는'),
-      el('p', {}, '자폐 스펙트럼 아이, 또래보다 천천히 배우는 아이가 집에서 놀이하듯 기초 인지를 연습하는 무료 학습 놀이예요. 짧고 쉬운 문제를 매일 조금씩, 아이의 속도에 맞춰 해요.')),
+      el('p', {}, '또래보다 천천히 배우는 아이가 집에서 놀이하듯 기초 인지를 연습하는 무료 학습 놀이예요. 짧고 쉬운 문제를 매일 조금씩, 아이의 속도에 맞춰 해요.')),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '이렇게 만들었어요'),
       el('ul', { class: 'feature-list' }, PRINCIPLES.map((p) => el('li', {},
@@ -2094,7 +2094,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 21;
+const APP_VERSION = 22;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
