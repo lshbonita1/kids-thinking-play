@@ -359,7 +359,9 @@ const shareSide = (a, b) => {
   const [p, q] = [DOTS[a], DOTS[b]];
   return (p.r === q.r && (p.r === 0 || p.r === 3)) || (p.c === q.c && (p.c === 0 || p.c === 3));
 };
-const isStraight = (a, b) => DOTS[a].r === DOTS[b].r || DOTS[a].c === DOTS[b].c;
+// 쉬운 선: 가로 · 세로 곧은 선과 네모의 두 대각선 (꼭짓점끼리)
+const isCorner = (k) => (DOTS[k].r === 0 || DOTS[k].r === 3) && (DOTS[k].c === 0 || DOTS[k].c === 3);
+const isStraight = (a, b) => DOTS[a].r === DOTS[b].r || DOTS[a].c === DOTS[b].c || (isCorner(a) && isCorner(b));
 const lineKey = ([a, b]) => (a < b ? `${a}-${b}` : `${b}-${a}`);
 // 단계별 [앞 5문제, 뒤 5문제] 선 개수
 const LINE_COUNTS = [[1, 2], [2, 3], [3, 4]];
@@ -742,8 +744,13 @@ const countGame = {
 /* ---------- 놀이 4: 다른 하나 찾기 ---------- */
 // 쉬운 짝: 색도 모양도 완전히 다름 / 어려운 짝: 같은 종류지만 색이 확실히 다름
 // (🍎/🍅, 🌷/🌹처럼 색까지 같은 짝은 쓰지 않음)
-const ODD_EASY = [['🍎', '🍌'], ['🐸', '🐷'], ['🚗', '🌳'], ['⭐', '🐳'], ['🍇', '🥕'], ['⚽', '🎈']];
-const ODD_HARD = [['🚗', '🚕'], ['⚽', '🏀'], ['🍊', '🍇'], ['🐻', '🐼'], ['🐟', '🐙'], ['🍎', '🍏']];
+const ODD_EASY = [
+  ['🍎', '🍌'], ['🐸', '🐷'], ['🚗', '🌳'], ['⭐', '🐳'], ['🍇', '🥕'], ['⚽', '🎈'],
+  ['🐘', '🌸'], ['🐧', '🌻'], ['✈️', '🍉'], ['🦒', '☂️'], ['🚌', '🐙'], ['🦋', '🍄'],
+];
+const ODD_HARD = [
+  ['🚗', '🚕'], ['⚽', '🏀'], ['🍊', '🍇'], ['🐻', '🐼'], ['🐟', '🐙'], ['🍎', '🍏'], ['❤️', '💙'], ['🌞', '🌙'],
+];
 // 단계별 [앞 5문제, 뒤 5문제] 칸 수
 const ODD_SIZES = [[4, 4], [4, 6], [6, 6]];
 
@@ -996,7 +1003,7 @@ const orderGame = {
     do order = shuffle(range(0, len - 1));
     while (order.every((v, k) => v === k));
     const placed = Array(len).fill(null); // 칸 → 조각 번호
-    const rec = { items: puzzle.items, chosen: placed };
+    const rec = { items: puzzle.items, order, chosen: placed };
     const tileSize = len >= 4 ? 'clamp(66px, 20vw, 86px)' : len === 3 ? 'clamp(84px, 28vw, 108px)' : 'clamp(110px, 36vw, 150px)';
 
     const slotNodes = placed.map((_, s) =>
@@ -1140,8 +1147,12 @@ const FEEL_SETS = [['happy', 'sad'], ['happy', 'sad', 'angry'], ['happy', 'sad',
 const FEEL_SITUATIONS = [
   { icon: '🎁', text: '선물을 받았어요', feel: 'happy' },
   { icon: '🎂', text: '생일 케이크를 받았어요', feel: 'happy' },
+  { icon: '🎉', text: '친구들과 파티를 해요', feel: 'happy' },
+  { icon: '🎠', text: '회전목마를 탔어요', feel: 'happy' },
   { icon: '🍦', text: '아이스크림을 떨어뜨렸어요', feel: 'sad', avoid: ['angry'] },
   { icon: '🎈', text: '풍선이 하늘로 날아갔어요', feel: 'sad', avoid: ['angry'] },
+  { icon: '🧸', text: '좋아하는 인형이 찢어졌어요', feel: 'sad', avoid: ['angry'] },
+  { icon: '🩹', text: '넘어져서 무릎이 아파요', feel: 'sad', avoid: ['angry', 'scared'] },
   { icon: '🧱', text: '친구가 내 블록을 일부러 무너뜨렸어요', feel: 'angry', avoid: ['sad'] },
   { icon: '⛈️', text: '천둥 번개가 쾅쾅 쳐요', feel: 'scared', avoid: ['sad'] },
 ];
@@ -1156,14 +1167,14 @@ const feelGame = {
 
   round(i, ctx) {
     const set = FEEL_SETS[ctx.level];
-    // 쉬움은 얼굴 찾기만, 보통·어려움은 뒤쪽에서 상황 문제
-    const situation = ctx.level > 0 && i >= [10, 5, 3][ctx.level]
+    // 앞쪽은 얼굴 찾기, 뒤쪽은 상황 문제 (얼굴 문제는 종류가 적어서 쉬움도 뒤쪽은 상황 문제로)
+    const situation = i >= [4, 5, 3][ctx.level]
       ? pick(FEEL_SITUATIONS.filter((s) => set.includes(s.feel)))
       : null;
     const feel = situation ? situation.feel : pick(set);
     const others = set.filter((f) => f !== feel && !situation?.avoid?.includes(f));
     const choices = shuffle([feel, ...sample(others, ctx.level === 0 ? 1 : 2)]);
-    const rec = { feel, situation, chosen: null };
+    const rec = { feel, situation, choices, chosen: null };
 
     const buttons = choices.map((f) =>
       el('button', { class: 'tile choice face', 'aria-label': FEELINGS[f].word, onclick: () => choose(f) }, FEELINGS[f].face));
@@ -1311,6 +1322,24 @@ const matchGame = {
     );
   },
 };
+
+// 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
+const QUESTION_KEYS = {
+  memory: (r) => r.original.join(),
+  copy: (r) => r.original.join(),
+  lines: (r) => r.original.map(lineKey).sort().join(),
+  pattern: (r) => `${r.seq.join('')}|${r.blank}`,
+  count: (r) => `${r.emoji}${r.n}`,
+  odd: (r) => [r.items[r.odd], r.items[r.odd === 0 ? 1 : 0]].sort().join(),
+  flip: (r) => [...r.faces].sort().join(),
+  shadow: (r) => r.answer,
+  listen: (r) => r.word,
+  feel: (r) => r.situation?.text ?? `${r.feel}|${r.choices.join()}`,
+  match: (r) => r.pair.q,
+  order: (r) => `${r.items.map((it) => `${it.label}${it.scale ?? ''}`).join()}|${r.order.join()}`,
+  routine: (r) => `${r.items.map((it) => it.label).join()}|${r.order.join()}`,
+};
+const questionKey = (game, r) => `${game.id}:${(QUESTION_KEYS[game.id] ?? JSON.stringify)(r)}`;
 
 const GAMES = [
   copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, memoryGame, patternGame,
@@ -1540,12 +1569,14 @@ function gamePicks() {
 
 function todayTab() {
   return [
-    ...tabHeader('쑥쑥 생각놀이', '오늘은 어떤 놀이를 해볼까요?'),
+    el('header', { class: 'home-top' },
+      el('h1', {}, '쑥쑥 생각놀이'),
+      el('button', { class: 'pill-btn', onclick: () => showGuide('howto') }, '📖 사용 방법')),
+    el('p', { class: 'sub' }, '오늘은 어떤 놀이를 해볼까요?'),
     el('div', { class: 'level-label' }, '난이도'),
     levelPicker(),
     dailyCard(),
     gamePicks(),
-    el('button', { class: 'guide-link', onclick: () => showGuide('howto') }, '📖 처음이신가요? 사용 방법 보기'),
   ];
 }
 
@@ -1913,6 +1944,8 @@ function playSession(session) {
   const strip = el('div', { class: 'schedule-strip' });
   strip.hidden = !steps;
   const announced = new Set();
+  const usedKeys = new Set(); // 이번에 이미 나온 문제
+  let lastKey = null;
   const stage = el('main', { class: 'stage' });
 
   const myScreen = mount(el('div', { class: 'screen game' },
@@ -1981,7 +2014,20 @@ function playSession(session) {
     locked = false;
     // 놀이가 rec을 나중에 고쳐 쓰므로 복사하지 않고 그대로 씀
     const make = () => Object.assign(game.round(index, ctx), { game });
-    rec = session.seed ? withRng(`${session.seed}:${state.index}`, make) : make();
+    // 이미 나온 문제면 다시 만듦. 문제 종류가 적어 다 써 버렸을 때는 바로 앞 문제와만 다르게
+    let key;
+    for (let attempt = 0; ; attempt++) {
+      if (attempt > 0) {
+        stage.replaceChildren();
+        timers.forEach(clearTimeout);
+        timers = [];
+      }
+      rec = session.seed ? withRng(`${session.seed}:${state.index}:${attempt}`, make) : make();
+      key = questionKey(game, rec);
+      if (!usedKeys.has(key) || (attempt >= 30 && key !== lastKey) || attempt >= 60) break;
+    }
+    usedKeys.add(key);
+    lastKey = key;
   }
 
   function finish(correct, kind) {
@@ -2048,7 +2094,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 19;
+const APP_VERSION = 21;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

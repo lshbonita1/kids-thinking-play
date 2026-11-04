@@ -771,15 +771,6 @@ button:disabled { cursor: default; }
 .cal-legend { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
 
 /* ---------- 소개 · 사용 방법 ---------- */
-.guide-link {
-  display: block;
-  margin: 18px auto 0;
-  padding: 10px 16px;
-  color: #8a7a62;
-  font-size: 18px;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
 .panel .more-games + .more-games { margin-top: 10px; }
 .guide-top { display: flex; align-items: center; gap: 12px; margin: 4px 0 16px; }
 .guide-top h1 { margin: 0; font-size: 26px; font-weight: 400; }
