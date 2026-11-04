@@ -1787,9 +1787,20 @@ function gamePicks() {
         el('span', {}, g.desc)))));
 }
 
-// 사이트 로고: 장난감 블록에 한 글자씩 (쑥쑥 · 생각놀이), 첫 블록 위에 새싹 잎
+// 사이트 로고: 왼쪽에 쑥쑥이(새싹 친구), 오른쪽에 장난감 블록 글자 (쑥쑥 · 생각놀이)
 const LOGO_SVG = `
-<svg viewBox="0 0 332 72" aria-hidden="true" focusable="false">
+<svg viewBox="0 0 410 72" aria-hidden="true" focusable="false">
+  <g transform="translate(-4 -6) scale(.8)">
+    <path d="M50 36 V22" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="37" cy="20" rx="14" ry="7.5" fill="#6cc08a" transform="rotate(-28 37 20)"/>
+    <ellipse cx="63" cy="20" rx="14" ry="7.5" fill="#4fa86f" transform="rotate(28 63 20)"/>
+    <circle cx="50" cy="62" r="28" fill="#a9dea1"/>
+    <circle cx="40" cy="58" r="4.2" fill="#3b3226"/><circle cx="60" cy="58" r="4.2" fill="#3b3226"/>
+    <circle cx="41.4" cy="56.6" r="1.3" fill="#fff"/><circle cx="61.4" cy="56.6" r="1.3" fill="#fff"/>
+    <circle cx="32" cy="68" r="4.5" fill="#f4a9a0" opacity=".8"/><circle cx="68" cy="68" r="4.5" fill="#f4a9a0" opacity=".8"/>
+    <path d="M43 69 Q50 76 57 69" stroke="#3b3226" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+  </g>
+  <g transform="translate(78 0)">
   <g font-family="Jua, sans-serif" font-size="29" text-anchor="middle">
     <g transform="translate(6 16) rotate(-5 24 24)"><rect width="48" height="48" rx="13" fill="#d4e8cf"/><text x="24" y="34" fill="#3f8f5a">쑥</text></g>
     <g transform="translate(58 16) rotate(4 24 24)"><rect width="48" height="48" rx="13" fill="#d4e8cf"/><text x="24" y="34" fill="#3f8f5a">쑥</text></g>
@@ -1799,6 +1810,7 @@ const LOGO_SVG = `
     <g transform="translate(278 16) rotate(3 24 24)"><rect width="48" height="48" rx="13" fill="#e4dbf3"/><text x="24" y="34" fill="#5e4f3c">이</text></g>
   </g>
   <path d="M48 17 q6 -15 22 -15 q-6 14 -22 15z" fill="#6cc08a"/>
+  </g>
 </svg>`;
 
 function logoTitle() {
@@ -1811,7 +1823,7 @@ function todayTab() {
   return [
     el('header', { class: 'home-top' },
       logoTitle(),
-      el('button', { class: 'pill-btn guide-btn', 'aria-label': '사용 방법', onclick: () => showGuide('howto') }, '📖 사용법')),
+      el('button', { class: 'pill-btn guide-btn', 'aria-label': '사용 방법', title: '사용 방법', onclick: () => showGuide('howto') }, '📖')),
     levelPicker('compact'),
     dailyCard(),
     gamePicks(),
@@ -2427,7 +2439,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 43;
+const APP_VERSION = 45;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

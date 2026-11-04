@@ -1067,3 +1067,8 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .daily-go:active { transform: translateY(4px); box-shadow: 0 1px 0 #e9b44c; }
 .daily-card.finished .daily-go { background: #bfe7c9; color: #2f6e44; box-shadow: 0 5px 0 #8fcfa1; }
 .daily-card.finished .daily-go:active { box-shadow: 0 1px 0 #8fcfa1; }
+
+/* 쑥쑥이 + 블록 글자 로고: 휴대폰에서도 크게 */
+.logo svg { max-width: 300px; }
+@media (min-width: 700px) { .logo svg { max-width: 380px; } }
+.guide-btn { width: 46px; height: 46px; padding: 0; border-radius: 50%; font-size: 22px; display: grid; place-items: center; }
