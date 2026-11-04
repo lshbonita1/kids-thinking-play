@@ -603,3 +603,109 @@ button:disabled { cursor: default; }
 .tile.captioned { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .tile.captioned .order-face { font-size: calc(var(--t) * .5); }
 .order-caption { color: var(--ink); font-size: clamp(12px, 3.6vw, 15px); line-height: 1.15; white-space: nowrap; }
+
+/* ---------- 아래 메뉴 (오늘 / 놀이 / 기록 / 설정) ---------- */
+.screen.home { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.tab-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
+  max-width: 560px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-top: 2px solid var(--line);
+  background: rgba(255, 255, 255, .96);
+  transform: translateX(-50%);
+}
+.tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0;
+  border-radius: 16px;
+  color: var(--muted);
+  font-size: 16px;
+}
+.tab-icon { font-size: 26px; line-height: 1; filter: grayscale(.7); opacity: .7; }
+.tab-btn.on { background: var(--card); color: var(--ink); }
+.tab-btn.on .tab-icon { filter: none; opacity: 1; }
+
+.more-games {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 18px 20px;
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+  font-size: 21px;
+}
+
+/* ---------- 놀이 탭: 영역 ---------- */
+.cat-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 -16px 18px;
+  padding: 0 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cat-tabs::-webkit-scrollbar { display: none; }
+.cat-tab {
+  flex: none;
+  padding: 10px 16px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: #8a7a62;
+  font-size: 18px;
+}
+.cat-tab.on { border-color: var(--ink); background: var(--ink); color: #fff; }
+.cat-section { margin-bottom: 26px; }
+.cat-title { margin: 0; font-size: 24px; font-weight: 400; }
+.cat-desc { margin: 2px 0 12px; color: var(--muted); font-size: 17px; }
+
+/* ---------- 기록 · 설정 ---------- */
+.panel {
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 2px solid var(--line);
+  border-radius: 24px;
+  background: #fff;
+}
+.panel-title { margin: 0 0 12px; font-size: 21px; font-weight: 400; }
+.rec-list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.rec-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--card);
+  font-size: 18px;
+}
+.rec-list li > span:first-child { flex: 1; }
+.rec-meta { color: #8a7a62; font-size: 15px; }
+.rec-list b { font-weight: 400; color: var(--accent); }
+.empty { margin: 0; color: var(--muted); font-size: 17px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.setting-name { margin-bottom: 8px; font-size: 20px; }
+.setting-row .setting-name { margin-bottom: 0; }
+.setting-desc { color: var(--muted); font-size: 15px; }
+.switch {
+  flex: none;
+  min-width: 72px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--line);
+  color: #8a7a62;
+  font-size: 18px;
+}
+.switch.on { background: var(--accent); color: #fff; }
+.guide-list { margin: 0; padding-left: 20px; color: #6f604b; font-size: 17px; line-height: 1.6; }
+.guide-list li + li { margin-top: 6px; }

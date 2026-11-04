@@ -1436,18 +1436,25 @@ function playDaily() {
 }
 
 /* ---------- 화면: 홈 ---------- */
-function showHome() {
-  window.speechSynthesis?.cancel();
-  const soundBtn = el('button', {
-    class: 'pill-btn',
-    onclick: () => {
-      settings.sound = !settings.sound;
-      store.set('sound', settings.sound);
-      soundBtn.textContent = settings.sound ? '🔊 소리 켬' : '🔇 소리 끔';
-    },
-  }, settings.sound ? '🔊 소리 켬' : '🔇 소리 끔');
+// 놀이를 영역별로 묶음 (보호자가 이해하기 쉬운 말로)
+const CATEGORIES = [
+  { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, linesGame, shadowGame, oddGame] },
+  { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
+  { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서를 찾아요', games: [patternGame, orderGame] },
+  { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame] },
+  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, matchGame] },
+  { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, routineGame] },
+];
 
-  const levelPicker = el('div', { class: 'level-seg', role: 'radiogroup', 'aria-label': '난이도' },
+const HOME_TABS = [
+  { id: 'today', icon: '🏠', name: '오늘' },
+  { id: 'games', icon: '🧩', name: '놀이' },
+  { id: 'records', icon: '📊', name: '기록' },
+  { id: 'settings', icon: '⚙️', name: '설정' },
+];
+
+function levelPicker() {
+  return el('div', { class: 'level-seg', role: 'radiogroup', 'aria-label': '난이도' },
     LEVELS.map((lv, k) => el('button', {
       class: `seg${k === settings.level ? ' on' : ''}`,
       role: 'radio',
@@ -1458,31 +1465,130 @@ function showHome() {
         showHome();
       },
     }, el('span', { class: 'seg-name' }, lv.name))));
+}
 
-  mount(el('div', { class: 'screen home' },
-    el('header', { class: 'home-top' }, el('h1', {}, '쑥쑥 생각놀이'), soundBtn),
-    el('p', { class: 'sub' }, '오늘은 어떤 놀이를 해볼까요?'),
+function gameCard(g) {
+  const best = store.get(bestKey(g, settings.level), null);
+  return el('button', { class: 'game-card', style: `--c:${g.color}`, onclick: () => playGame(g) },
+    el('div', { class: 'gc-icon' }, g.icon),
+    el('div', { class: 'gc-body' },
+      el('div', { class: 'gc-title' }, g.title),
+      el('div', { class: 'gc-desc' }, g.desc),
+      el('span', { class: 'gc-skill' }, g.skill)),
+    best == null ? null : el('div', { class: 'gc-best' }, `최고 ${best}점`));
+}
+
+function tabHeader(title, sub) {
+  return [el('header', { class: 'home-top' }, el('h1', {}, title)), sub ? el('p', { class: 'sub' }, sub) : null];
+}
+
+function todayTab() {
+  return [
+    ...tabHeader('쑥쑥 생각놀이', '오늘은 어떤 놀이를 해볼까요?'),
     el('div', { class: 'level-label' }, '난이도'),
-    levelPicker,
+    levelPicker(),
     dailyCard(),
-    el('div', { class: 'level-label' }, '놀이 골라 하기'),
-    el('div', { class: 'game-list' },
-      GAMES.map((g) => {
-        const best = store.get(bestKey(g, settings.level), null);
-        return el('button', { class: 'game-card', style: `--c:${g.color}`, onclick: () => playGame(g) },
-          el('div', { class: 'gc-icon' }, g.icon),
-          el('div', { class: 'gc-body' },
-            el('div', { class: 'gc-title' }, g.title),
-            el('div', { class: 'gc-desc' }, g.desc),
-            el('span', { class: 'gc-skill' }, g.skill)),
-          best == null ? null : el('div', { class: 'gc-best' }, `최고 ${best}점`));
-      })),
-    el('p', { class: 'parent-note' },
-      '👪 보호자 안내 · 매일 ‘오늘의 학습’으로 여러 놀이를 10문제씩 섞어 풀어 보세요(약 5분). ',
-      '모든 놀이가 날마다 골고루 돌아가며 나오고, 같은 날에는 몇 번을 열어도 같은 문제가 나와요. ',
-      '아이 옆에서 함께 소리 내어 이야기하며 풀고, 정답보다 끝까지 생각해 본 과정을 칭찬해 주세요. ',
-      '너무 쉬워하거나 어려워하면 위에서 난이도를 바꿔 주세요.'),
-  ));
+    el('button', { class: 'more-games', onclick: () => showHome('games') },
+      el('span', {}, '🧩 놀이 골라서 더 하기'), el('span', {}, '›')),
+  ];
+}
+
+function gamesTab() {
+  const current = store.get('gameCat', 'all');
+  const tabs = [{ id: 'all', icon: '✨', name: '전체' }, ...CATEGORIES];
+  const shown = current === 'all' ? CATEGORIES : CATEGORIES.filter((c) => c.id === current);
+  return [
+    ...tabHeader('놀이', '하고 싶은 놀이를 골라요'),
+    el('div', { class: 'level-label' }, '난이도'),
+    levelPicker(),
+    el('div', { class: 'cat-tabs', role: 'tablist' },
+      tabs.map((c) => el('button', {
+        class: `cat-tab${c.id === current ? ' on' : ''}`,
+        role: 'tab',
+        'aria-selected': String(c.id === current),
+        onclick: () => {
+          store.set('gameCat', c.id);
+          showHome('games');
+        },
+      }, `${c.icon} ${c.name}`))),
+    ...shown.map((c) => el('section', { class: 'cat-section' },
+      el('h2', { class: 'cat-title' }, `${c.icon} ${c.name}`),
+      el('p', { class: 'cat-desc' }, c.desc),
+      el('div', { class: 'game-list' }, c.games.map(gameCard)))),
+  ];
+}
+
+// 간단한 기록 (자세한 정답률·어려운 놀이 분석은 다음 단계)
+function recordsTab() {
+  const days = range(0, 13)
+    .map((n) => ({ d: daysAgo(n), rec: store.get(dailyKey(dateKey(daysAgo(n))), null) }))
+    .filter((x) => x.rec);
+  const bests = GAMES.map((g) => ({ g, best: store.get(bestKey(g, settings.level), null) })).filter((x) => x.best != null);
+  return [
+    ...tabHeader('기록', '이 기기에서 한 학습이 저장돼요'),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '📅 최근 2주 오늘의 학습'),
+      days.length
+        ? el('ul', { class: 'rec-list' }, days.map(({ d, rec }) => el('li', {},
+          el('span', {}, `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`),
+          el('span', { class: 'rec-meta' }, `${LEVELS[rec.level]?.name ?? ''} · ${rec.correct}/${rec.total} 맞음`),
+          el('b', {}, `${rec.score}점`))))
+        : el('p', { class: 'empty' }, '아직 기록이 없어요. 오늘의 학습을 해 보세요!')),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, `🏆 놀이별 최고 점수 (${LEVELS[settings.level].name})`),
+      bests.length
+        ? el('ul', { class: 'rec-list' }, bests.map(({ g, best }) => el('li', {},
+          el('span', {}, `${g.icon} ${g.title}`), el('b', {}, `${best}점`))))
+        : el('p', { class: 'empty' }, '아직 끝까지 한 놀이가 없어요.')),
+  ];
+}
+
+function settingsTab() {
+  const soundBtn = el('button', {
+    class: `switch${settings.sound ? ' on' : ''}`,
+    role: 'switch',
+    'aria-checked': String(settings.sound),
+    onclick: () => {
+      settings.sound = !settings.sound;
+      store.set('sound', settings.sound);
+      showHome('settings');
+    },
+  }, settings.sound ? '켬' : '끔');
+  return [
+    ...tabHeader('설정'),
+    el('section', { class: 'panel' },
+      el('div', { class: 'setting-row' },
+        el('div', {}, el('div', { class: 'setting-name' }, '🔊 소리'), el('div', { class: 'setting-desc' }, '문제 읽어주기와 효과음')),
+        soundBtn),
+      el('div', { class: 'setting-name' }, '난이도'),
+      levelPicker()),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '👪 보호자 안내'),
+      el('ul', { class: 'guide-list' },
+        el('li', {}, '매일 ‘오늘의 학습’으로 여러 놀이를 10문제씩 풀어요(약 5분). 모든 놀이가 날마다 골고루 돌아가며 나와요.'),
+        el('li', {}, '시작할 때와 놀이가 바뀔 때 일정표가 나와서, 아이가 다음에 할 일을 미리 알 수 있어요.'),
+        el('li', {}, '틀리면 정답이 반짝이고 다시 해 볼 수 있어요. 처음에 맞힌 문제만 점수에 들어가요.'),
+        el('li', {}, '아이 옆에서 함께 소리 내어 이야기하며 풀고, 끝까지 해 본 과정을 칭찬해 주세요.'),
+        el('li', {}, '너무 쉬워하거나 어려워하면 난이도를 바꿔 주세요. 기록은 이 기기에만 저장돼요.'))),
+  ];
+}
+
+function tabBar(current) {
+  return el('nav', { class: 'tab-bar', 'aria-label': '메뉴' },
+    HOME_TABS.map((t) => el('button', {
+      class: `tab-btn${t.id === current ? ' on' : ''}`,
+      'aria-current': t.id === current ? 'page' : null,
+      onclick: () => showHome(t.id),
+    }, el('span', { class: 'tab-icon' }, t.icon), el('span', {}, t.name))));
+}
+
+function showHome(tab) {
+  window.speechSynthesis?.cancel();
+  // 버튼에서 바로 불리면 이벤트가 넘어오므로, 글자가 아니면 마지막으로 본 탭으로
+  if (typeof tab !== 'string' || !HOME_TABS.some((t) => t.id === tab)) tab = store.get('homeTab', 'today');
+  store.set('homeTab', tab);
+  const content = { today: todayTab, games: gamesTab, records: recordsTab, settings: settingsTab }[tab]();
+  mount(el('div', { class: 'screen home' }, ...content, tabBar(tab)));
 }
 
 /* ---------- 화면: 놀이 ---------- */
@@ -1690,7 +1796,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 16;
+const APP_VERSION = 17;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
