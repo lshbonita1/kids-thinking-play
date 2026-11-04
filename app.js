@@ -161,8 +161,17 @@ function feedback(kind, done) {
 }
 
 // 보기 개수별 보기 칸 크기 (적을수록 크게)
-const CHOICE_SIZE = { 2: 'clamp(110px, 36vw, 150px)', 3: 'clamp(90px, 28vw, 112px)', 4: 'clamp(70px, 20vw, 96px)' };
+const CHOICE_SIZE = { 2: 'clamp(110px, 36vw, 150px)', 3: 'clamp(88px, 27vw, 112px)', 4: 'clamp(70px, 20vw, 96px)' };
 const choicesStyle = (count) => `--choice-t:${CHOICE_SIZE[count] ?? CHOICE_SIZE[4]}`;
+
+// 틀린 보기는 흐리게 막고 정답 보기를 반짝여 알려준 뒤 다시 고르게 함
+// (자폐 아동 학습에서 쓰는 '오류 없는 학습': 실패로 끝나지 않고 정답을 직접 눌러 보게)
+function retryChoice(ctx, wrong, right) {
+  wrong.classList.add('bad', 'tried');
+  wrong.disabled = true;
+  right.classList.add('hint');
+  ctx.miss('반짝이는 것을 눌러 볼까요?');
+}
 
 // 문제 그림과 보기를 헷갈리지 않도록 보기 위에 다는 안내
 function choiceLabel(count) {
@@ -208,6 +217,7 @@ function paintGrid(size, onChange) {
     if (selected.has(k)) selected.delete(k);
     else selected.add(k);
     cells[k].classList.toggle('on', selected.has(k));
+    cells[k].classList.remove('hint');
     tone([selected.has(k) ? 620 : 440], 0.06);
     onChange(selected);
   }
@@ -215,6 +225,17 @@ function paintGrid(size, onChange) {
     node: el('div', { class: `mgrid ${size}` }, cells),
     cells,
     answer: () => [...selected].sort((a, b) => a - b),
+    // 틀렸을 때: 잘못 칠한 칸은 지우고, 빠진 칸은 테두리로 알려줌
+    showHint(original) {
+      for (const k of [...selected]) {
+        if (!original.includes(k)) {
+          selected.delete(k);
+          cells[k].classList.remove('on');
+        }
+      }
+      original.forEach((k) => cells[k].classList.toggle('hint', !selected.has(k)));
+      onChange(selected);
+    },
   };
 }
 
@@ -269,7 +290,11 @@ const memoryGame = {
 
     function submit() {
       rec.answer = board.answer();
-      ctx.finish(sameSet(rec.answer, original));
+      if (sameSet(rec.answer, original)) ctx.finish(true);
+      else {
+        board.showHint(original);
+        ctx.miss('반짝이는 칸을 칠해 볼까요?');
+      }
     }
 
     return rec;
@@ -307,7 +332,11 @@ const copyGame = {
 
     function submit() {
       rec.answer = board.answer();
-      ctx.finish(sameSet(rec.answer, original));
+      if (sameSet(rec.answer, original)) ctx.finish(true);
+      else {
+        board.showHint(original);
+        ctx.miss('반짝이는 칸을 칠해 볼까요?');
+      }
     }
 
     return rec;
@@ -362,6 +391,7 @@ function svg(tag, attrs = {}, ...kids) {
 const DOT_REACH = 38;
 
 function dotBoard(size, drawable = false) {
+  const hintLayer = svg('g');
   const lineLayer = svg('g');
   const previewLayer = svg('g');
   const dots = DOTS.map((_, k) => {
@@ -370,18 +400,23 @@ function dotBoard(size, drawable = false) {
   });
   const node = svg('svg', { viewBox: '0 0 300 300', class: `dl-board ${size}${drawable ? ' drawable' : ''}` },
     svg('rect', { x: 30, y: 30, width: 240, height: 240, class: 'dl-frame' }),
+    hintLayer,
     lineLayer,
     previewLayer,
     svg('g', {}, ...dots));
   return {
     node,
     dots,
-    draw(lines, kind) {
-      lineLayer.replaceChildren(...lines.map(([a, b]) => {
+    draw(lines, kind, layer = lineLayer) {
+      layer.replaceChildren(...lines.map(([a, b]) => {
         const [x1, y1] = dotXY(a);
         const [x2, y2] = dotXY(b);
         return svg('line', { x1, y1, x2, y2, class: `dl-line ${kind}` });
       }));
+    },
+    // 그어야 할 선을 흐린 점선으로 보여줌
+    hint(lines) {
+      this.draw(lines, 'hint', hintLayer);
     },
     // 긋는 중인 선 (from 점에서 손가락 위치까지)
     preview(from, x, y) {
@@ -439,7 +474,7 @@ const linesGame = {
       el('div', { class: 'compare' },
         el('div', { class: 'compare-col' }, '원본', left.node),
         el('div', { class: 'compare-col' }, '내 답', right.node)),
-      el('div', { class: 'hint' }, '점에서 점까지 손가락으로 쭉 그어요'),
+      el('div', { class: 'draw-tip' }, '점에서 점까지 손가락으로 쭉 그어요'),
       el('div', { class: 'btn-row' }, undoBtn, doneBtn),
     );
 
@@ -455,6 +490,8 @@ const linesGame = {
     function addLine(a, b) {
       const key = lineKey([a, b]);
       if (!mine.some((l) => lineKey(l) === key)) mine.push([a, b]);
+      const have = mine.map(lineKey);
+      if (rec.missed) right.hint(original.filter((l) => !have.includes(lineKey(l))));
       tone([760], 0.06);
     }
 
@@ -512,7 +549,19 @@ const linesGame = {
 
     function submit() {
       rec.answer = [...mine];
-      ctx.finish(sameSet(mine.map(lineKey), original.map(lineKey)));
+      const want = original.map(lineKey);
+      if (sameSet(mine.map(lineKey), want)) {
+        ctx.finish(true);
+        return;
+      }
+      // 잘못 그은 선은 지우고, 빠진 선은 점선으로 알려줌
+      for (let k = mine.length - 1; k >= 0; k--) {
+        if (!want.includes(lineKey(mine[k]))) mine.splice(k, 1);
+      }
+      const have = mine.map(lineKey);
+      right.hint(original.filter((l) => !have.includes(lineKey(l))));
+      refresh();
+      ctx.miss('점선을 따라 그어 볼까요?');
     }
 
     return rec;
@@ -553,7 +602,7 @@ const PATTERN_CHOICES = [2, 3, 3];
 // 규칙 길이별 묶음 수: 규칙을 보여주는 묶음 1개 + 빈칸이 있는 묶음 1개 (한눈에 보이도록 최소로)
 const PATTERN_GROUPS = { 2: 2, 3: 2 };
 const PATTERN_TILE = {
-  2: 'clamp(110px, 38vw, 150px)',
+  2: 'clamp(100px, 33vw, 136px)',
   3: 'clamp(84px, 26vw, 104px)',
 };
 
@@ -598,17 +647,20 @@ const patternGame = {
 
     const blankNode = el('div', { class: 'tile blank' }, '?');
     const board = patternBoard(seq, unit.length, { index: blank, node: blankNode }, PATTERN_TILE[unit.length]);
-    const choiceRow = el('div', { class: 'choices', style: choicesStyle(choices.length) },
-      choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c)));
+    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c));
+    const choiceRow = el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons);
 
     ctx.stage.append(prompt('빈칸에 들어갈 것은?'), board, choiceLabel(choices.length), choiceRow);
 
     function choose(c) {
+      if (c !== answer) {
+        retryChoice(ctx, buttons[choices.indexOf(c)], buttons[choices.indexOf(answer)]);
+        return;
+      }
       rec.chosen = c;
-      const ok = c === answer;
       blankNode.textContent = c;
-      blankNode.className = `tile pop ${ok ? 'good' : 'bad'}`;
-      ctx.finish(ok);
+      blankNode.className = 'tile pop good';
+      ctx.finish(true);
     }
 
     return rec;
@@ -667,9 +719,13 @@ const countGame = {
     speak('몇 개일까요?');
 
     function choose(c, btn) {
+      if (c !== n) {
+        retryChoice(ctx, btn, buttons[choices.indexOf(n)]);
+        return;
+      }
       rec.chosen = c;
-      btn.classList.add(c === n ? 'good' : 'bad');
-      ctx.finish(c === n);
+      btn.classList.add('good');
+      ctx.finish(true);
     }
 
     return rec;
@@ -721,9 +777,13 @@ const oddGame = {
     ctx.stage.append(prompt('다른 하나를 찾아요!'), grid);
 
     function choose(k) {
+      if (k !== odd) {
+        retryChoice(ctx, grid.children[k], grid.children[odd]);
+        return;
+      }
       rec.chosen = k;
-      grid.children[k].classList.add(k === odd ? 'good' : 'bad');
-      ctx.finish(k === odd);
+      grid.children[k].classList.add('good');
+      ctx.finish(true);
     }
 
     return rec;
@@ -863,9 +923,13 @@ const shadowGame = {
     );
 
     function choose(c, btn) {
+      if (c !== answer) {
+        retryChoice(ctx, btn, buttons[choices.indexOf(answer)]);
+        return;
+      }
       rec.chosen = c;
-      btn.classList.add(c === answer ? 'good' : 'bad');
-      ctx.finish(c === answer);
+      btn.classList.add('good');
+      ctx.finish(true);
     }
 
     return rec;
@@ -957,10 +1021,24 @@ const orderGame = {
       pieceNodes[order.indexOf(p)].classList.add('used');
       tone([520 + s * 80], 0.07);
       if (!placed.includes(null)) {
-        const ok = placed.every((v, k) => v === k);
-        slotNodes.forEach((n) => n.classList.add(ok ? 'good' : 'bad'));
-        ctx.finish(ok);
+        const wrongAt = placed.findIndex((v, k) => v !== k);
+        if (wrongAt < 0) {
+          slotNodes.forEach((n) => n.classList.add('good'));
+          ctx.finish(true);
+          return;
+        }
+        // 처음 틀린 자리부터 다시 놓게 하고, 놓아야 할 그림을 반짝여 알려줌
+        for (let k = placed.length - 1; k >= wrongAt; k--) unplace(k);
+        rec.missed = true;
+        ctx.miss('반짝이는 그림을 놓아 볼까요?');
       }
+      guide();
+    }
+
+    function guide() {
+      pieceNodes.forEach((n) => n.classList.remove('hint'));
+      const s = placed.indexOf(null);
+      if (rec.missed && s >= 0) pieceNodes[order.indexOf(s)].classList.add('hint');
     }
 
     function unplace(s) {
@@ -970,6 +1048,7 @@ const orderGame = {
       slotNodes[s].replaceChildren(String(s + 1));
       slotNodes[s].className = 'tile blank slot';
       pieceNodes[order.indexOf(p)].classList.remove('used');
+      guide();
     }
 
     return rec;
@@ -986,7 +1065,151 @@ const orderGame = {
   },
 };
 
-const GAMES = [copyGame, linesGame, memoryGame, patternGame, countGame, oddGame, flipGame, shadowGame, orderGame];
+/* ---------- 놀이: 이름 듣고 찾기 ---------- */
+// 색과 모양이 서로 확실히 다른 낱말만
+const LISTEN_WORDS = [
+  ['사과', '🍎'], ['바나나', '🍌'], ['개구리', '🐸'], ['고래', '🐳'], ['포도', '🍇'], ['꽃', '🌸'],
+  ['펭귄', '🐧'], ['당근', '🥕'], ['자동차', '🚗'], ['별', '⭐'], ['공', '⚽'], ['풍선', '🎈'],
+  ['코끼리', '🐘'], ['나비', '🦋'], ['기린', '🦒'], ['비행기', '✈️'],
+];
+// 단계별 [앞 5문제, 뒤 5문제] 보기 개수
+const LISTEN_CHOICES = [[2, 2], [2, 3], [3, 4]];
+
+// 받침이 있으면 '을', 없으면 '를'
+function objectParticle(word) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code % 28 ? '을' : '를';
+}
+
+const listenGame = {
+  id: 'listen',
+  title: '이름 듣고 찾기',
+  desc: '말을 듣고 그림을 골라요',
+  skill: '말 알아듣기',
+  icon: '👂',
+  color: '#d4e8f7',
+
+  round(i, ctx) {
+    const picked = sample(LISTEN_WORDS, LISTEN_CHOICES[ctx.level][i < 5 ? 0 : 1]);
+    const [word, answer] = picked[0];
+    const choices = shuffle(picked.map(([, e]) => e));
+    const rec = { word, answer, chosen: null };
+
+    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c));
+    ctx.stage.append(
+      prompt(`${word}${objectParticle(word)} 찾아요`),
+      el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
+    );
+
+    function choose(c) {
+      if (c !== answer) {
+        retryChoice(ctx, buttons[choices.indexOf(c)], buttons[choices.indexOf(answer)]);
+        return;
+      }
+      rec.chosen = c;
+      buttons[choices.indexOf(c)].classList.add('good');
+      ctx.finish(true);
+    }
+
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', { class: 'compare' },
+      el('div', { class: 'compare-col' }, '들은 말', el('div', { class: 'review-word' }, rec.word)),
+      el('div', { class: 'compare-col' }, '고른 그림',
+        el('div', { class: `tile ${rec.chosen == null ? 'blank' : 'good'}`, style: '--t:64px' }, rec.chosen ?? '?')),
+    );
+  },
+};
+
+/* ---------- 놀이: 기분 알기 ---------- */
+// 표정이 확실히 다른 얼굴만 (😢/😭, 😨/😱처럼 비슷한 얼굴은 함께 쓰지 않음)
+const FEELINGS = {
+  happy: { face: '😄', word: '기뻐요', adj: '기쁜' },
+  sad: { face: '😭', word: '슬퍼요', adj: '슬픈' },
+  angry: { face: '😡', word: '화나요', adj: '화난' },
+  scared: { face: '😱', word: '무서워요', adj: '무서운' },
+};
+// 단계별로 쓰는 기분
+const FEEL_SETS = [['happy', 'sad'], ['happy', 'sad', 'angry'], ['happy', 'sad', 'angry', 'scared']];
+// 상황 문제: avoid는 함께 느낄 수도 있어서 보기로 내지 않는 기분
+const FEEL_SITUATIONS = [
+  { icon: '🎁', text: '선물을 받았어요', feel: 'happy' },
+  { icon: '🎂', text: '생일 케이크를 받았어요', feel: 'happy' },
+  { icon: '🍦', text: '아이스크림을 떨어뜨렸어요', feel: 'sad', avoid: ['angry'] },
+  { icon: '🎈', text: '풍선이 하늘로 날아갔어요', feel: 'sad', avoid: ['angry'] },
+  { icon: '🧱', text: '친구가 내 블록을 일부러 무너뜨렸어요', feel: 'angry', avoid: ['sad'] },
+  { icon: '⛈️', text: '천둥 번개가 쾅쾅 쳐요', feel: 'scared', avoid: ['sad'] },
+];
+
+const feelGame = {
+  id: 'feel',
+  title: '기분 알기',
+  desc: '얼굴 표정을 보고 기분을 알아요',
+  skill: '감정 이해',
+  icon: '😊',
+  color: '#fde2b8',
+
+  round(i, ctx) {
+    const set = FEEL_SETS[ctx.level];
+    // 쉬움은 얼굴 찾기만, 보통·어려움은 뒤쪽에서 상황 문제
+    const situation = ctx.level > 0 && i >= [10, 5, 3][ctx.level]
+      ? pick(FEEL_SITUATIONS.filter((s) => set.includes(s.feel)))
+      : null;
+    const feel = situation ? situation.feel : pick(set);
+    const others = set.filter((f) => f !== feel && !situation?.avoid?.includes(f));
+    const choices = shuffle([feel, ...sample(others, ctx.level === 0 ? 1 : 2)]);
+    const rec = { feel, situation, chosen: null };
+
+    const buttons = choices.map((f) =>
+      el('button', { class: 'tile choice face', 'aria-label': FEELINGS[f].word, onclick: () => choose(f) }, FEELINGS[f].face));
+    const row = el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons);
+
+    if (situation) {
+      ctx.stage.append(
+        prompt('어떤 기분일까요?', false),
+        el('div', { class: 'situation' },
+          el('div', { class: 'situation-icon' }, situation.icon),
+          el('div', { class: 'situation-text' }, situation.text)),
+        choiceLabel(choices.length),
+        row,
+      );
+      speak(`${situation.text}. 어떤 기분일까요?`);
+    } else {
+      ctx.stage.append(prompt(`${FEELINGS[feel].adj} 얼굴을 찾아요`), row);
+    }
+
+    function choose(f) {
+      if (f !== feel) {
+        retryChoice(ctx, buttons[choices.indexOf(f)], buttons[choices.indexOf(feel)]);
+        return;
+      }
+      rec.chosen = f;
+      buttons[choices.indexOf(f)].classList.add('good');
+      ctx.finish(true);
+    }
+
+    return rec;
+  },
+
+  review(rec) {
+    const question = rec.situation
+      ? el('div', { class: 'review-word' }, `${rec.situation.icon} ${rec.situation.text}`)
+      : el('div', { class: 'review-word' }, `${FEELINGS[rec.feel].adj} 얼굴`);
+    return el('div', { class: 'compare' },
+      el('div', { class: 'compare-col' }, '문제', question),
+      el('div', { class: 'compare-col' }, FEELINGS[rec.feel].word,
+        el('div', { class: `tile ${rec.chosen == null ? 'blank' : 'good'}`, style: '--t:64px' },
+          rec.chosen ? FEELINGS[rec.chosen].face : '?')),
+    );
+  },
+};
+
+const GAMES = [
+  copyGame, linesGame, listenGame, feelGame, memoryGame, patternGame,
+  countGame, oddGame, flipGame, shadowGame, orderGame,
+];
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
 
@@ -1203,6 +1426,13 @@ function playSession(session) {
     stage,
     level,
     finish: (correct, kind) => finish(correct, kind),
+    // 틀렸지만 힌트를 보고 다시 해 보는 중 (첫 시도에 맞힌 것만 점수)
+    miss(message) {
+      if (locked || !rec) return;
+      rec.missed = true;
+      tone([392, 330], 0.15);
+      speak(message);
+    },
     later(fn, ms) {
       timers.push(setTimeout(() => alive() && fn(), ms));
     },
@@ -1233,13 +1463,15 @@ function playSession(session) {
     timers.forEach(clearTimeout);
     timers = [];
     const passed = kind === 'pass';
-    state.records.push({ ...rec, correct, passed });
+    const retried = correct && !!rec.missed;
+    correct = correct && !rec.missed;
+    state.records.push({ ...rec, correct, retried, passed });
     if (correct) {
       state.correct++;
       state.score = Math.min(100, state.score + points);
     }
     score.textContent = `${state.score}점`;
-    feedback(kind ?? (correct ? 'good' : 'bad'), () => {
+    feedback(kind ?? (correct || retried ? 'good' : 'bad'), () => {
       if (!alive()) return;
       state.index++;
       next();
@@ -1261,7 +1493,7 @@ function showResult(session, state) {
   speak(`${total}개 중에 ${correct}개 맞았어요. ${message}`);
 
   const badgeOf = (r) => r.game.badge?.(r)
-    ?? (r.passed ? ['pass', '패스'] : r.correct ? ['good', '정답'] : ['bad', '오답']);
+    ?? (r.passed ? ['pass', '패스'] : r.correct ? ['good', '정답'] : r.retried ? ['retry', '다시 해서 맞음'] : ['bad', '오답']);
 
   mount(el('div', { class: 'screen result' },
     el('section', { class: 'result-hero' },
@@ -1287,7 +1519,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 13;
+const APP_VERSION = 14;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

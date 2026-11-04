@@ -292,7 +292,7 @@ button:disabled { cursor: default; }
 .dl-line.orig { stroke: #c9534a; }
 .dl-line.mine { stroke: #4f5b8a; }
 .dl-line.preview { stroke: #4f5b8a; opacity: .45; stroke-dasharray: 2 14; }
-.hint { margin-top: -12px; color: var(--muted); font-size: 17px; text-align: center; }
+.draw-tip { margin-top: -12px; color: var(--muted); font-size: 17px; text-align: center; }
 .btn-row { display: flex; gap: 12px; width: 100%; max-width: 420px; }
 .btn-row .btn-main { flex: 1; padding: 18px; font-size: 24px; }
 .btn-row .btn-main.alt { flex: 0 0 38%; }
@@ -336,7 +336,7 @@ button:disabled { cursor: default; }
 .choice-label::before,
 .choice-label::after { content: ''; flex: 1; border-top: 2px dashed var(--line); }
 
-.choices { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.choices { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .choice { --t: var(--choice-t, clamp(80px, 24vw, 108px)); transition: transform .12s, opacity .2s; }
 .choice.used { opacity: 0; pointer-events: none; }
 .choice:active { transform: scale(.92); }
@@ -496,3 +496,46 @@ button:disabled { cursor: default; }
 .review-note { margin-top: 12px; text-align: center; color: #8a7a62; font-size: 19px; }
 .review-items { text-align: center; font-size: 30px; letter-spacing: 2px; word-break: break-all; }
 .review-center { display: flex; justify-content: center; }
+
+/* ---------- 틀렸을 때 다시 해 보기 ---------- */
+/* .choices .choice의 등장 애니메이션보다 뒤에 두어서 덮어씀 */
+.stage .hint {
+  position: relative;
+  z-index: 1;
+  border-color: var(--orange);
+  animation: hint-pulse 1s ease-in-out infinite;
+}
+.stage .mcell.hint {
+  background: #fde9cf;
+  outline: 4px dashed var(--orange);
+  outline-offset: -4px;
+  animation: hint-blink 1s ease-in-out infinite;
+}
+.stage .tried { opacity: .3; }
+@keyframes hint-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 4px rgba(227, 162, 90, .9); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 12px rgba(227, 162, 90, .3); }
+}
+@keyframes hint-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
+.dl-line.hint { stroke: var(--orange); stroke-dasharray: 4 14; opacity: .9; animation: hint-blink 1s ease-in-out infinite; }
+.badge.retry { background: #fdeccf; color: #b7792f; }
+
+/* ---------- 이름 듣고 찾기 · 기분 알기 ---------- */
+.review-word { max-width: 150px; text-align: center; color: var(--ink); font-size: 22px; line-height: 1.4; }
+.situation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(88vw, 380px);
+  padding: 18px 16px;
+  border: 2px solid var(--line);
+  border-radius: 26px;
+  background: #fff;
+  animation: pop .35s;
+}
+.situation-icon { font-size: clamp(90px, 30vw, 130px); line-height: 1; }
+.situation-text { font-size: 26px; text-align: center; line-height: 1.4; }
