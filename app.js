@@ -1825,6 +1825,195 @@ const sortGame = {
   },
 };
 
+/* ---------- 게임 놀이: 풍선 터뜨리기 ---------- */
+// 색이 서로 확실히 다른 풍선만
+const BALLOON_COLORS = [
+  { name: '빨간', fill: '#ff6b6b' },
+  { name: '노란', fill: '#ffd43b' },
+  { name: '파란', fill: '#4dabf7' },
+  { name: '초록', fill: '#51cf66' },
+];
+// 단계별 풍선 색 수, [앞 5문제, 뒤 5문제] 풍선 수
+const BALLOON_KINDS = [1, 2, 3];
+const BALLOON_COUNTS = [[4, 5], [5, 6], [6, 7]];
+
+function balloonSvg(fill) {
+  return `<svg viewBox="0 0 60 92" aria-hidden="true">
+    <path d="M30 64 Q26 76 32 84 Q36 90 30 92" stroke="#b9ad9b" stroke-width="2" fill="none"/>
+    <path d="M25 66 L35 66 L30 59 Z" fill="${fill}"/>
+    <ellipse cx="30" cy="32" rx="26" ry="30" fill="${fill}"/>
+    <ellipse cx="20" cy="20" rx="6" ry="10" fill="#fff" opacity=".45" transform="rotate(25 20 20)"/>
+  </svg>`;
+}
+
+const balloonGame = {
+  id: 'balloon',
+  title: '풍선 터뜨리기',
+  desc: '풍선을 톡톡 눌러 터뜨려요',
+  skill: '집중력 · 색깔',
+  icon: '🎈',
+  color: '#fde2e2',
+
+  round(i, ctx) {
+    const n = BALLOON_COUNTS[ctx.level][i < 5 ? 0 : 1];
+    const kinds = sample(BALLOON_COLORS, BALLOON_KINDS[ctx.level]);
+    const target = kinds[0];
+    // 쉬움: 모두 같은 색이라 다 터뜨리면 끝 / 보통 · 어려움: 정한 색만 (절반쯤)
+    const targets = kinds.length === 1 ? n : Math.ceil(n / 2);
+    const colors = shuffle([
+      ...Array(targets).fill(target),
+      ...range(1, n - targets).map((k) => kinds[1 + (k % (kinds.length - 1))]),
+    ]);
+    const rec = { color: target.name, single: kinds.length === 1, n, targets, done: false };
+    let popped = 0;
+
+    // 3칸 × 3줄 자리에 흩어 놓기 (조금씩 비뚤게)
+    const slots = sample(range(0, 8), n);
+    const balloons = colors.map((c, k) => {
+      const s = slots[k];
+      const node = el('button', {
+        class: 'balloon',
+        'aria-label': `${c.name} 풍선`,
+        style: `left:${18 + (s % 3) * 32 + (Math.random() * 4 - 2)}%;top:${19 + Math.floor(s / 3) * 31 + (Math.random() * 4 - 2)}%;animation-delay:${(Math.random() * -2).toFixed(2)}s`,
+        onclick: () => pop(k),
+      });
+      node.innerHTML = balloonSvg(c.fill);
+      return node;
+    });
+    const say = rec.single ? '풍선을 모두 터뜨려요!' : `${target.name} 풍선을 터뜨려요!`;
+    ctx.stage.append(prompt(say), el('div', { class: 'balloon-field' }, balloons));
+
+    function pop(k) {
+      const node = balloons[k];
+      if (node.classList.contains('popped')) return;
+      if (colors[k] !== target) {
+        node.classList.remove('nope');
+        void node.offsetWidth;
+        node.classList.add('nope');
+        balloons.forEach((b, j) => b.classList.toggle('hint', colors[j] === target && !b.classList.contains('popped')));
+        ctx.miss(`${target.name} 풍선을 찾아요`);
+        return;
+      }
+      node.classList.add('popped');
+      node.classList.remove('hint');
+      tone([880, 1320], 0.06);
+      if (++popped === targets) {
+        rec.done = true;
+        ctx.later(() => ctx.finish(true), 350);
+      }
+    }
+
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', { class: 'review-note' },
+      rec.done ? (rec.single ? `풍선 ${rec.n}개를 다 터뜨렸어요` : `${rec.color} 풍선 ${rec.targets}개를 다 터뜨렸어요`) : '끝까지 하지 못했어요');
+  },
+};
+
+/* ---------- 게임 놀이: 숨은 친구 잡기 ---------- */
+// 서로 색과 모양이 확실히 다른 친구들
+const MOLE_FRIENDS = [['🐰', '토끼'], ['🐻', '곰'], ['🐸', '개구리'], ['🐷', '돼지']];
+// 단계별 구멍 수, 잡을 횟수, 나와 있는 시간(없으면 잡을 때까지 기다림), 다른 친구가 섞여 나올 확률
+const MOLE_HOLES = [3, 4, 6];
+const MOLE_NEED = [3, 4, 5];
+const MOLE_STAY = [0, 2600, 2000];
+const MOLE_DECOY = [0, 0, 0.35];
+
+const moleGame = {
+  id: 'mole',
+  title: '숨은 친구 잡기',
+  desc: '쏙 나온 친구를 톡 잡아요',
+  skill: '집중력 · 반응',
+  icon: '🐰',
+  color: '#e3f0d6',
+
+  round(i, ctx) {
+    const [target, decoy] = sample(MOLE_FRIENDS, 2);
+    const holesN = MOLE_HOLES[ctx.level];
+    const need = MOLE_NEED[ctx.level];
+    const rec = { target: target[0], decoy: decoy[0], holes: holesN, need, hits: 0, done: false };
+    let up = null; // { hole, who }
+    let turn = 0; // 지난 차례의 타이머가 새 차례를 건드리지 않게
+    let last = -1;
+
+    const holes = range(1, holesN).map((_, h) => el('button', { class: 'mole-hole', 'aria-label': '구멍', onclick: () => tap(h) },
+      el('span', { class: 'mole-friend' })));
+    const counter = el('div', { class: 'mole-count' });
+    ctx.stage.append(
+      prompt(MOLE_DECOY[ctx.level] ? `${target[1]}만 잡아요!` : `${target[1]}${objectParticle(target[1])} 잡아요!`),
+      counter,
+      el('div', { class: `mole-field holes-${holesN}` }, holes),
+    );
+
+    function draw() {
+      counter.replaceChildren(...range(1, need).map((k) => el('span', { class: k <= rec.hits ? 'on' : '' }, k <= rec.hits ? '⭐' : '☆')));
+    }
+
+    function show() {
+      const t = ++turn;
+      let h;
+      do h = rand(holesN);
+      while (h === last && holesN > 1);
+      last = h;
+      const who = Math.random() < MOLE_DECOY[ctx.level] ? decoy[0] : target[0];
+      up = { hole: h, who };
+      const friend = holes[h].firstChild;
+      friend.textContent = who;
+      holes[h].classList.add('up');
+      if (MOLE_STAY[ctx.level]) {
+        ctx.later(() => {
+          if (t !== turn) return;
+          hide();
+          ctx.later(() => t === turn && show(), 450);
+        }, who === target[0] ? MOLE_STAY[ctx.level] : MOLE_STAY[ctx.level] * 0.8);
+      }
+    }
+
+    function hide() {
+      if (up) holes[up.hole].classList.remove('up', 'hit');
+      up = null;
+    }
+
+    function tap(h) {
+      if (!up || up.hole !== h || rec.done) return;
+      const t = ++turn;
+      if (up.who !== target[0]) {
+        holes[h].classList.add('nope');
+        ctx.later(() => holes[h].classList.remove('nope'), 400);
+        ctx.miss(`${target[1]}만 잡아요`);
+        hide();
+        ctx.later(() => t === turn && show(), 700);
+        return;
+      }
+      rec.hits++;
+      holes[h].classList.add('hit');
+      tone([700, 1000], 0.07);
+      draw();
+      if (rec.hits >= need) {
+        rec.done = true;
+        ctx.later(() => ctx.finish(true), 450);
+        return;
+      }
+      ctx.later(() => {
+        if (t !== turn) return;
+        hide();
+        ctx.later(() => t === turn && show(), 400);
+      }, 350);
+    }
+
+    draw();
+    ctx.later(show, 700);
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', { class: 'review-note' },
+      rec.done ? `${rec.target} ${rec.need}번 잡았어요` : `${rec.target} ${rec.hits}번 잡았어요`);
+  },
+};
+
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
   memory: (r) => r.original.join(),
@@ -1840,6 +2029,8 @@ const QUESTION_KEYS = {
   match: (r) => r.pair.q,
   order: (r) => `${r.items.map((it) => `${it.label}${it.scale ?? ''}`).join()}|${r.order.join()}`,
   routine: (r) => `${r.items.map((it) => it.label).join()}|${r.order.join()}`,
+  balloon: (r) => `${r.color}|${r.n}`,
+  mole: (r) => `${r.target}|${r.decoy}`,
   trace: (r) => `${r.shape}|${r.flip}|${r.pair.join('')}`,
   sort: (r) => `${[...r.kinds].sort().join()}|${r.items.length}`,
   space: (r) => `${r.furniture}|${Object.entries(r.placed).map(([pl, t]) => pl + t.e).join()}|${r.ask}|${r.whereType}`,
@@ -1848,7 +2039,7 @@ const questionKey = (game, r) => `${game.id}:${(QUESTION_KEYS[game.id] ?? JSON.s
 
 const GAMES = [
   copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, spaceGame, memoryGame, patternGame,
-  countGame, oddGame, flipGame, shadowGame, orderGame, traceGame, sortGame,
+  countGame, oddGame, flipGame, shadowGame, orderGame, traceGame, sortGame, balloonGame, moleGame,
 ];
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
@@ -2004,6 +2195,7 @@ function playDaily() {
 const CATEGORIES = [
   { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame] },
   { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame] },
+  { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame] },
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
   { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame] },
@@ -2761,7 +2953,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 50;
+const APP_VERSION = 52;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

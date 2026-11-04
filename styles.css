@@ -1235,3 +1235,90 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .share-card { flex-wrap: wrap; row-gap: 14px; }
 .share-btn { width: 100%; padding: 14px; font-size: 20px; }
 @media (max-width: 360px) { .share-btn { padding: 12px; font-size: 18px; } }
+
+/* ---------- 게임 놀이: 풍선 터뜨리기 ---------- */
+.balloon-field {
+  position: relative;
+  width: min(100%, calc(520px * var(--k)));
+  height: clamp(300px, 52vh, calc(460px * var(--k)));
+  margin: 0 auto;
+  border-radius: 24px;
+  background: linear-gradient(#e3f2fd, #f5fbff);
+  overflow: hidden;
+}
+.balloon {
+  position: absolute;
+  width: clamp(60px, 20%, calc(104px * var(--k)));
+  padding: 0;
+  background: none;
+  transform: translate(-50%, -50%);
+  animation: balloon-bob 2.4s ease-in-out infinite;
+}
+.balloon svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .12)); }
+.balloon.popped { pointer-events: none; animation: balloon-pop .3s forwards; }
+.balloon.nope { animation: balloon-nope .4s; }
+.stage .balloon.hint { box-shadow: none; border-radius: 50%; animation: balloon-hint 1s ease-in-out infinite; }
+@keyframes balloon-bob {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50% { transform: translate(-50%, -56%); }
+}
+@keyframes balloon-pop {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  60% { transform: translate(-50%, -50%) scale(1.35); opacity: .6; }
+  100% { transform: translate(-50%, -50%) scale(.2); opacity: 0; }
+}
+@keyframes balloon-nope {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0); }
+  25% { transform: translate(-50%, -50%) rotate(-12deg); }
+  75% { transform: translate(-50%, -50%) rotate(12deg); }
+}
+@keyframes balloon-hint {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 0 #ffb347); }
+  50% { transform: translate(-50%, -50%) scale(1.12); filter: drop-shadow(0 0 10px #ffb347); }
+}
+
+/* ---------- 게임 놀이: 숨은 친구 잡기 ---------- */
+.mole-count { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; color: #d9b07c; font-size: 28px; }
+.mole-field {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 3vw, 22px);
+  width: min(100%, calc(520px * var(--k)));
+  margin: 0 auto;
+  padding: 22px 16px;
+  border-radius: 24px;
+  background: #e3f0d6;
+}
+.mole-field.holes-4 { grid-template-columns: repeat(2, 1fr); width: min(100%, calc(400px * var(--k))); }
+.mole-field.holes-3 { grid-template-rows: auto; }
+.mole-hole {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 50% 50% 22px 22px;
+  background: radial-gradient(ellipse at 50% 88%, #6b4f35 0 38%, transparent 39%), #cfe5bd;
+}
+.mole-friend {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  font-size: min(16vw, calc(78px * var(--k)));
+  line-height: 1;
+  transform: translate(-50%, 150%);
+  transition: transform .22s ease-out;
+}
+.mole-hole.up .mole-friend { transform: translate(-50%, 0); }
+.mole-hole.hit .mole-friend { transform: translate(-50%, 0) scale(1.2); filter: drop-shadow(0 0 10px #ffd76e); }
+.mole-hole.nope { animation: balloon-nope .4s; }
+.mole-hole.nope { animation-name: mole-nope; }
+@keyframes mole-nope {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+
+/* 공유하기: 파란색 계열로 (실선 테두리 · 큰 버튼은 그대로) */
+.share-card { border-color: #b9d5f0; background: #eef6fd; }
+.share-text span { color: #5b7a99; }
+.share-btn { background: #cfe3f7; color: #2f5478; box-shadow: 0 4px 0 #9fc2e6; }
+.share-btn:active { box-shadow: 0 1px 0 #9fc2e6; }
