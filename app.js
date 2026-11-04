@@ -95,8 +95,8 @@ const settings = {
   sound: store.get('sound', true),
   level: store.get('level', 0), // 처음엔 쉬움부터
   voice: store.get('voice', ''), // 고른 목소리 이름 (없으면 자동)
-  pitch: store.get('pitch', 1.4), // 목소리 높이: 높을수록 밝고 어린 느낌
-  rate: store.get('rate', 0.85), // 빠르기: 아이가 알아듣기 쉽게 조금 천천히
+  pitch: store.get('pitch', 1.1), // 목소리 높이: 높을수록 밝고 어린 느낌 (기본: 보통)
+  rate: store.get('rate', 1), // 빠르기 (기본: 보통)
 };
 
 // 목소리 높이 · 빠르기 선택지
@@ -112,7 +112,7 @@ function koreanVoices() {
   return speechSynthesis.getVoices().filter((v) => v.lang?.replace('_', '-').toLowerCase().startsWith('ko'));
 }
 // 고른 목소리 → 없으면 여성 목소리(이름으로 추정) → 기기 안 목소리 → 아무 한국어 목소리
-const SOFT_VOICE_HINTS = ['yuna', '유나', 'sora', 'female', 'heami', 'sunhi', 'jimin', 'seoyeon', 'google 한국'];
+const SOFT_VOICE_HINTS = ['유나', 'yuna', 'sora', 'female', 'heami', 'sunhi', 'jimin', 'seoyeon', 'google 한국'];
 function pickKoreanVoice() {
   const voices = koreanVoices();
   koVoice = voices.find((v) => v.name === settings.voice)
@@ -2408,7 +2408,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 37;
+const APP_VERSION = 38;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
