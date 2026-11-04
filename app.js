@@ -160,6 +160,12 @@ function feedback(kind, done) {
   }, 1100);
 }
 
+// 문제 그림과 보기를 헷갈리지 않도록 보기 위에 다는 안내
+function choiceLabel(count) {
+  const word = ['', '한', '두', '세', '네'][count] ?? String(count);
+  return el('div', { class: 'choice-label' }, `👇 아래 ${word} 보기에서 골라 보세요`);
+}
+
 function miniGrid(cells) {
   return el('div', { class: 'mgrid mini' },
     [...Array(9)].map((_, k) => el('div', { class: `mcell${cells.includes(k) ? ' on' : ''}` })),
@@ -591,7 +597,7 @@ const patternGame = {
     const choiceRow = el('div', { class: 'choices' },
       choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c)));
 
-    ctx.stage.append(prompt('빈칸에 들어갈 것은?'), board, choiceRow);
+    ctx.stage.append(prompt('빈칸에 들어갈 것은?'), board, choiceLabel(choices.length), choiceRow);
 
     function choose(c) {
       rec.chosen = c;
@@ -652,7 +658,8 @@ const countGame = {
     const buttons = choices.map((c) =>
       el('button', { class: 'num-btn', onclick: () => choose(c, buttons[choices.indexOf(c)]) }, String(c)));
 
-    ctx.stage.append(prompt(`${emoji} 몇 개일까요?`, false), board, el('div', { class: 'num-choices' }, buttons));
+    ctx.stage.append(prompt(`${emoji} 몇 개일까요?`, false), board, choiceLabel(choices.length),
+      el('div', { class: 'num-choices' }, buttons));
     speak('몇 개일까요?');
 
     function choose(c, btn) {
@@ -847,6 +854,7 @@ const shadowGame = {
     ctx.stage.append(
       prompt('알맞은 그림자를 찾아요!'),
       el('div', { class: 'tile shadow-target' }, answer),
+      choiceLabel(choices.length),
       el('div', { class: 'choices' }, buttons),
     );
 
@@ -1245,7 +1253,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 10;
+const APP_VERSION = 11;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

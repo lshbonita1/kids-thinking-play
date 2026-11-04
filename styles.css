@@ -322,6 +322,20 @@ button:disabled { cursor: default; }
 .tile.bad { border: 3px solid var(--bad); background: var(--bad-bg); }
 .tile.pop { animation: pop .35s; }
 
+.choice-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: -12px;
+  color: #8a7a62;
+  font-size: 21px;
+  white-space: nowrap;
+}
+.choice-label::before,
+.choice-label::after { content: ''; flex: 1; border-top: 2px dashed var(--line); }
+
 .choices { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .choice { --t: var(--choice-t, clamp(80px, 24vw, 108px)); transition: transform .12s, opacity .2s; }
 .choice.used { opacity: 0; pointer-events: none; }
