@@ -4,9 +4,9 @@ const TOTAL = 10;
 const $app = document.getElementById('app');
 
 const LEVELS = [
-  { name: '쉬움', age: '3~4세' },
-  { name: '보통', age: '5세' },
-  { name: '어려움', age: '6~7세' },
+  { name: '쉬움' },
+  { name: '보통' },
+  { name: '어려움' },
 ];
 
 /* ---------- 유틸 ---------- */
@@ -988,9 +988,10 @@ const orderGame = {
   icon: '🪜',
   color: '#f6dbe7',
 
-  round(i, ctx) {
-    const len = ORDER_LENGTHS[ctx.level][i < 5 ? 0 : 1];
-    const puzzle = makeOrderPuzzle(ctx.level, len);
+  // makePuzzle을 바꿔 끼워서 '생활 순서' 놀이도 같은 방식으로 씀
+  round(i, ctx, makePuzzle = makeOrderPuzzle) {
+    const puzzle = makePuzzle(ctx.level, ORDER_LENGTHS[ctx.level][i < 5 ? 0 : 1]);
+    const len = puzzle.items.length;
     let order;
     do order = shuffle(range(0, len - 1));
     while (order.every((v, k) => v === k));
@@ -1002,9 +1003,10 @@ const orderGame = {
       el('button', { class: 'tile blank slot', 'aria-label': `${s + 1}번째 자리`, onclick: () => unplace(s) },
         String(s + 1)));
     const pieceNodes = order.map((p) =>
-      el('button', { class: 'tile choice', onclick: () => place(p) },
+      el('button', { class: `tile choice${puzzle.items[p].text ? ' captioned' : ''}`, onclick: () => place(p) },
         el('span', { class: 'order-face', style: puzzle.items[p].scale ? `transform:scale(${puzzle.items[p].scale})` : '' },
-          puzzle.items[p].label)));
+          puzzle.items[p].label),
+        puzzle.items[p].text ? el('span', { class: 'order-caption' }, puzzle.items[p].text) : null));
 
     ctx.stage.append(
       prompt(puzzle.say),
@@ -1017,9 +1019,10 @@ const orderGame = {
       if (s < 0 || placed.includes(p)) return;
       placed[s] = p;
       slotNodes[s].replaceChildren(...pieceNodes[order.indexOf(p)].cloneNode(true).childNodes);
-      slotNodes[s].className = 'tile slot filled pop';
+      slotNodes[s].className = `tile slot filled pop${puzzle.items[p].text ? ' captioned' : ''}`;
       pieceNodes[order.indexOf(p)].classList.add('used');
       tone([520 + s * 80], 0.07);
+      if (puzzle.items[p].text) speak(puzzle.items[p].text);
       if (!placed.includes(null)) {
         const wrongAt = placed.findIndex((v, k) => v !== k);
         if (wrongAt < 0) {
@@ -1206,8 +1209,111 @@ const feelGame = {
   },
 };
 
+/* ---------- 놀이: 생활 순서 ---------- */
+// 순서가 분명한 생활 습관만 (옷 입기처럼 순서가 사람마다 다른 것은 뺌)
+const ROUTINES = [
+  { say: '손 씻는 순서대로 놓아요', steps: [['🚰', '물 틀기'], ['🧼', '비누칠'], ['💦', '헹구기'], ['🧻', '닦기']] },
+  { say: '밖에 나가는 순서대로 놓아요', steps: [['🧦', '양말 신기'], ['👟', '신발 신기'], ['🚪', '나가기']] },
+  { say: '밥 먹는 순서대로 놓아요', steps: [['🧼', '손 씻기'], ['🍚', '밥 먹기'], ['🪥', '이 닦기']] },
+  { say: '잠자는 순서대로 놓아요', steps: [['🛁', '목욕'], ['👕', '잠옷 입기'], ['🛏️', '잠자기']] },
+  { say: '그림 그리는 순서대로 놓아요', steps: [['📄', '종이 꺼내기'], ['🖍️', '그리기'], ['🖼️', '완성']] },
+];
+
+// 그림 아래 글자가 잘 보이도록 생활 순서는 많아야 3단계까지만 냄
+const ROUTINE_MAX_STEPS = 3;
+
+function makeRoutinePuzzle(level, len) {
+  const want = Math.min(len, ROUTINE_MAX_STEPS);
+  const routine = pick(ROUTINES.filter((r) => r.steps.length >= want));
+  const n = want;
+  return { say: routine.say, items: routine.steps.slice(0, n).map(([label, text]) => ({ label, text })) };
+}
+
+const routineGame = {
+  ...orderGame,
+  id: 'routine',
+  title: '생활 순서',
+  desc: '손 씻기, 밥 먹기 순서를 알아요',
+  skill: '생활 습관 · 순서',
+  icon: '🧼',
+  color: '#d9f0ec',
+
+  round(i, ctx) {
+    return orderGame.round(i, ctx, makeRoutinePuzzle);
+  },
+};
+
+/* ---------- 놀이: 어울리는 짝 찾기 ---------- */
+// 먹이 짝과 물건 짝을 나눠서, 보기는 늘 다른 쪽에서만 냄 (헷갈릴 만한 보기 없게)
+const MATCH_PAIRS = [
+  { q: '🐶', name: '강아지', a: '🦴', kind: 'food' },
+  { q: '🐝', name: '벌', a: '🍯', kind: 'food' },
+  { q: '🐰', name: '토끼', a: '🥕', kind: 'food' },
+  { q: '🐒', name: '원숭이', a: '🍌', kind: 'food' },
+  { q: '🐄', name: '젖소', a: '🥛', kind: 'food' },
+  { q: '🐔', name: '닭', a: '🥚', kind: 'food' },
+  { q: '🌧️', name: '비', a: '☂️', kind: 'thing' },
+  { q: '🦷', name: '이빨', a: '🪥', kind: 'thing' },
+  { q: '🔒', name: '자물쇠', a: '🔑', kind: 'thing' },
+  { q: '✏️', name: '연필', a: '📒', kind: 'thing' },
+  { q: '🦶', name: '발', a: '🧦', kind: 'thing' },
+  { q: '⚽', name: '공', a: '🥅', kind: 'thing' },
+];
+// 단계별 [앞 5문제, 뒤 5문제] 보기 개수
+const MATCH_CHOICES = [[2, 2], [2, 3], [3, 3]];
+
+// 받침이 있으면 '과', 없으면 '와'
+function withParticle(word) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return `${word}${code >= 0 && code % 28 ? '과' : '와'}`;
+}
+
+const matchGame = {
+  id: 'match',
+  title: '어울리는 짝 찾기',
+  desc: '함께 쓰이는 것을 찾아요',
+  skill: '쓰임 이해 · 연상',
+  icon: '🔗',
+  color: '#e8dff5',
+
+  round(i, ctx) {
+    const pair = pick(MATCH_PAIRS);
+    const others = MATCH_PAIRS.filter((x) => x.kind !== pair.kind).map((x) => x.a);
+    const choices = shuffle([pair.a, ...sample(others, MATCH_CHOICES[ctx.level][i < 5 ? 0 : 1] - 1)]);
+    const rec = { pair, chosen: null };
+
+    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c));
+    ctx.stage.append(
+      prompt(`${withParticle(pair.name)} 어울리는 것은?`),
+      el('div', { class: 'tile shadow-target' }, pair.q),
+      choiceLabel(choices.length),
+      el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
+    );
+
+    function choose(c) {
+      if (c !== pair.a) {
+        retryChoice(ctx, buttons[choices.indexOf(c)], buttons[choices.indexOf(pair.a)]);
+        return;
+      }
+      rec.chosen = c;
+      buttons[choices.indexOf(c)].classList.add('good');
+      ctx.finish(true);
+    }
+
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', { class: 'compare' },
+      el('div', { class: 'compare-col' }, rec.pair.name, el('div', { class: 'tile', style: '--t:64px' }, rec.pair.q)),
+      el('div', { class: 'compare-col' }, '짝',
+        el('div', { class: `tile ${rec.chosen == null ? 'blank' : 'good'}`, style: '--t:64px' }, rec.chosen ?? rec.pair.a)),
+    );
+  },
+};
+
 const GAMES = [
-  copyGame, linesGame, listenGame, feelGame, memoryGame, patternGame,
+  copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, memoryGame, patternGame,
   countGame, oddGame, flipGame, shadowGame, orderGame,
 ];
 
@@ -1351,7 +1457,7 @@ function showHome() {
         store.set('level', k);
         showHome();
       },
-    }, el('span', { class: 'seg-name' }, lv.name), el('span', { class: 'seg-age' }, lv.age))));
+    }, el('span', { class: 'seg-name' }, lv.name))));
 
   mount(el('div', { class: 'screen home' },
     el('header', { class: 'home-top' }, el('h1', {}, '쑥쑥 생각놀이'), soundBtn),
@@ -1584,7 +1690,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 15;
+const APP_VERSION = 16;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

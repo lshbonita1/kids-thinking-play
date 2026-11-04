@@ -68,14 +68,13 @@ button:disabled { cursor: default; }
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 10px 4px;
+  padding: 14px 4px;
   border-radius: 16px;
   color: var(--muted);
   transition: background .15s, color .15s;
 }
 .seg.on { background: #fff; color: var(--ink); box-shadow: 0 2px 0 var(--line); }
 .seg-name { font-size: 21px; }
-.seg-age { font-size: 14px; }
 
 /* ---------- 오늘의 학습 ---------- */
 .daily-card {
@@ -599,3 +598,8 @@ button:disabled { cursor: default; }
 .strip-step.done { background: var(--good-bg); color: var(--good); font-size: 18px; }
 .strip-step.later { opacity: .55; }
 .strip-name { font-size: 16px; }
+
+/* ---------- 생활 순서: 그림 아래 글자 ---------- */
+.tile.captioned { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.tile.captioned .order-face { font-size: calc(var(--t) * .5); }
+.order-caption { color: var(--ink); font-size: clamp(12px, 3.6vw, 15px); line-height: 1.15; white-space: nowrap; }
