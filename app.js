@@ -1781,11 +1781,11 @@ function tabHeader(title, sub) {
   return [el('header', { class: 'home-top' }, el('h1', {}, title)), sub ? el('p', { class: 'sub' }, sub) : null];
 }
 
-// 오늘의 학습에 없는 놀이 중 4가지를 예시로 (날마다 바뀜)
+// 오늘의 학습에 없는 놀이 중 8가지를 예시로 (날마다 바뀜)
 function gamePicks() {
   const today = dateKey(new Date());
   const inDaily = new Set(dailyPlan(today).map((r) => r.game));
-  const picks = withRng(`picks:${today}`, () => sample(GAMES.filter((g) => !inDaily.has(g)), 4));
+  const picks = withRng(`picks:${today}`, () => sample(GAMES.filter((g) => !inDaily.has(g)), 8));
   return el('section', { class: 'pick-section' },
     el('div', { class: 'pick-head' },
       el('h2', {}, '🧩 이런 놀이도 있어요'),
@@ -2441,7 +2441,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 39;
+const APP_VERSION = 40;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
