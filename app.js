@@ -93,7 +93,7 @@ const store = {
 
 const settings = {
   sound: store.get('sound', true),
-  level: store.get('level', 1),
+  level: store.get('level', 0), // 처음엔 쉬움부터
 };
 
 /* ---------- 소리 ---------- */
@@ -522,12 +522,10 @@ const linesGame = {
 };
 
 /* ---------- 놀이 2: 규칙 찾기 ---------- */
-// 한 묶음 안에서는 색과 모양이 확실히 다른 것만 (하얀 얼굴 동물끼리처럼 헷갈리는 짝 없게)
+// 자폐 아동도 한눈에 구분하도록 색과 모양이 모두 확실히 다른 그림만 씀
+// (빨강 동그라미 사과 · 노랑 바나나 · 초록 개구리 · 파랑 고래 · 보라 포도 · 분홍 꽃 · 검정 펭귄 · 주황 당근)
 const PATTERN_SETS = [
-  ['🍎', '🍌', '🍇', '🍊', '🍉', '🫐'],
-  ['🐶', '🐸', '🐷', '🐥', '🐧', '🦁', '🐳'],
-  ['🚗', '🚌', '🚜', '✈️', '🚂', '🚁'],
-  ['🔴', '🟡', '🔵', '🟢', '🟣', '🟠'],
+  ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🐧', '🥕'],
 ];
 // 숫자가 같으면 같은 그림
 const AB = [0, 1];
@@ -617,7 +615,7 @@ const patternGame = {
 };
 
 /* ---------- 놀이 3: 몇 개일까? ---------- */
-const COUNT_ITEMS = ['🍎', '🍓', '🐥', '⭐', '🎈', '🐟', '🌸', '🍪', '🚗', '🦋'];
+const COUNT_ITEMS = ['🍎', '🐥', '⭐', '🎈', '🐳', '🌸', '🚗', '🦋'];
 // 단계별 [앞 5문제, 뒤 5문제] 개수 범위
 const COUNT_RANGES = [
   [[1, 3], [1, 4]],
@@ -675,8 +673,10 @@ const countGame = {
 };
 
 /* ---------- 놀이 4: 다른 하나 찾기 ---------- */
-const ODD_EASY = [['🐶', '🐱'], ['🍎', '🍌'], ['🌞', '🌙'], ['🚗', '✈️'], ['🌷', '🍄'], ['⚽', '🎈']];
-const ODD_HARD = [['🍎', '🍅'], ['🐥', '🐔'], ['🚗', '🚕'], ['🐟', '🐠'], ['🌷', '🌹'], ['⚽', '🏀'], ['🐻', '🐼'], ['🍊', '🍋']];
+// 쉬운 짝: 색도 모양도 완전히 다름 / 어려운 짝: 같은 종류지만 색이 확실히 다름
+// (🍎/🍅, 🌷/🌹처럼 색까지 같은 짝은 쓰지 않음)
+const ODD_EASY = [['🍎', '🍌'], ['🐸', '🐷'], ['🚗', '🌳'], ['⭐', '🐳'], ['🍇', '🥕'], ['⚽', '🎈']];
+const ODD_HARD = [['🚗', '🚕'], ['⚽', '🏀'], ['🍊', '🍇'], ['🐻', '🐼'], ['🐟', '🐙'], ['🍎', '🍏']];
 // 단계별 [앞 5문제, 뒤 5문제] 칸 수
 const ODD_SIZES = [[4, 4], [4, 6], [6, 6]];
 
@@ -728,7 +728,8 @@ const oddGame = {
 };
 
 /* ---------- 놀이 5: 짝 맞추기 ---------- */
-const FLIP_ITEMS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🐸', '🦁', '🐷', '🐵', '🐧', '🐥', '🐳'];
+// 동물 얼굴끼리는 헷갈리므로 색과 모양이 다른 그림으로 섞음
+const FLIP_ITEMS = ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🚗', '⭐'];
 // 단계별 · 판별 짝 개수
 const FLIP_PAIRS = [[2, 2, 2, 3, 3], [2, 3, 3, 3, 4], [3, 3, 4, 4, 5]];
 // 시작할 때 카드를 미리 보여주는 시간
@@ -820,13 +821,9 @@ const flipGame = {
 };
 
 /* ---------- 놀이 6: 그림자 찾기 ---------- */
-// 같은 묶음끼리는 모양이 비슷해서 어려운 단계에서 보기로 함께 나옴
-const SHADOW_GROUPS = [
-  ['🐶', '🐱', '🐰', '🐻', '🐷', '🐸', '🐵', '🐭'],
-  ['🚗', '🚌', '🚲', '✈️', '🚂', '🚁', '⛵', '🚀'],
-  ['🍎', '🍌', '🍇', '🍓', '🍐', '🍉', '🥕', '🍄'],
-  ['🐘', '🦒', '🐢', '🐇', '🦋', '🐌', '🦀', '🐙'],
-];
+// 그림자는 모양으로만 구분하므로 윤곽이 서로 확실히 다른 것만 씀
+// (동물 얼굴, 둥근 과일처럼 그림자가 비슷한 것끼리는 넣지 않음)
+const SHADOW_ITEMS = ['🐘', '🦒', '🦋', '🦀', '🐙', '✈️', '🚲', '⛵', '🍌', '🍄', '🌵', '⭐', '❤️', '🌙', '🔑'];
 
 const shadow = (item) => el('span', { class: 'shadow' }, item);
 
@@ -839,13 +836,8 @@ const shadowGame = {
   color: '#dcdde8',
 
   round(i, ctx) {
-    const group = pick(SHADOW_GROUPS);
-    const answer = pick(group);
-    const similar = ctx.level === 2 && i >= 5;
-    const pool = similar
-      ? group.filter((x) => x !== answer)
-      : SHADOW_GROUPS.filter((g) => g !== group).flat();
-    const choices = shuffle([answer, ...sample(pool, ctx.level === 0 ? 1 : 2)]);
+    const [answer, ...others] = sample(SHADOW_ITEMS, ctx.level === 0 ? 2 : 3);
+    const choices = shuffle([answer, ...others]);
     const rec = { answer, chosen: null };
 
     const buttons = choices.map((c) =>
@@ -881,18 +873,16 @@ const shadowGame = {
 /* ---------- 놀이 7: 순서 맞추기 ---------- */
 const ORDER_STORIES = [
   { items: ['🥚', '🐣', '🐥', '🐔'], say: '자라는 순서대로 놓아요', level: 0 },
-  { items: ['🌱', '🌿', '🌳'], say: '자라는 순서대로 놓아요', level: 0 },
-  { items: ['👶', '🧒', '🧑', '👴'], say: '자라는 순서대로 놓아요', level: 0 },
-  { items: ['🌑', '🌒', '🌓', '🌔', '🌕'], say: '달이 커지는 순서대로 놓아요', level: 2 },
 ];
-const ORDER_SIZE_ITEMS = ['🎈', '🍎', '🐻', '⭐', '🌸', '🐟', '🍩'];
+// (사람 나이 순서·달 모양·새싹 단계는 그림 차이가 작아서 뺌)
+const ORDER_SIZE_ITEMS = ['🎈', '🍎', '⭐', '🐳', '🍩'];
 // 단계별 [앞 5문제, 뒤 5문제] 개수
 const ORDER_LENGTHS = [[2, 3], [3, 3], [3, 4]];
 const ORDER_MAX_NUMBER = [3, 5, 9];
 
 function makeOrderPuzzle(level, len) {
   const stories = ORDER_STORIES.filter((s) => s.level <= level && s.items.length >= len);
-  const kind = pick(['size', 'number', ...(stories.length ? ['story', 'story'] : [])]);
+  const kind = pick(['size', 'number', ...(stories.length ? ['story'] : [])]);
 
   if (kind === 'story') {
     const story = pick(stories);
@@ -1255,7 +1245,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 8;
+const APP_VERSION = 9;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
