@@ -1690,27 +1690,17 @@ function dailyCard() {
   const games = [...new Set(dailyPlan(date).map((r) => r.game))];
   const done = store.get(dailyKey(date), null);
   const streak = dailyStreak();
+  const info = done ? `✅ 오늘 완료 · ${done.score}점` : `${DAILY_TOTAL}문제 · 약 5분`;
 
-  const week = range(0, 6).reverse().map((n) => {
-    const d = daysAgo(n);
-    const finished = store.get(dailyKey(dateKey(d)), null);
-    return el('div', { class: `wk${finished ? ' done' : ''}${n === 0 ? ' today' : ''}` },
-      el('span', { class: 'wk-day' }, WEEKDAYS[d.getDay()]),
-      el('span', { class: 'wk-mark' }, finished ? '⭐' : '·'));
-  });
-
-  return el('button', { class: `daily-card${done ? ' finished' : ''}`, onclick: playDaily },
+  return el('section', { class: `daily-card${done ? ' finished' : ''}` },
     el('div', { class: 'daily-top' },
-      el('span', { class: 'daily-tag' }, '📅 오늘의 학습'),
+      el('span', { class: 'daily-tag' }, '오늘의 학습'),
       el('span', { class: 'daily-date' }, `${today.getMonth() + 1}월 ${today.getDate()}일 (${WEEKDAYS[today.getDay()]})`)),
-    el('div', { class: 'daily-games' },
-      games.map((g) => el('span', { class: 'daily-chip', style: `--c:${g.color}` }, `${g.icon} ${g.title}`))),
-    el('div', { class: 'daily-bottom' },
-      el('span', { class: 'daily-info' },
-        done ? `✅ 오늘 완료 · ${done.score}점` : `${DAILY_TOTAL}문제 · 약 5분`,
-        streak ? el('span', { class: 'daily-streak' }, ` · 🔥 ${streak}일 연속`) : null),
-      el('span', { class: 'daily-go' }, done ? '다시 하기 ›' : '시작하기 ›')),
-    el('div', { class: 'week' }, week),
+    el('div', { class: 'daily-row' },
+      el('div', { class: 'daily-icons' },
+        games.map((g) => el('span', { class: 'daily-icon', style: `--c:${g.color}`, title: g.title, 'aria-label': g.title }, g.icon))),
+      el('span', { class: 'daily-info' }, info, streak > 1 ? el('small', {}, `🔥 ${streak}일 연속`) : null)),
+    el('button', { class: 'daily-go', onclick: playDaily }, done ? '다시 하기' : '▶ 시작하기'),
   );
 }
 
@@ -1752,8 +1742,8 @@ const HOME_TABS = [
   { id: 'settings', icon: '⚙️', name: '설정' },
 ];
 
-function levelPicker() {
-  return el('div', { class: 'level-seg', role: 'radiogroup', 'aria-label': '난이도' },
+function levelPicker(size = '') {
+  return el('div', { class: `level-seg ${size}`, role: 'radiogroup', 'aria-label': '난이도' },
     LEVELS.map((lv, k) => el('button', {
       class: `seg${k === settings.level ? ' on' : ''}`,
       role: 'radio',
@@ -1797,20 +1787,18 @@ function gamePicks() {
         el('span', {}, g.desc)))));
 }
 
-// 사이트 로고: 새싹 친구 '쑥쑥이'와 글자 (icons/icon.svg와 같은 캐릭터)
+// 사이트 로고: 장난감 블록에 한 글자씩 (쑥쑥 · 생각놀이), 첫 블록 위에 새싹 잎
 const LOGO_SVG = `
-<svg viewBox="0 0 360 96" aria-hidden="true" focusable="false">
-  <g transform="translate(6 4)">
-    <path d="M44 34 V18" stroke="#4fa86f" stroke-width="5" stroke-linecap="round" fill="none"/>
-    <ellipse cx="31" cy="16" rx="15" ry="8" fill="#6cc08a" transform="rotate(-28 31 16)"/>
-    <ellipse cx="57" cy="16" rx="15" ry="8" fill="#4fa86f" transform="rotate(28 57 16)"/>
-    <circle cx="44" cy="58" r="32" fill="#a9dea1"/>
-    <circle cx="33" cy="54" r="4.5" fill="#3b3226"/><circle cx="55" cy="54" r="4.5" fill="#3b3226"/>
-    <circle cx="34.5" cy="52.5" r="1.4" fill="#fff"/><circle cx="56.5" cy="52.5" r="1.4" fill="#fff"/>
-    <circle cx="25" cy="65" r="5" fill="#f4a9a0" opacity=".8"/><circle cx="63" cy="65" r="5" fill="#f4a9a0" opacity=".8"/>
-    <path d="M36 66 Q44 74 52 66" stroke="#3b3226" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+<svg viewBox="0 0 332 72" aria-hidden="true" focusable="false">
+  <g font-family="Jua, sans-serif" font-size="29" text-anchor="middle">
+    <g transform="translate(6 16) rotate(-5 24 24)"><rect width="48" height="48" rx="13" fill="#d4e8cf"/><text x="24" y="34" fill="#3f8f5a">쑥</text></g>
+    <g transform="translate(58 16) rotate(4 24 24)"><rect width="48" height="48" rx="13" fill="#d4e8cf"/><text x="24" y="34" fill="#3f8f5a">쑥</text></g>
+    <g transform="translate(122 16) rotate(-3 24 24)"><rect width="48" height="48" rx="13" fill="#f8e2b2"/><text x="24" y="34" fill="#5e4f3c">생</text></g>
+    <g transform="translate(174 16) rotate(4 24 24)"><rect width="48" height="48" rx="13" fill="#d5e6f6"/><text x="24" y="34" fill="#5e4f3c">각</text></g>
+    <g transform="translate(226 16) rotate(-4 24 24)"><rect width="48" height="48" rx="13" fill="#f3d7cf"/><text x="24" y="34" fill="#5e4f3c">놀</text></g>
+    <g transform="translate(278 16) rotate(3 24 24)"><rect width="48" height="48" rx="13" fill="#e4dbf3"/><text x="24" y="34" fill="#5e4f3c">이</text></g>
   </g>
-  <text x="104" y="64" font-family="Jua, sans-serif" font-size="40"><tspan fill="#3f8f5a">쑥쑥</tspan><tspan fill="#5e4f3c"> 생각놀이</tspan></text>
+  <path d="M48 17 q6 -15 22 -15 q-6 14 -22 15z" fill="#6cc08a"/>
 </svg>`;
 
 function logoTitle() {
@@ -1823,10 +1811,8 @@ function todayTab() {
   return [
     el('header', { class: 'home-top' },
       logoTitle(),
-      el('button', { class: 'pill-btn', onclick: () => showGuide('howto') }, '📖 사용 방법')),
-    el('p', { class: 'sub' }, '오늘은 어떤 놀이를 해볼까요?'),
-    el('div', { class: 'level-label' }, '난이도'),
-    levelPicker(),
+      el('button', { class: 'pill-btn guide-btn', 'aria-label': '사용 방법', onclick: () => showGuide('howto') }, '📖 사용법')),
+    levelPicker('compact'),
     dailyCard(),
     gamePicks(),
   ];
@@ -2441,7 +2427,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 40;
+const APP_VERSION = 42;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

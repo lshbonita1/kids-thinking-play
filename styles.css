@@ -997,3 +997,62 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .voice-seg .seg { padding: 10px 4px; }
 .voice-seg .seg-name { font-size: 18px; }
 .voice-box .more-games:disabled { opacity: .45; }
+
+/* ---------- 오늘 탭 위쪽 단순하게 (블록 로고 · 작은 난이도 · 오늘의 학습) ---------- */
+.home-top { align-items: center; gap: 10px; }
+.logo svg { max-width: 270px; }
+.guide-btn { flex: none; padding: 8px 12px; font-size: 15px; }
+.level-seg.compact { margin: 6px 0 16px; padding: 4px; border-radius: 18px; }
+.level-seg.compact .seg { padding: 8px 4px; border-radius: 14px; }
+.level-seg.compact .seg-name { font-size: 18px; }
+.daily-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 26px;
+  padding: 18px;
+  border: 2px solid var(--line);
+  border-radius: 24px;
+  background: #fff;
+  text-align: left;
+}
+.daily-card:active { transform: none; }
+.daily-card.finished { border-color: #b9dcc3; background: #f5fbf6; }
+.daily-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.daily-tag { font-size: 23px; }
+.daily-date { color: var(--muted); font-size: 15px; }
+.daily-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.daily-icons { display: flex; gap: 6px; }
+.daily-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--c);
+  font-size: 23px;
+}
+.daily-info { display: flex; flex-direction: column; align-items: flex-end; color: #8a7a62; font-size: 15px; text-align: right; }
+.daily-info small { color: var(--orange); font-size: 14px; }
+.daily-go {
+  width: 100%;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 22px;
+  transition: transform .12s;
+}
+.daily-go:active { transform: scale(.98); }
+.daily-card.finished .daily-go { background: var(--good); }
+@media (min-width: 700px) {
+  .logo svg { max-width: 340px; }
+  .daily-icon { width: 52px; height: 52px; font-size: 27px; }
+}
+.pick-head h2, .pick-all { white-space: nowrap; }
+@media (max-width: 360px) {
+  .pick-head h2 { font-size: 19px; }
+  .pick-all { font-size: 14px; }
+  .bubble { font-size: 16px; white-space: nowrap; }
+  .daily-icon { width: 40px; height: 40px; font-size: 21px; }
+}
