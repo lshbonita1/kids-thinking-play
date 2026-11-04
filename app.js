@@ -97,21 +97,58 @@ const settings = {
 };
 
 /* ---------- 소리 ---------- */
+// 한국어 음성을 골라 둠 (태블릿에 따라 기본 음성이 영어라 한국어를 이상하게 읽는 경우가 있음)
+let koVoice = null;
+function pickKoreanVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = speechSynthesis.getVoices();
+  koVoice = voices.find((v) => v.lang === 'ko-KR' && v.localService)
+    ?? voices.find((v) => v.lang?.replace('_', '-').startsWith('ko'))
+    ?? null;
+}
+if ('speechSynthesis' in window) {
+  pickKoreanVoice();
+  speechSynthesis.addEventListener?.('voiceschanged', pickKoreanVoice);
+}
+
 function speak(text) {
   if (!settings.sound || !('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ko-KR';
+  if (koVoice) u.voice = koVoice;
   u.rate = 0.9;
   u.pitch = 1.2;
-  speechSynthesis.speak(u);
+  // 아이패드에서 음성이 '일시 정지' 상태로 멈춰 있는 경우가 있어 풀어 줌
+  speechSynthesis.resume();
+  if (speechSynthesis.speaking || speechSynthesis.pending) {
+    speechSynthesis.cancel();
+    // 일부 안드로이드 태블릿은 취소 직후 바로 말하면 소리가 안 나서 잠깐 쉬었다가 말함
+    setTimeout(() => speechSynthesis.speak(u), 80);
+  } else {
+    speechSynthesis.speak(u);
+  }
 }
+
+// 태블릿·휴대폰은 화면을 한 번 만진 뒤에야 소리를 낼 수 있어서, 첫 터치 때 소리를 켜 둠
+function unlockSound() {
+  try {
+    audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch {}
+  if ('speechSynthesis' in window && settings.sound) {
+    const silent = new SpeechSynthesisUtterance(' ');
+    silent.volume = 0;
+    speechSynthesis.speak(silent);
+  }
+}
+document.addEventListener('pointerdown', unlockSound, { once: true, capture: true });
 
 let audioCtx;
 function tone(freqs, dur = 0.14) {
   if (!settings.sound) return;
   try {
     audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     freqs.forEach((f, i) => {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -190,7 +227,7 @@ function feedback(kind, done) {
 }
 
 // 보기 개수별 보기 칸 크기 (적을수록 크게)
-const CHOICE_SIZE = { 2: 'clamp(110px, 36vw, 150px)', 3: 'clamp(88px, 27vw, 112px)', 4: 'clamp(70px, 20vw, 96px)' };
+const CHOICE_SIZE = { 2: 'clamp(calc(110px * var(--k)), 36vw, calc(150px * var(--k)))', 3: 'clamp(calc(88px * var(--k)), 27vw, calc(112px * var(--k)))', 4: 'clamp(calc(70px * var(--k)), 20vw, calc(96px * var(--k)))' };
 const choicesStyle = (count) => `--choice-t:${CHOICE_SIZE[count] ?? CHOICE_SIZE[4]}`;
 
 // 틀린 보기는 흐리게 막고 정답 보기를 반짝여 알려준 뒤 다시 고르게 함
@@ -421,6 +458,8 @@ function svg(tag, attrs = {}, ...kids) {
 // 손가락이 점에서 이만큼(보드 좌표) 안에 있으면 그 점을 누른 것으로 봄
 const DOT_REACH = 38;
 
+const pathData = (pts) => `M${pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L')}`;
+
 function dotBoard(size, drawable = false) {
   const hintLayer = svg('g');
   const lineLayer = svg('g');
@@ -449,14 +488,13 @@ function dotBoard(size, drawable = false) {
     hint(lines) {
       this.draw(lines, 'hint', hintLayer);
     },
-    // 긋는 중인 선 (from 점에서 손가락 위치까지)
-    preview(from, x, y) {
-      if (from == null) {
-        previewLayer.replaceChildren();
-        return;
-      }
-      const [x1, y1] = dotXY(from);
-      previewLayer.replaceChildren(svg('line', { x1, y1, x2: x, y2: y, class: 'dl-line preview' }));
+    // 손으로 그린 자국을 그대로 그림
+    drawPaths(paths, kind) {
+      lineLayer.replaceChildren(...paths.map((pts) => svg('path', { d: pathData(pts), class: `dl-line ${kind}` })));
+    },
+    // 지금 그리고 있는 자국
+    livePath(points) {
+      previewLayer.replaceChildren(...(points ? [svg('path', { d: pathData(points), class: 'dl-line live' })] : []));
     },
     // 화면 좌표 → 보드 좌표
     toBoard(e) {
@@ -490,14 +528,14 @@ const linesGame = {
   round(i, ctx) {
     const original = randomLines(LINE_COUNTS[ctx.level][i < 5 ? 0 : 1], ctx.level === 0 && i < 5);
     const rec = { original, answer: [] };
-    const mine = [];
-    let selected = null; // 눌러서 고른 점 (두 점을 차례로 눌러도 선이 생김)
-    let dragFrom = null; // 손가락으로 긋기 시작한 점
+    // 아이가 손으로 그린 선: 그린 자국(points)을 그대로 보여 주고, 채점은 시작 점과 끝 점으로 함
+    const strokes = []; // [{ line: [시작 점, 끝 점], points: [[x, y], ...] }]
+    let drawing = null; // 지금 그리고 있는 선 { from, points }
 
     const left = dotBoard('mid');
     left.draw(original, 'orig');
     const right = dotBoard('mid', true);
-    const undoBtn = el('button', { class: 'btn-main alt', disabled: true, onclick: undo }, '지우기');
+    const resetBtn = el('button', { class: 'btn-main alt', disabled: true, onclick: reset }, '다시 그리기');
     const doneBtn = el('button', { class: 'btn-main', disabled: true, onclick: submit }, '다 했어요');
 
     ctx.stage.append(
@@ -505,25 +543,22 @@ const linesGame = {
       el('div', { class: 'compare' },
         el('div', { class: 'compare-col' }, '원본', left.node),
         el('div', { class: 'compare-col' }, '내 답', right.node)),
-      el('div', { class: 'draw-tip' }, '점에서 점까지 손가락으로 쭉 그어요'),
-      el('div', { class: 'btn-row' }, undoBtn, doneBtn),
+      el('div', { class: 'draw-tip' }, '점에서 점까지 손가락으로 그려요'),
+      el('div', { class: 'btn-row' }, resetBtn, doneBtn),
     );
 
     const canJoin = (a, b) => a != null && b != null && a !== b && !shareSide(a, b);
+    const drawnLines = () => strokes.map((st) => st.line);
 
     function refresh() {
-      right.draw(mine, 'mine');
-      right.dots.forEach((d, k) => d.classList.toggle('sel', k === selected || k === dragFrom));
-      undoBtn.disabled = mine.length === 0;
-      doneBtn.disabled = mine.length === 0;
-    }
-
-    function addLine(a, b) {
-      const key = lineKey([a, b]);
-      if (!mine.some((l) => lineKey(l) === key)) mine.push([a, b]);
-      const have = mine.map(lineKey);
-      if (rec.missed) right.hint(original.filter((l) => !have.includes(lineKey(l))));
-      tone([760], 0.06);
+      right.drawPaths(strokes.map((st) => st.points), 'mine');
+      right.dots.forEach((d, k) => d.classList.toggle('sel', drawing?.from === k));
+      resetBtn.disabled = strokes.length === 0;
+      doneBtn.disabled = strokes.length === 0;
+      if (rec.missed) {
+        const have = drawnLines().map(lineKey);
+        right.hint(original.filter((l) => !have.includes(lineKey(l))));
+      }
     }
 
     right.node.addEventListener('pointerdown', (e) => {
@@ -531,68 +566,63 @@ const linesGame = {
       if (k == null) return;
       e.preventDefault();
       right.node.setPointerCapture(e.pointerId);
-      dragFrom = k;
+      drawing = { from: k, points: [dotXY(k)] };
       tone([600], 0.05);
       refresh();
+      right.livePath(drawing.points);
     });
 
     right.node.addEventListener('pointermove', (e) => {
-      if (dragFrom == null) return;
-      const [x, y] = right.toBoard(e);
-      const k = right.nearest(x, y);
-      // 이을 수 있는 점 가까이 오면 그 점에 딱 붙여서 보여줌
-      if (canJoin(dragFrom, k)) right.preview(dragFrom, ...dotXY(k));
-      else right.preview(dragFrom, x, y);
+      if (!drawing) return;
+      const point = right.toBoard(e);
+      const [lx, ly] = drawing.points[drawing.points.length - 1];
+      if (Math.hypot(point[0] - lx, point[1] - ly) < 3) return;
+      drawing.points.push(point);
+      right.livePath(drawing.points);
     });
 
     right.node.addEventListener('pointerup', (e) => {
-      if (dragFrom == null) return;
-      const from = dragFrom;
+      if (!drawing) return;
+      const { from, points } = drawing;
+      drawing = null;
+      right.livePath(null);
+      // 다른 점에서 손을 떼면 선이 생기고, 아니면 그린 자국은 사라짐
       const to = right.nearest(...right.toBoard(e));
-      dragFrom = null;
-      right.preview(null);
-      if (canJoin(from, to)) {
-        addLine(from, to);
-        selected = null;
-      } else if (to === from) {
-        // 긋지 않고 콕 누른 경우: 두 점을 차례로 눌러도 이어지게
-        if (canJoin(selected, from)) {
-          addLine(selected, from);
-          selected = null;
-        } else {
-          selected = selected === from ? null : from;
-        }
+      const key = canJoin(from, to) ? lineKey([from, to]) : null;
+      if (key && !strokes.some((st) => lineKey(st.line) === key)) {
+        points.push(dotXY(to));
+        strokes.push({ line: [from, to], points });
+        tone([760], 0.06);
       }
       refresh();
     });
 
     right.node.addEventListener('pointercancel', () => {
-      dragFrom = null;
-      right.preview(null);
+      drawing = null;
+      right.livePath(null);
       refresh();
     });
 
-    function undo() {
-      mine.pop();
-      selected = null;
+    // 그린 선을 모두 지우고 처음부터 다시
+    function reset() {
+      strokes.length = 0;
+      tone([440], 0.06);
       refresh();
     }
 
     function submit() {
-      rec.answer = [...mine];
+      rec.answer = drawnLines();
       const want = original.map(lineKey);
-      if (sameSet(mine.map(lineKey), want)) {
+      if (sameSet(rec.answer.map(lineKey), want)) {
         ctx.finish(true);
         return;
       }
-      // 잘못 그은 선은 지우고, 빠진 선은 점선으로 알려줌
-      for (let k = mine.length - 1; k >= 0; k--) {
-        if (!want.includes(lineKey(mine[k]))) mine.splice(k, 1);
+      // 잘못 그린 선은 지우고, 빠진 선은 점선으로 알려줌
+      for (let k = strokes.length - 1; k >= 0; k--) {
+        if (!want.includes(lineKey(strokes[k].line))) strokes.splice(k, 1);
       }
-      const have = mine.map(lineKey);
-      right.hint(original.filter((l) => !have.includes(lineKey(l))));
-      refresh();
       ctx.miss('점선을 따라 그어 볼까요?');
+      refresh();
     }
 
     return rec;
@@ -633,8 +663,8 @@ const PATTERN_CHOICES = [2, 3, 3];
 // 규칙 길이별 묶음 수: 규칙을 보여주는 묶음 1개 + 빈칸이 있는 묶음 1개 (한눈에 보이도록 최소로)
 const PATTERN_GROUPS = { 2: 2, 3: 2 };
 const PATTERN_TILE = {
-  2: 'clamp(100px, 33vw, 136px)',
-  3: 'clamp(84px, 26vw, 104px)',
+  2: 'clamp(calc(100px * var(--k)), 33vw, calc(136px * var(--k)))',
+  3: 'clamp(calc(84px * var(--k)), 26vw, calc(104px * var(--k)))',
 };
 
 function patternBoard(seq, unitLen, blankTile, tileSize) {
@@ -787,7 +817,7 @@ function oddGrid(items, cols, extra = {}) {
   return el('div', { class: `ogrid${extra.mini ? ' mini' : ''}`, style: `grid-template-columns:repeat(${cols},1fr)` },
     items.map((item, k) => el(extra.mini ? 'div' : 'button', {
       class: `otile ${extra.classOf?.(k) ?? ''}`,
-      style: `font-size:${extra.mini ? '22px' : cols === 2 ? 'min(30vw, 140px)' : 'min(20vw, 96px)'};animation-delay:${k * 0.04}s`,
+      style: `font-size:${extra.mini ? '22px' : cols === 2 ? 'min(30vw, calc(140px * var(--k)))' : 'min(20vw, calc(96px * var(--k)))'};animation-delay:${k * 0.04}s`,
       onclick: extra.onPick && (() => extra.onPick(k)),
     }, item)));
 }
@@ -866,7 +896,7 @@ const flipGame = {
       el('button', { class: 'card open', 'aria-label': '카드', onclick: () => flip(k) }, el('span', {}, face)));
     const grid = el('div', {
       class: 'card-grid',
-      style: `grid-template-columns:repeat(${cols},1fr);font-size:${{ 2: 'min(30vw, 130px)', 3: 'min(21vw, 96px)', 4: 'min(15vw, 72px)' }[cols] ?? 'min(10vw, 48px)'}`,
+      style: `grid-template-columns:repeat(${cols},1fr);font-size:${{ 2: 'min(30vw, calc(130px * var(--k)))', 3: 'min(21vw, calc(96px * var(--k)))', 4: 'min(15vw, calc(72px * var(--k)))' }[cols] ?? 'min(10vw, calc(48px * var(--k)))'}`,
     }, cards);
     ctx.stage.append(title, grid);
 
@@ -1033,7 +1063,7 @@ const orderGame = {
     while (order.every((v, k) => v === k));
     const placed = Array(len).fill(null); // 칸 → 조각 번호
     const rec = { items: puzzle.items, order, chosen: placed };
-    const tileSize = len >= 4 ? 'clamp(66px, 20vw, 86px)' : len === 3 ? 'clamp(84px, 28vw, 108px)' : 'clamp(110px, 36vw, 150px)';
+    const tileSize = len >= 4 ? 'clamp(calc(66px * var(--k)), 20vw, calc(86px * var(--k)))' : len === 3 ? 'clamp(calc(84px * var(--k)), 28vw, calc(108px * var(--k)))' : 'clamp(calc(110px * var(--k)), 36vw, calc(150px * var(--k)))';
 
     const slotNodes = placed.map((_, s) =>
       el('button', { class: 'tile blank slot', 'aria-label': `${s + 1}번째 자리`, onclick: () => unplace(s) },
@@ -1803,6 +1833,17 @@ function settingsTab() {
       el('div', { class: 'setting-row' },
         el('div', {}, el('div', { class: 'setting-name' }, '🔊 소리'), el('div', { class: 'setting-desc' }, '문제 읽어주기와 효과음')),
         soundBtn),
+      el('button', {
+        class: 'more-games sound-test',
+        disabled: !settings.sound,
+        onclick: () => {
+          unlockSound();
+          tone([660, 880, 1320]);
+          speak('안녕하세요. 쑥쑥 생각놀이예요. 소리가 잘 들리나요?');
+        },
+      }, el('span', {}, '🔈 소리 시험하기'), el('span', {}, '▶')),
+      el('p', { class: 'setting-desc sound-help' },
+        '소리가 안 나면: 무음 모드를 끄고 볼륨을 올려 주세요. 효과음만 나고 말소리가 안 나면 기기 설정의 ‘텍스트 음성 변환’에서 한국어 음성을 받아 주세요.'),
       el('div', { class: 'setting-name' }, '난이도'),
       levelPicker()),
     el('section', { class: 'panel' },
@@ -2148,7 +2189,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 24;
+const APP_VERSION = 25;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

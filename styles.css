@@ -1,4 +1,6 @@
 :root {
+  /* 화면 크기 배율: 휴대폰 1, 태블릿에서 키움 (아래 태블릿 부분 참고) */
+  --k: 1;
   --bg: #fbf8f2;
   --card: #f6f2ea;
   --tile: #f8f6f1;
@@ -259,9 +261,9 @@ button:disabled { cursor: default; }
   border-radius: 14px;
   background: #e7e0d4;
 }
-.mgrid.big { width: min(88vw, 360px); gap: 8px; padding: 9px; border-radius: 18px; }
+.mgrid.big { width: min(88vw, calc(360px * var(--k))); gap: 8px; padding: 9px; border-radius: 18px; }
 .mgrid.mini { width: 120px; }
-.mgrid.mid { width: min(44vw, 210px); gap: 6px; padding: 7px; border-radius: 16px; }
+.mgrid.mid { width: min(44vw, calc(210px * var(--k))); gap: 6px; padding: 7px; border-radius: 16px; }
 .mgrid.mid .mcell { border-radius: 8px; }
 .mcell {
   aspect-ratio: 1;
@@ -273,14 +275,14 @@ button:disabled { cursor: default; }
 .mcell.on { background: var(--red); }
 .mcell:active:not(:disabled) { transform: scale(.92); }
 
-.timer { width: min(88vw, 360px); height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.timer { width: min(88vw, calc(360px * var(--k))); height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .timer-fill { width: 100%; height: 100%; background: var(--orange); }
 .timer.run .timer-fill { animation: shrink linear forwards; }
 @keyframes shrink { from { width: 100%; } to { width: 0; } }
 
 /* ---------- 선 따라 긋기 ---------- */
 .dl-board { display: block; background: #fff; border-radius: 16px; }
-.dl-board.mid { width: min(43vw, 220px); }
+.dl-board.mid { width: min(43vw, calc(220px * var(--k))); }
 .dl-board.mini { width: 130px; }
 .dl-frame { fill: none; stroke: #3d3a36; stroke-width: 3; }
 .dl-point { fill: #1f1d1b; }
@@ -290,11 +292,12 @@ button:disabled { cursor: default; }
 .dl-line { stroke-width: 7; stroke-linecap: round; }
 .dl-line.orig { stroke: #c9534a; }
 .dl-line.mine { stroke: #4f5b8a; }
-.dl-line.preview { stroke: #4f5b8a; opacity: .45; stroke-dasharray: 2 14; }
+path.dl-line { fill: none; stroke-linejoin: round; }
+.dl-line.live { stroke: #4f5b8a; opacity: .65; }
 .draw-tip { margin-top: -12px; color: var(--muted); font-size: 17px; text-align: center; }
 .btn-row { display: flex; gap: 12px; width: 100%; max-width: 420px; }
 .btn-row .btn-main { flex: 1; padding: 18px; font-size: 24px; }
-.btn-row .btn-main.alt { flex: 0 0 38%; }
+.btn-row .btn-main.alt { flex: 0 0 42%; white-space: nowrap; font-size: 21px; }
 
 /* ---------- 규칙 찾기 ---------- */
 .pgroups { display: grid; grid-template-columns: repeat(2, auto); gap: 14px; justify-content: center; }
@@ -336,7 +339,7 @@ button:disabled { cursor: default; }
 .choice-label::after { content: ''; flex: 1; border-top: 2px dashed var(--line); }
 
 .choices { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-.choice { --t: var(--choice-t, clamp(80px, 24vw, 108px)); transition: transform .12s, opacity .2s; }
+.choice { --t: var(--choice-t, clamp(calc(80px * var(--k)), 24vw, calc(108px * var(--k)))); transition: transform .12s, opacity .2s; }
 .choice.used { opacity: 0; pointer-events: none; }
 .choice:active { transform: scale(.92); }
 .choices .choice { animation: pop .3s backwards; }
@@ -346,7 +349,7 @@ button:disabled { cursor: default; }
 /* ---------- 몇 개일까 ---------- */
 .count-board {
   position: relative;
-  width: min(88vw, 420px);
+  width: min(88vw, calc(420px * var(--k)));
   aspect-ratio: 4 / 3;
   border: 2px solid var(--line);
   border-radius: 26px;
@@ -355,19 +358,19 @@ button:disabled { cursor: default; }
 .count-item {
   position: absolute;
   transform: translate(-50%, -50%);
-  font-size: clamp(56px, 17vw, 80px);
+  font-size: clamp(calc(56px * var(--k)), 17vw, calc(80px * var(--k)));
   line-height: 1;
 }
 .count-item > span { display: block; animation: pop .35s backwards; }
 
 .num-choices { display: flex; gap: 18px; justify-content: center; }
 .num-btn {
-  width: 100px;
-  height: 100px;
+  width: calc(100px * var(--k));
+  height: calc(100px * var(--k));
   border: 3px solid var(--gold);
   border-radius: 28px;
   background: #faf6ee;
-  font-size: 54px;
+  font-size: calc(54px * var(--k));
   transition: transform .12s;
 }
 .num-btn:active { transform: scale(.92); }
@@ -375,7 +378,7 @@ button:disabled { cursor: default; }
 .num-btn.bad { border-color: var(--bad); background: var(--bad-bg); }
 
 /* ---------- 다른 하나 찾기 ---------- */
-.ogrid { display: grid; gap: 12px; width: min(90vw, 420px); }
+.ogrid { display: grid; gap: 12px; width: min(90vw, calc(420px * var(--k))); }
 .otile {
   aspect-ratio: 1;
   border: 2px solid #efebe3;
@@ -392,7 +395,7 @@ button:disabled { cursor: default; }
 .ogrid.mini .otile { animation: none; border-radius: 10px; }
 
 /* ---------- 짝 맞추기 ---------- */
-.card-grid { display: grid; gap: 10px; width: min(90vw, 420px); }
+.card-grid { display: grid; gap: 10px; width: min(90vw, calc(420px * var(--k))); }
 .card {
   position: relative;
   aspect-ratio: 1;
@@ -421,7 +424,7 @@ button:disabled { cursor: default; }
 
 /* ---------- 그림자 찾기 ---------- */
 .shadow { display: block; filter: brightness(0); opacity: .78; }
-.shadow-target { --t: clamp(150px, 46vw, 200px); background: #fff; animation: pop .35s; }
+.shadow-target { --t: clamp(calc(150px * var(--k)), 46vw, calc(200px * var(--k))); background: #fff; animation: pop .35s; }
 
 /* ---------- 순서 맞추기 ---------- */
 .order-slots { display: flex; gap: 10px; justify-content: center; }
@@ -529,14 +532,14 @@ button:disabled { cursor: default; }
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: min(88vw, 380px);
+  width: min(88vw, calc(380px * var(--k)));
   padding: 18px 16px;
   border: 2px solid var(--line);
   border-radius: 26px;
   background: #fff;
   animation: pop .35s;
 }
-.situation-icon { font-size: clamp(90px, 30vw, 130px); line-height: 1; }
+.situation-icon { font-size: clamp(calc(90px * var(--k)), 30vw, calc(130px * var(--k))); line-height: 1; }
 .situation-text { font-size: 26px; text-align: center; line-height: 1.4; }
 
 /* ---------- 시각 일정표 (오늘의 학습) ---------- */
@@ -602,7 +605,7 @@ button:disabled { cursor: default; }
 /* ---------- 생활 순서: 그림 아래 글자 ---------- */
 .tile.captioned { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .tile.captioned .order-face { font-size: calc(var(--t) * .5); }
-.order-caption { color: var(--ink); font-size: clamp(12px, 3.6vw, 15px); line-height: 1.15; white-space: nowrap; }
+.order-caption { color: var(--ink); font-size: clamp(calc(12px * var(--k)), 3.6vw, calc(15px * var(--k))); line-height: 1.15; white-space: nowrap; }
 
 /* ---------- 아래 메뉴 (오늘 / 놀이 / 기록 / 설정) ---------- */
 .screen.home { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
@@ -858,7 +861,7 @@ button:disabled { cursor: default; }
   100% { transform: none; }
 }
 .feedback .fb-icon { animation: none; }
-.feedback .mascot { width: 150px; height: 150px; }
+.feedback .mascot { width: calc(150px * var(--k)); height: calc(150px * var(--k)); }
 .schedule-title { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .schedule-title .mascot { width: 60px; height: 60px; }
 .bubble {
@@ -882,4 +885,35 @@ button:disabled { cursor: default; }
 .result-mascot .mascot { width: 110px; height: 110px; }
 @media (prefers-reduced-motion: reduce) {
   .mascot.bounce { animation: none; }
+}
+
+.sound-test { margin-bottom: 8px; }
+.sound-test:disabled { opacity: .45; }
+.sound-help { margin: 0 0 16px; line-height: 1.5; }
+
+/* ---------- 태블릿: 여백 줄이고 크게 ---------- */
+@media (min-width: 700px) {
+  :root { --k: 1.25; }
+  #app { max-width: 920px; padding: 24px 32px 40px; }
+  .tab-bar { max-width: 920px; }
+  .tab-btn { font-size: 18px; }
+  .tab-icon { font-size: 30px; }
+  .home-top h1 { font-size: 40px; }
+  .logo svg { max-width: 320px; }
+  .sub { font-size: 22px; }
+  .game-list { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .pick-grid { grid-template-columns: repeat(4, 1fr); }
+  .stage { gap: 26px; padding-top: 28px; }
+  .prompt { font-size: 32px; }
+  .speak-btn { width: 52px; height: 52px; font-size: 24px; }
+  .choice-label { max-width: 620px; font-size: 24px; }
+  .choices { gap: 16px; }
+  .btn-main, .btn-row { max-width: 560px; }
+  .compare { gap: 40px; }
+  .fb-text { font-size: 42px; }
+  .records { display: grid; grid-template-columns: repeat(2, 1fr); }
+}
+/* 세로로 긴 태블릿(세로 모드)은 더 크게 */
+@media (min-width: 700px) and (min-height: 860px) {
+  :root { --k: 1.45; }
 }
