@@ -1318,6 +1318,7 @@ function playDaily() {
     rounds: dailyPlan(date),
     seed: `${date}:${level}`,
     showGameName: true,
+    schedule: true,
     restart: playDaily,
     save(state) {
       const prev = store.get(dailyKey(date), null);
@@ -1393,7 +1394,45 @@ function playGame(game) {
   });
 }
 
-// session: { title, level, rounds: [{ game, index }], seed?, showGameName?, restart, save }
+// 이어지는 같은 놀이 문제를 한 단계로 묶음 → [{ game, start, count }]
+function scheduleSteps(rounds) {
+  const steps = [];
+  rounds.forEach(({ game }, i) => {
+    const last = steps[steps.length - 1];
+    if (last && last.game === game) last.count++;
+    else steps.push({ game, start: i, count: 1 });
+  });
+  return steps;
+}
+
+const ORDINALS = ['첫', '두', '세', '네', '다섯', '여섯'];
+
+// 시각 일정표: 오늘 할 놀이를 순서대로 보여주고, 끝난 것은 ✔, 지금 할 것은 크게 표시
+function scheduleBoard(steps, current) {
+  return el('div', { class: 'schedule' },
+    el('div', { class: 'schedule-title' }, '📋 오늘 할 일'),
+    el('ol', { class: 'schedule-list' },
+      steps.map((step, k) => {
+        const status = k < current ? 'done' : k === current ? 'now' : 'later';
+        return el('li', { class: `schedule-item ${status}`, style: `--c:${step.game.color}` },
+          el('span', { class: 'schedule-num' }, k < current ? '✔' : String(k + 1)),
+          el('span', { class: 'schedule-icon' }, step.game.icon),
+          el('span', { class: 'schedule-name' }, step.game.title,
+            el('small', {}, `${step.count}문제`)),
+          el('span', { class: 'schedule-state' }, { done: '다 했어요', now: '지금 해요', later: '' }[status]));
+      })),
+  );
+}
+
+// 푸는 동안 위에 보이는 작은 일정 줄
+function scheduleStrip(steps, current) {
+  return steps.map((step, k) =>
+    el('span', { class: `strip-step ${k < current ? 'done' : k === current ? 'now' : 'later'}`, style: `--c:${step.game.color}` },
+      k < current ? '✔' : step.game.icon,
+      k === current ? el('span', { class: 'strip-name' }, step.game.title) : null));
+}
+
+// session: { title, level, rounds: [{ game, index }], seed?, showGameName?, schedule?, restart, save }
 function playSession(session) {
   const { level, rounds } = session;
   const total = rounds.length;
@@ -1407,7 +1446,11 @@ function playSession(session) {
   const barFill = el('div', { class: 'bar-fill' });
   const score = el('div', { class: 'score' });
   const gameName = el('div', { class: 'round-chip' });
-  gameName.hidden = !session.showGameName;
+  gameName.hidden = !session.showGameName || session.schedule;
+  const steps = session.schedule ? scheduleSteps(rounds) : null;
+  const strip = el('div', { class: 'schedule-strip' });
+  strip.hidden = !steps;
+  const announced = new Set();
   const stage = el('main', { class: 'stage' });
 
   const myScreen = mount(el('div', { class: 'screen game' },
@@ -1418,6 +1461,7 @@ function playSession(session) {
       score,
       el('button', { class: 'pill-btn', onclick: () => finish(false, 'pass') }, '패스')),
     gameName,
+    strip,
     stage,
   ));
   const alive = () => screenId === myScreen;
@@ -1451,6 +1495,27 @@ function playSession(session) {
     gameName.style.setProperty('--c', game.color);
     gameName.textContent = `${game.icon} ${game.title}`;
     stage.replaceChildren();
+
+    // 새 놀이로 넘어갈 때마다 일정표를 먼저 보여주고, 아이가 버튼을 눌러야 시작
+    if (steps) {
+      const current = steps.findIndex((st) => state.index >= st.start && state.index < st.start + st.count);
+      strip.replaceChildren(...scheduleStrip(steps, current));
+      if (!announced.has(current)) {
+        announced.add(current);
+        rec = null; // 일정표를 보는 동안에는 패스가 눌리지 않게
+        const step = steps[current];
+        const prev = steps[current - 1];
+        stage.append(
+          scheduleBoard(steps, current),
+          el('button', { class: 'btn-main', onclick: next }, current === 0 ? '▶ 시작하기' : '▶ 다음 놀이 하기'),
+        );
+        speak(current === 0
+          ? `오늘은 ${ORDINALS[steps.length - 1] ?? steps.length} 가지 놀이를 해요. ${ORDINALS[0]} 번째는 ${step.game.title} 놀이예요.`
+          : `${prev.game.title} 끝! 다음은 ${step.game.title} 놀이예요.`);
+        return;
+      }
+    }
+
     locked = false;
     // 놀이가 rec을 나중에 고쳐 쓰므로 복사하지 않고 그대로 씀
     const make = () => Object.assign(game.round(index, ctx), { game });
@@ -1519,7 +1584,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 14;
+const APP_VERSION = 15;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

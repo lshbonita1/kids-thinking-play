@@ -539,3 +539,63 @@ button:disabled { cursor: default; }
 }
 .situation-icon { font-size: clamp(90px, 30vw, 130px); line-height: 1; }
 .situation-text { font-size: 26px; text-align: center; line-height: 1.4; }
+
+/* ---------- 시각 일정표 (오늘의 학습) ---------- */
+.schedule {
+  width: 100%;
+  max-width: 440px;
+  padding: 18px 16px;
+  border: 2px solid var(--line);
+  border-radius: 28px;
+  background: #fff;
+}
+.schedule-title { margin-bottom: 12px; text-align: center; font-size: 26px; }
+.schedule-list { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 3px solid transparent;
+  border-radius: 22px;
+  background: var(--card);
+  transition: opacity .2s;
+}
+.schedule-item.now { border-color: var(--orange); background: var(--c); animation: pop .4s; }
+.schedule-item.done { opacity: .45; }
+.schedule-item.later { opacity: .8; }
+.schedule-num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 20px;
+}
+.schedule-item.done .schedule-num { background: var(--good); color: #fff; }
+.schedule-item.now .schedule-num { background: var(--orange); color: #fff; }
+.schedule-icon { flex: none; font-size: 46px; line-height: 1; }
+.schedule-name { flex: 1; display: flex; flex-direction: column; font-size: 22px; }
+.schedule-name small { color: #8a7a62; font-size: 15px; }
+.schedule-state { flex: none; color: #8a7a62; font-size: 16px; }
+.schedule-item.now .schedule-state { color: var(--ink); }
+
+.schedule-strip { display: flex; justify-content: center; gap: 8px; margin: 14px 0 -10px; }
+.strip-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0 10px;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 22px;
+}
+.strip-step.now { border: 2px solid var(--orange); background: var(--c); }
+.strip-step.done { background: var(--good-bg); color: var(--good); font-size: 18px; }
+.strip-step.later { opacity: .55; }
+.strip-name { font-size: 16px; }
