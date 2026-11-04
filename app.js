@@ -251,7 +251,7 @@ function feedback(kind, done) {
 }
 
 // 보기 개수별 보기 칸 크기 (적을수록 크게)
-const CHOICE_SIZE = { 2: 'clamp(calc(110px * var(--k)), 36vw, calc(150px * var(--k)))', 3: 'clamp(calc(88px * var(--k)), 27vw, calc(112px * var(--k)))', 4: 'clamp(calc(70px * var(--k)), 20vw, calc(96px * var(--k)))' };
+const CHOICE_SIZE = { 2: 'clamp(calc(110px * var(--k)), min(36vw, 20vh), calc(150px * var(--k)))', 3: 'clamp(calc(72px * var(--k)), min(27vw, 17vh), calc(112px * var(--k)))', 4: 'clamp(calc(58px * var(--k)), 20vw, calc(96px * var(--k)))' };
 const choicesStyle = (count) => `--choice-t:${CHOICE_SIZE[count] ?? CHOICE_SIZE[4]}`;
 
 // 틀린 보기는 흐리게 막고 정답 보기를 반짝여 알려준 뒤 다시 고르게 함
@@ -687,8 +687,8 @@ const PATTERN_CHOICES = [2, 3, 3];
 // 규칙 길이별 묶음 수: 규칙을 보여주는 묶음 1개 + 빈칸이 있는 묶음 1개 (한눈에 보이도록 최소로)
 const PATTERN_GROUPS = { 2: 2, 3: 2 };
 const PATTERN_TILE = {
-  2: 'clamp(calc(100px * var(--k)), 33vw, calc(136px * var(--k)))',
-  3: 'clamp(calc(84px * var(--k)), 26vw, calc(104px * var(--k)))',
+  2: 'clamp(calc(100px * var(--k)), min(33vw, 17vh), calc(136px * var(--k)))',
+  3: 'clamp(calc(84px * var(--k)), min(26vw, 14vh), calc(104px * var(--k)))',
 };
 
 function patternBoard(seq, unitLen, blankTile, tileSize) {
@@ -1088,7 +1088,7 @@ const orderGame = {
     while (order.every((v, k) => v === k));
     const placed = Array(len).fill(null); // 칸 → 조각 번호
     const rec = { items: puzzle.items, order, chosen: placed };
-    const tileSize = len >= 4 ? 'clamp(calc(66px * var(--k)), 20vw, calc(86px * var(--k)))' : len === 3 ? 'clamp(calc(84px * var(--k)), 28vw, calc(108px * var(--k)))' : 'clamp(calc(110px * var(--k)), 36vw, calc(150px * var(--k)))';
+    const tileSize = len >= 4 ? 'clamp(calc(58px * var(--k)), 20vw, calc(86px * var(--k)))' : len === 3 ? 'clamp(calc(84px * var(--k)), 28vw, calc(108px * var(--k)))' : 'clamp(calc(110px * var(--k)), 36vw, calc(150px * var(--k)))';
 
     const slotNodes = placed.map((_, s) =>
       el('button', { class: 'tile blank slot', 'aria-label': `${s + 1}번째 자리`, onclick: () => unplace(s) },
@@ -1189,7 +1189,8 @@ const listenGame = {
     const choices = shuffle(picked.map(([, e]) => e));
     const rec = { word, answer, chosen: null };
 
-    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, pic(c)));
+    const show = photoRenderer(choices);
+    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, show(c)));
     ctx.stage.append(
       prompt(`${word}${objectParticle(word)} 찾아요`),
       el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
@@ -1377,10 +1378,11 @@ const matchGame = {
     const choices = shuffle([pair.a, ...sample(others, MATCH_CHOICES[ctx.level][i < 5 ? 0 : 1] - 1)]);
     const rec = { pair, chosen: null };
 
-    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, pic(c)));
+    const show = photoRenderer([pair.q, ...choices]);
+    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, show(c)));
     ctx.stage.append(
       prompt(`${withParticle(pair.name)} 어울리는 것은?`),
-      el('div', { class: 'tile shadow-target' }, pic(pair.q)),
+      el('div', { class: 'tile shadow-target' }, show(pair.q)),
       choiceLabel(choices.length),
       el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
     );
@@ -2345,7 +2347,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 31;
+const APP_VERSION = 36;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

@@ -349,7 +349,7 @@ path.dl-line { fill: none; stroke-linejoin: round; }
 /* ---------- 몇 개일까 ---------- */
 .count-board {
   position: relative;
-  width: min(88vw, calc(420px * var(--k)));
+  width: min(88vw, 60vh, calc(420px * var(--k)));
   aspect-ratio: 4 / 3;
   border: 2px solid var(--line);
   border-radius: 26px;
@@ -365,12 +365,12 @@ path.dl-line { fill: none; stroke-linejoin: round; }
 
 .num-choices { display: flex; gap: 18px; justify-content: center; }
 .num-btn {
-  width: calc(100px * var(--k));
-  height: calc(100px * var(--k));
+  width: min(27vw, calc(100px * var(--k)));
+  height: min(27vw, calc(100px * var(--k)));
   border: 3px solid var(--gold);
   border-radius: 28px;
   background: #faf6ee;
-  font-size: calc(54px * var(--k));
+  font-size: min(14vw, calc(54px * var(--k)));
   transition: transform .12s;
 }
 .num-btn:active { transform: scale(.92); }
@@ -919,7 +919,7 @@ path.dl-line { fill: none; stroke-linejoin: round; }
 }
 
 /* ---------- 어디에 있을까? (공간 개념) ---------- */
-.space-scene { width: min(90vw, calc(400px * var(--k))); max-width: 100%; padding: 8px; border: 2px solid var(--line); border-radius: 26px; background: #fff; animation: pop .35s; }
+.space-scene { width: min(90vw, 52vh, calc(400px * var(--k))); max-width: 100%; padding: 8px; border: 2px solid var(--line); border-radius: 26px; background: #fff; animation: pop .35s; }
 .space-scene svg { display: block; width: 100%; height: auto; }
 .space-scene.mini { width: 180px; padding: 4px; border-radius: 16px; animation: none; }
 .space-review { display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -941,3 +941,40 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .order-face img.photo { width: calc(var(--t) * .8); height: calc(var(--t) * .8); border-radius: 18%; }
 .answer-note { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .answer-note img.photo { width: 36px; height: 36px; border-radius: 8px; }
+
+/* ---------- 세로가 짧은 휴대폰 (아이폰 SE 등): 간격을 줄여 한 화면에 들어오게 ---------- */
+@media (max-height: 700px) {
+  .stage { gap: 14px; padding-top: 14px; }
+  .prompt { font-size: 22px; }
+  .speak-btn { width: 36px; height: 36px; font-size: 18px; }
+  .choice-label { margin-bottom: -6px; font-size: 18px; }
+  .round-chip { margin: 10px auto -8px; font-size: 16px; }
+  .schedule-strip { margin: 10px 0 -6px; }
+  .schedule { padding: 12px; }
+  .schedule-title { font-size: 21px; }
+  .schedule-title .mascot { width: 46px; height: 46px; }
+  .bubble { font-size: 18px; padding: 6px 12px; }
+  .schedule-list { gap: 6px; }
+  .schedule-item { padding: 6px 12px; }
+  .schedule-icon { font-size: 34px; }
+  .schedule-name { font-size: 19px; }
+  .stage > .btn-main { padding: 14px; font-size: 24px; }
+}
+@media (max-height: 600px) {
+  .stage { gap: 10px; padding-top: 8px; }
+  .space-scene { width: min(90vw, 46vh); }
+  .pgroups { --t: min(30vw, 15vh) !important; }
+  .choices .choice { --t: min(var(--choice-t, 80px), 14vh); }
+}
+
+/* ---------- 폭이 아주 좁은 휴대폰 (320px 대) ---------- */
+@media (max-width: 360px) {
+  .daily-top { flex-wrap: wrap; row-gap: 2px; }
+  .daily-tag { font-size: 22px; }
+  .daily-date { font-size: 15px; }
+  .schedule-state { display: none; }
+  .schedule-item.now { box-shadow: 0 0 0 2px var(--orange); }
+  .strip-step { padding: 0 8px; gap: 4px; font-size: 19px; }
+  .strip-name { font-size: 13px; white-space: nowrap; }
+  .home-top h1.logo .logo svg, .logo svg { max-width: 200px; }
+}
