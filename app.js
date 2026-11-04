@@ -1382,6 +1382,134 @@ const matchGame = {
   },
 };
 
+/* ---------- 놀이: 어디에 있을까? (위 · 아래 · 옆) ---------- */
+// 색과 모양이 서로 다른 물건만 (한 그림 안에서 헷갈리지 않게)
+const SPACE_ITEMS = [
+  { e: '🧦', name: '양말' }, { e: '☕', name: '컵' }, { e: '📘', name: '책' }, { e: '🍓', name: '딸기' },
+  { e: '🍌', name: '바나나' }, { e: '⚽', name: '공' }, { e: '🧸', name: '곰인형' }, { e: '🐸', name: '개구리' },
+];
+const PLACES = {
+  top: { word: '위', arrow: '⬆️' },
+  under: { word: '아래', arrow: '⬇️' },
+  side: { word: '옆', arrow: '➡️' },
+};
+// 단계별로 쓰는 자리
+const SPACE_PLACES = [['top', 'under'], ['top', 'under', 'side'], ['top', 'under', 'side']];
+
+// 받침이 있으면 '은', 없으면 '는'
+function topicParticle(word) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return `${word}${code >= 0 && code % 28 ? '은' : '는'}`;
+}
+
+// 가구 그림 (책상 · 의자)과 물건 자리. 물건은 그림 글자로 얹음
+const FURNITURE = {
+  desk: {
+    name: '책상',
+    draw: `
+      <rect x="40" y="112" width="190" height="20" rx="4" fill="#e9b47e"/>
+      <rect x="52" y="132" width="166" height="14" rx="3" fill="#d79a62"/>
+      <path d="M62 146 L52 226 M208 146 L218 226" stroke="#d79a62" stroke-width="10" stroke-linecap="round"/>
+      <path d="M92 146 L98 214 M178 146 L172 214" stroke="#ecc79e" stroke-width="8" stroke-linecap="round"/>`,
+    spots: { top: [135, 106, 70], under: [135, 222, 62], side: [290, 222, 62] },
+  },
+  chair: {
+    name: '의자',
+    draw: `
+      <path d="M70 40 L76 136 M170 40 L164 136" stroke="#c98552" stroke-width="10" stroke-linecap="round"/>
+      <rect x="64" y="36" width="112" height="20" rx="6" fill="#d9925b"/>
+      <rect x="58" y="134" width="124" height="16" rx="5" fill="#e9b47e"/>
+      <path d="M70 150 L62 228 M170 150 L178 228 M92 150 L96 218 M148 150 L144 218" stroke="#c98552" stroke-width="9" stroke-linecap="round"/>`,
+    spots: { top: [120, 128, 64], under: [120, 224, 56], side: [270, 224, 62] },
+  },
+};
+
+function spaceScene(furniture, placed, size = '') {
+  const f = FURNITURE[furniture];
+  const items = Object.entries(placed).map(([place, item]) => {
+    const [x, y, fs] = f.spots[place];
+    return `<text x="${x}" y="${y}" font-size="${fs}" text-anchor="middle">${item.e}</text>`;
+  }).join('');
+  const wrap = el('div', { class: `space-scene ${size}` });
+  wrap.innerHTML = `<svg viewBox="0 0 340 240" role="img" aria-label="${f.name} 그림">
+    <path d="M10 228 H330" stroke="#e3d8c6" stroke-width="3" stroke-linecap="round"/>${f.draw}${items}</svg>`;
+  return wrap;
+}
+
+const spaceGame = {
+  id: 'space',
+  title: '어디에 있을까?',
+  desc: '위, 아래, 옆을 알아요',
+  skill: '공간 개념',
+  icon: '🪑',
+  color: '#f3e3cc',
+
+  round(i, ctx) {
+    const furniture = pick(Object.keys(FURNITURE));
+    const places = SPACE_PLACES[ctx.level];
+    // 쉬움은 물건 2개(위·아래), 보통은 앞쪽 2개·뒤쪽 3개, 어려움은 3개
+    const used = ctx.level === 0 || (ctx.level === 1 && i < 5) ? sample(places, 2) : places;
+    const things = sample(SPACE_ITEMS, used.length + 1);
+    const placed = Object.fromEntries(used.map((pl, k) => [pl, things[k]]));
+    const extra = things[used.length]; // 그림에 없는 물건 (보기로만)
+    const ask = pick(used);
+    // 보통 뒤쪽 · 어려움 뒤쪽은 '어디에 있어요?' 문제
+    const whereType = ctx.level > 0 && i >= [10, 7, 5][ctx.level];
+    const f = FURNITURE[furniture];
+    const rec = { furniture, placed, ask, whereType, chosen: null };
+
+    let choices, answer, label, say;
+    if (whereType) {
+      answer = ask;
+      choices = shuffle([...used]);
+      label = (pl) => el('span', { class: 'place-btn' }, el('b', {}, PLACES[pl].arrow), PLACES[pl].word);
+      say = `${topicParticle(placed[ask].name)} 어디에 있어요?`;
+    } else {
+      answer = placed[ask].e;
+      const pool = [...Object.values(placed)].concat(ctx.level === 0 ? [] : [extra]);
+      choices = shuffle(pool.map((t) => t.e));
+      label = (c) => c;
+      say = `${f.name} ${PLACES[ask].word}에 뭐가 있어요?`;
+    }
+
+    const buttons = choices.map((c) => el('button', {
+      class: `tile choice${whereType ? ' place' : ''}`,
+      'aria-label': whereType ? PLACES[c].word : c,
+      onclick: () => choose(c),
+    }, label(c)));
+
+    ctx.stage.append(
+      prompt(say),
+      spaceScene(furniture, placed),
+      choiceLabel(choices.length),
+      el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
+    );
+
+    function choose(c) {
+      if (c !== answer) {
+        retryChoice(ctx, buttons[choices.indexOf(c)], buttons[choices.indexOf(answer)]);
+        return;
+      }
+      rec.chosen = c;
+      buttons[choices.indexOf(c)].classList.add('good');
+      if (!whereType) speak(`${PLACES[ask].word}에 ${placed[ask].name}`);
+      ctx.finish(true);
+    }
+
+    return rec;
+  },
+
+  review(rec) {
+    const f = FURNITURE[rec.furniture];
+    const q = rec.whereType
+      ? `${topicParticle(rec.placed[rec.ask].name)} 어디에? → ${PLACES[rec.ask].word}`
+      : `${f.name} ${PLACES[rec.ask].word}에? → ${rec.placed[rec.ask].name}`;
+    return el('div', { class: 'space-review' },
+      spaceScene(rec.furniture, rec.placed, 'mini'),
+      el('div', { class: 'review-note' }, q));
+  },
+};
+
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
   memory: (r) => r.original.join(),
@@ -1397,11 +1525,12 @@ const QUESTION_KEYS = {
   match: (r) => r.pair.q,
   order: (r) => `${r.items.map((it) => `${it.label}${it.scale ?? ''}`).join()}|${r.order.join()}`,
   routine: (r) => `${r.items.map((it) => it.label).join()}|${r.order.join()}`,
+  space: (r) => `${r.furniture}|${Object.entries(r.placed).map(([pl, t]) => pl + t.e).join()}|${r.ask}|${r.whereType}`,
 };
 const questionKey = (game, r) => `${game.id}:${(QUESTION_KEYS[game.id] ?? JSON.stringify)(r)}`;
 
 const GAMES = [
-  copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, memoryGame, patternGame,
+  copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, spaceGame, memoryGame, patternGame,
   countGame, oddGame, flipGame, shadowGame, orderGame,
 ];
 
@@ -1568,7 +1697,7 @@ function playDaily() {
 const CATEGORIES = [
   { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, linesGame, shadowGame, oddGame] },
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
-  { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서를 찾아요', games: [patternGame, orderGame] },
+  { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame] },
   { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, matchGame] },
   { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, routineGame] },
@@ -2189,7 +2318,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 25;
+const APP_VERSION = 26;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
