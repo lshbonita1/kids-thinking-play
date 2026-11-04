@@ -1005,9 +1005,39 @@ const daysAgo = (n) => {
 };
 const dailyKey = (date) => `daily:${date}`;
 
+// 놀이를 골고루 돌리기: 모든 놀이를 한 번씩 섞은 '한 바퀴'를 이어 붙이고,
+// 날마다 그 줄에서 차례로 4개씩 가져감 → 한 바퀴(9가지)를 다 돌아야 같은 놀이가 다시 나옴
+const ROTATION_START = Date.UTC(2026, 0, 1);
+const rotationCycles = [];
+
+function dayNumber(date) {
+  const [y, m, d] = date.split('-').map(Number);
+  return Math.max(0, Math.round((Date.UTC(y, m - 1, d) - ROTATION_START) / 86400000));
+}
+
+function rotationCycle(k) {
+  const overlap = DAILY_COUNTS.length - 1;
+  while (rotationCycles.length <= k) {
+    const n = rotationCycles.length;
+    const prevTail = n > 0 ? rotationCycles[n - 1].slice(-overlap) : [];
+    let order;
+    // 바퀴가 바뀌는 날에 같은 놀이가 하루에 두 번 나오지 않도록, 앞 바퀴 끝과 겹치면 다시 섞음
+    for (let attempt = 0; attempt < 50; attempt++) {
+      order = withRng(`cycle:${n}:${attempt}`, () => shuffle(GAMES));
+      if (!order.slice(0, overlap).some((g) => prevTail.includes(g))) break;
+    }
+    rotationCycles.push(order);
+  }
+  return rotationCycles[k];
+}
+
 // 같은 날에는 누가 언제 열어도 같은 놀이 · 같은 문제가 나오도록 날짜로 정함
 function dailyPlan(date) {
-  const games = withRng(`plan:${date}`, () => sample(GAMES, DAILY_COUNTS.length));
+  const start = dayNumber(date) * DAILY_COUNTS.length;
+  const games = DAILY_COUNTS.map((_, g) => {
+    const pos = start + g;
+    return rotationCycle(Math.floor(pos / GAMES.length))[pos % GAMES.length];
+  });
   return games.flatMap((game, g) => {
     const per = DAILY_COUNTS[g];
     const total = game.total ?? TOTAL;
@@ -1119,7 +1149,7 @@ function showHome() {
       })),
     el('p', { class: 'parent-note' },
       '👪 보호자 안내 · 매일 ‘오늘의 학습’으로 여러 놀이를 10문제씩 섞어 풀어 보세요(약 5분). ',
-      '날마다 놀이 종류가 바뀌고, 같은 날에는 몇 번을 열어도 같은 문제가 나와요. ',
+      '모든 놀이가 날마다 골고루 돌아가며 나오고, 같은 날에는 몇 번을 열어도 같은 문제가 나와요. ',
       '아이 옆에서 함께 소리 내어 이야기하며 풀고, 정답보다 끝까지 생각해 본 과정을 칭찬해 주세요. ',
       '너무 쉬워하거나 어려워하면 위에서 난이도를 바꿔 주세요.'),
   ));
@@ -1257,7 +1287,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 12;
+const APP_VERSION = 13;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
