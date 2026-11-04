@@ -2103,7 +2103,51 @@ function todayTab() {
     levelPicker('compact'),
     dailyCard(),
     gamePicks(),
+    shareCard(),
   ];
+}
+
+/* ---------- 공유하기 ---------- */
+const SITE_URL = 'https://ssukssuknori.app/';
+const SHARE_TEXT = '아이와 함께하는 그림 생각놀이, 쑥쑥 생각놀이예요. 하루 10문제, 설치 없이 바로 해요!';
+
+function shareCard() {
+  return el('section', { class: 'share-card' },
+    el('div', { class: 'share-text' },
+      el('b', {}, '친구에게 알려 주세요'),
+      el('span', {}, '함께 하면 더 즐거워요')),
+    el('button', { class: 'share-btn', onclick: shareSite }, '📤 공유하기'));
+}
+
+// 휴대폰은 공유 창(카카오톡 · 문자 등)을 열고, 안 되는 곳에서는 주소를 복사함
+async function shareSite() {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: '쑥쑥 생각놀이', text: SHARE_TEXT, url: SITE_URL });
+    } catch {}
+    return;
+  }
+  const text = `${SHARE_TEXT}\n${SITE_URL}`;
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    copied = true;
+  } catch {
+    const box = el('textarea', { style: 'position:fixed;opacity:0' });
+    box.value = text;
+    document.body.append(box);
+    box.select();
+    try { copied = document.execCommand('copy'); } catch {}
+    box.remove();
+  }
+  toast(copied ? '주소를 복사했어요. 친구에게 붙여 넣어 보내 주세요!' : `이 주소를 보내 주세요: ${SITE_URL}`);
+}
+
+function toast(text) {
+  document.querySelector('.toast')?.remove();
+  const node = el('div', { class: 'toast', role: 'status' }, text);
+  document.body.append(node);
+  setTimeout(() => node.remove(), 2800);
 }
 
 function gamesTab() {
@@ -2696,7 +2740,8 @@ function visitorId() {
 
 function sendLog(data) {
   // 실제 사이트에서만 보냄 (내 컴퓨터에서 시험할 때는 안 보냄)
-  if (!/(^|\.)ssukssuknori\.app$|\.vercel\.app$/.test(location.hostname)) return;
+  // 진짜 주소에서만 기록 (배포 미리보기 주소 *.vercel.app은 Vercel 봇이 열어 보므로 빼기)
+  if (!/(^|\.)ssukssuknori\.app$/.test(location.hostname)) return;
   try {
     const body = JSON.stringify({ vid: visitorId(), admin: store.get('isAdminDevice', false), ...data });
     const sent = navigator.sendBeacon?.('/api/visit', new Blob([body], { type: 'text/plain' }));
@@ -2715,7 +2760,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 46;
+const APP_VERSION = 48;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

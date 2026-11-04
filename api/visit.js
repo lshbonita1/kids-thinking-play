@@ -29,6 +29,13 @@ function deviceOf(ua = '') {
   return `${os} · ${browser}`;
 }
 
+// 검색엔진 · 링크 미리보기 · 자동 브라우저(봇)는 기록하지 않음
+const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|preview|scrap|facebookexternalhit|yeti|daum|python|curl|wget|node-fetch|axios|vercel/i;
+const SITE_HOST = /(^|\.)ssukssuknori\.app$/;
+function hostOf(url) {
+  try { return new URL(url).hostname; } catch { return ''; }
+}
+
 const clean = (v, n = 60) => String(v ?? '').trim().replace(/[^\w.\-\/:%가-힣]/g, '').slice(0, n) || null;
 const small = (v) => (Number.isFinite(Number(v)) ? Math.max(-32768, Math.min(32767, Math.round(Number(v)))) : null);
 
@@ -44,6 +51,12 @@ export default async function handler(req, res) {
       try { body = JSON.parse(body); } catch { body = {}; }
     }
     body = body || {};
+    const ua = req.headers['user-agent'] || '';
+    const from = hostOf(req.headers.origin || req.headers.referer || '');
+    if (BOT_UA.test(ua) || (from && !SITE_HOST.test(from))) {
+      res.status(204).end();
+      return;
+    }
     const row = {
       event: body.t === 'play' ? 'play' : 'visit',
       ip_address: getClientIp(req),

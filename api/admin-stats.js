@@ -37,8 +37,13 @@ export default async function handler(req, res) {
     const today = kstDay(now);
     const yesterday = kstDay(now - DAY_MS);
     const since = kstDay(now - 13 * DAY_MS);
-    // 내 접속 제외: 관리자 기기에서 온 기록 + 환경 변수로 정한 IP
-    const mine = rows.filter((r) => !r.is_admin && !EXCLUDED_VISIT_IPS.includes(r.ip_address));
+    // IP별 지역 · 통신사 (최근에 들어온 IP부터 최대 1000개)
+    const allIps = [...new Set(rows.map((r) => r.ip_address).filter(Boolean))].slice(0, 1000);
+    const geo = await fetchIpGeo(allIps);
+    // 빼는 기록: 관리자 기기 + 환경 변수로 정한 IP(내 접속), 클라우드 · 봇 통신사(사람이 아님)
+    const isBot = (r) => looksLikeBotIsp(geo[r.ip_address]);
+    const mine = rows.filter((r) => !r.is_admin && !EXCLUDED_VISIT_IPS.includes(r.ip_address) && !isBot(r));
+    const botRows = rows.filter((r) => !r.is_admin && isBot(r));
     const visits = mine.filter((r) => r.event === 'visit');
     const plays = mine.filter((r) => r.event === 'play');
 
@@ -62,13 +67,10 @@ export default async function handler(req, res) {
       cur.last = Math.max(cur.last, r.ts);
       ipInfo.set(r.ip_address, cur);
     }
-    const geo = await fetchIpGeo([...ipInfo.keys()]);
     const regionCount = new Map();
     const ipList = [];
-    let botIps = 0;
     for (const [ip, info] of ipInfo) {
       const g = geo[ip];
-      if (looksLikeBotIsp(g)) { botIps += 1; continue; }
       const region = !g ? '알 수 없음' : g.countryCode === 'KR' ? g.region : `해외 (${g.country})`;
       regionCount.set(region, (regionCount.get(region) || 0) + 1);
       ipList.push({ ip, region, city: g ? (CITY_NAME_KO[g.city] || g.city) : '', isp: g?.isp || '', last: info.last, visits: info.visits });
@@ -101,7 +103,8 @@ export default async function handler(req, res) {
       })),
       regions: [...regionCount].map(([region, count]) => ({ region, count })).sort((a, b) => b.count - a.count),
       ipList: ipList.sort((a, b) => b.last - a.last).slice(0, 100),
-      botIps,
+      botIps: new Set(recent2w(botRows).map((r) => r.ip_address)).size,
+      botToday: botRows.filter((r) => r.day === today).length,
       adminToday: rows.filter((r) => r.is_admin && r.day === today).length,
       keepDays: KEEP_DAYS,
     });
