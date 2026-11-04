@@ -2041,17 +2041,30 @@ const BODY_SCENES = {
   face: { viewBox: '0 0 200 200', svg: FACE_SVG },
   body: {
     viewBox: '0 0 200 330',
+    // 팔(소매 → 맨팔) 끝에 손이 붙고, 목 · 티셔츠 · 반바지 · 다리 · 신발이 이어지게
     svg: `
-      <rect x="20" y="132" width="44" height="22" rx="11" fill="#8fc1e8" transform="rotate(35 42 143)"/>
-      <rect x="136" y="132" width="44" height="22" rx="11" fill="#8fc1e8" transform="rotate(-35 158 143)"/>
-      <g class="bp" data-part="hand"><circle cx="26" cy="178" r="15" fill="#fbe0c6"/><circle cx="174" cy="178" r="15" fill="#fbe0c6"/>
-        <circle cx="26" cy="178" r="24" fill="transparent"/><circle cx="174" cy="178" r="24" fill="transparent"/></g>
-      <rect x="70" y="214" width="26" height="72" rx="10" fill="#6c8fb3"/><rect x="104" y="214" width="26" height="72" rx="10" fill="#6c8fb3"/>
-      <g class="bp" data-part="foot"><ellipse cx="78" cy="292" rx="24" ry="12" fill="#e07a5f"/><ellipse cx="122" cy="292" rx="24" ry="12" fill="#e07a5f"/>
-        <rect x="46" y="276" width="108" height="34" fill="transparent"/></g>
-      <g class="bp" data-part="tummy"><rect x="58" y="120" width="84" height="104" rx="26" fill="#8fc1e8"/>
-        <circle cx="100" cy="180" r="4" fill="#5d8db8"/></g>
-      <g transform="translate(40 2) scale(.6)">${FACE_SVG}</g>`,
+      <path d="M70 132 L54 160" stroke="#8fc1e8" stroke-width="24" stroke-linecap="round"/>
+      <path d="M130 132 L146 160" stroke="#8fc1e8" stroke-width="24" stroke-linecap="round"/>
+      <path d="M55 158 L40 194" stroke="#fbe0c6" stroke-width="16" stroke-linecap="round"/>
+      <path d="M145 158 L160 194" stroke="#fbe0c6" stroke-width="16" stroke-linecap="round"/>
+      <g class="bp" data-part="hand">
+        <circle cx="37" cy="201" r="13" fill="#fbe0c6"/><circle cx="163" cy="201" r="13" fill="#fbe0c6"/>
+        <ellipse cx="47" cy="196" rx="5" ry="4" fill="#fbe0c6" transform="rotate(-30 47 196)"/>
+        <ellipse cx="153" cy="196" rx="5" ry="4" fill="#fbe0c6" transform="rotate(30 153 196)"/>
+        <circle cx="37" cy="201" r="24" fill="transparent"/><circle cx="163" cy="201" r="24" fill="transparent"/></g>
+      <rect x="90" y="104" width="20" height="22" rx="6" fill="#f3cfae"/>
+      <rect x="77" y="228" width="18" height="50" rx="8" fill="#fbe0c6"/>
+      <rect x="105" y="228" width="18" height="50" rx="8" fill="#fbe0c6"/>
+      <path d="M66 200 H134 V236 Q134 240 130 240 H104 L100 222 L96 240 H70 Q66 240 66 236Z" fill="#6c8fb3"/>
+      <g class="bp" data-part="tummy">
+        <path d="M70 120 Q100 112 130 120 Q140 124 140 136 V206 Q140 214 132 214 H68 Q60 214 60 206 V136 Q60 124 70 120Z" fill="#8fc1e8"/>
+        <path d="M88 119 Q100 130 112 119" stroke="#6fa6d6" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M100 176 l-9 -9 a6 6 0 0 1 9 -8 a6 6 0 0 1 9 8z" fill="#f7a8b8"/></g>
+      <g class="bp" data-part="foot">
+        <path d="M60 286 Q60 274 74 274 H92 Q96 274 96 280 V290 Q96 294 90 294 H66 Q60 294 60 286Z" fill="#e07a5f"/>
+        <path d="M140 286 Q140 274 126 274 H108 Q104 274 104 280 V290 Q104 294 110 294 H134 Q140 294 140 286Z" fill="#e07a5f"/>
+        <rect x="48" y="264" width="104" height="42" fill="transparent"/></g>
+      <g transform="translate(40 -4) scale(.6)">${FACE_SVG}</g>`,
   },
 };
 
@@ -3286,7 +3299,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 53;
+const APP_VERSION = 54;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
