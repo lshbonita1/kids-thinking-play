@@ -19,7 +19,7 @@
 | `egg.jpg` | 달걀 | [사진](https://www.rawpixel.com/image/5937329/free-public-domain-cc0-photo) | - | CC0 1.0 |
 | `elephant.jpg` | 코끼리 | [Baby elephant drinking water](https://www.rawpixel.com/image/6043403/photo-image-public-domain-nature-baby) | - | CC0 1.0 |
 | `flower.jpg` | 꽃 | [2022166-PINK FLOWER UNDER THE RAIN](https://www.flickr.com/photos/168583569@N03/51911606845) | amalthus | CC0 1.0 |
-| `frog.jpg` | 개구리 | [Free green frog image](https://www.rawpixel.com/image/5917021/image-background-public-domain-green) | - | CC0 1.0 |
+| `frog.jpg` | 개구리 | [Green Tree Frog This American green](https://www.rawpixel.com/image/4028992/photo-image-plant-leaf-summer) | U.S. Fish and Wildlife Service | CC0 1.0 |
 | `goal.jpg` | 골대 | [Zeller Park](https://www.flickr.com/photos/140641142@N05/52371785398) | dankeck | CC0 1.0 |
 | `grapes.jpg` | 포도 | [Free purple grapes branch image](https://www.rawpixel.com/image/5917173/image-background-public-domain-green) | - | CC0 1.0 |
 | `honey.jpg` | 꿀 | [Small Honey Jar with Honeycomb](https://www.flickr.com/photos/184594136@N08/51330638681) | Alabama Extension | CC0 1.0 |
