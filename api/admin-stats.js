@@ -40,8 +40,11 @@ export default async function handler(req, res) {
     // IP별 지역 · 통신사 (최근에 들어온 IP부터 최대 1000개)
     const allIps = [...new Set(rows.map((r) => r.ip_address).filter(Boolean))].slice(0, 1000);
     const geo = await fetchIpGeo(allIps);
-    // 빼는 기록: 관리자 기기 + 환경 변수로 정한 IP(내 접속), 클라우드 · 봇 통신사(사람이 아님)
-    const isBot = (r) => looksLikeBotIsp(geo[r.ip_address]);
+    // 빼는 기록: 관리자 기기 + 환경 변수로 정한 IP(내 접속), 클라우드 · 봇 통신사와 해외 IP(대부분 봇)
+    const isBot = (r) => {
+      const g = geo[r.ip_address];
+      return looksLikeBotIsp(g) || (g && g.countryCode !== 'KR');
+    };
     const mine = rows.filter((r) => !r.is_admin && !EXCLUDED_VISIT_IPS.includes(r.ip_address) && !isBot(r));
     const botRows = rows.filter((r) => !r.is_admin && isBot(r));
     const visits = mine.filter((r) => r.event === 'visit');
@@ -71,7 +74,7 @@ export default async function handler(req, res) {
     const ipList = [];
     for (const [ip, info] of ipInfo) {
       const g = geo[ip];
-      const region = !g ? '알 수 없음' : g.countryCode === 'KR' ? g.region : `해외 (${g.country})`;
+      const region = g ? g.region : '알 수 없음';
       regionCount.set(region, (regionCount.get(region) || 0) + 1);
       ipList.push({ ip, region, city: g ? (CITY_NAME_KO[g.city] || g.city) : '', isp: g?.isp || '', last: info.last, visits: info.visits });
     }

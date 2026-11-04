@@ -218,7 +218,7 @@
       $('regions').innerHTML = s.regions.length
         ? s.regions.map((r) => `<tr><td><span class="swatch" style="background:${regionColor(byKey[regionKey(r.region)] || 0, max)}"></span>${esc(korName(r.region))}</td><td class="num">${fmt(r.count)}개</td></tr>`).join('')
         : '<tr><td class="muted">아직 지역 정보가 없어요.</td></tr>';
-      $('bot-note').textContent = s.botIps ? `클라우드 · 봇으로 보이는 IP ${fmt(s.botIps)}개는 뺐어요.` : '';
+      $('bot-note').textContent = s.botIps ? `해외 · 클라우드 · 봇으로 보이는 IP ${fmt(s.botIps)}개는 뺐어요.` : '';
       $('ip-list').innerHTML = s.ipList.length
         ? s.ipList.map((r) => `<tr><td>${esc(korName(r.region))} ${esc(r.city)}</td><td>${esc(r.isp)}</td><td>${esc(r.ip)}</td><td>${fmt(r.visits)}건</td><td>${new Date(r.last).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td></tr>`).join('')
         : '<tr><td class="muted" colspan="5">아직 기록이 없어요.</td></tr>';
@@ -272,7 +272,7 @@
           return `<tr><td>${time}</td><td><span class="tag ${r.type}">${r.type === 'play' ? '놀이 완료' : '방문'}</span></td><td>${esc(r.device)}</td><td>${what}</td><td>${esc(r.ip || '-')}</td><td>${esc(r.visitor || '-')}</td></tr>`;
         }).join('')
         : '<tr><td class="muted" colspan="6">아직 기록이 없어요.</td></tr>';
-      $('admin-note').textContent = `오늘 제외된 내 접속 ${fmt(s.adminToday)}건 · 봇 ${fmt(s.botToday ?? 0)}건 · 기록은 ${s.keepDays}일 동안 보관해요.`;
+      $('admin-note').textContent = `오늘 제외된 내 접속 ${fmt(s.adminToday)}건 · 해외 · 봇 ${fmt(s.botToday ?? 0)}건 · 기록은 ${s.keepDays}일 동안 보관해요.`;
     }
 
     async function load() {
