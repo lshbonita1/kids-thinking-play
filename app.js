@@ -137,20 +137,49 @@ function prompt(text, say = true) {
   );
 }
 
+/* ---------- 쑥쑥이 (새싹 친구 캐릭터) ---------- */
+// 표정: smile(기본 미소) · happy(눈웃음 + 활짝 웃는 입)
+function mascotSvg(mood = 'smile') {
+  const ink = '#3b3226';
+  const eyes = mood === 'happy'
+    ? `<path d="M34 59 Q40 52 46 59" stroke="${ink}" stroke-width="3.6" stroke-linecap="round" fill="none"/>
+       <path d="M54 59 Q60 52 66 59" stroke="${ink}" stroke-width="3.6" stroke-linecap="round" fill="none"/>`
+    : `<circle cx="40" cy="57" r="4.2" fill="${ink}"/><circle cx="60" cy="57" r="4.2" fill="${ink}"/>
+       <circle cx="41.4" cy="55.6" r="1.3" fill="#fff"/><circle cx="61.4" cy="55.6" r="1.3" fill="#fff"/>`;
+  const mouth = mood === 'happy'
+    ? `<path d="M41 66 Q50 80 59 66 Z" fill="${ink}"/><path d="M45.5 72.5 Q50 77 54.5 72.5 Q50 70 45.5 72.5 Z" fill="#f08a80"/>`
+    : `<path d="M43 68 Q50 75 57 68" stroke="${ink}" stroke-width="3.2" stroke-linecap="round" fill="none"/>`;
+  return `<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+    <path d="M50 36 V22" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="37" cy="20" rx="14" ry="7.5" fill="#6cc08a" transform="rotate(-28 37 20)"/>
+    <ellipse cx="63" cy="20" rx="14" ry="7.5" fill="#4fa86f" transform="rotate(28 63 20)"/>
+    <circle cx="50" cy="62" r="28" fill="#a9dea1"/>
+    <circle cx="32" cy="68" r="4.5" fill="#f4a9a0" opacity=".8"/><circle cx="68" cy="68" r="4.5" fill="#f4a9a0" opacity=".8"/>
+    ${eyes}${mouth}
+  </svg>`;
+}
+
+function mascot(mood, cls = '') {
+  const node = el('span', { class: `mascot ${cls}` });
+  node.innerHTML = mascotSvg(mood);
+  return node;
+}
+
+// 정답·패스 등에서 쑥쑥이가 나와서 말해 줌
 const FEEDBACK = {
-  good: ['⭕', '잘했어요!'],
-  bad: ['💪', '괜찮아요!'],
-  pass: ['👉', '다음 문제!'],
-  done: ['🎉', '다 찾았어요!'],
+  good: ['happy', '잘했어요!'],
+  bad: ['smile', '괜찮아요!'],
+  pass: ['smile', '다음 문제!'],
+  done: ['happy', '다 찾았어요!'],
 };
 
 function feedback(kind, done) {
-  const [icon, text] = FEEDBACK[kind];
+  const [mood, text] = FEEDBACK[kind];
   if (kind === 'good' || kind === 'done') tone([660, 880, 1320]);
   else if (kind === 'bad') tone([392, 294], 0.18);
   speak(text);
   const overlay = el('div', { class: `feedback ${kind}` },
-    el('div', { class: 'fb-icon' }, icon),
+    el('div', { class: 'fb-icon' }, mascot(mood, 'bounce')),
     el('div', { class: 'fb-text' }, text),
   );
   document.body.append(overlay);
@@ -1925,7 +1954,9 @@ const ORDINALS = ['첫', '두', '세', '네', '다섯', '여섯'];
 // 시각 일정표: 오늘 할 놀이를 순서대로 보여주고, 끝난 것은 ✔, 지금 할 것은 크게 표시
 function scheduleBoard(steps, current) {
   return el('div', { class: 'schedule' },
-    el('div', { class: 'schedule-title' }, '📋 오늘 할 일'),
+    el('div', { class: 'schedule-title' },
+      mascot(current === 0 ? 'smile' : 'happy', 'bounce'),
+      el('span', { class: 'bubble' }, current === 0 ? '오늘 할 일이에요!' : '잘했어요! 다음 놀이예요')),
     el('ol', { class: 'schedule-list' },
       steps.map((step, k) => {
         const status = k < current ? 'done' : k === current ? 'now' : 'later';
@@ -2095,6 +2126,7 @@ function showResult(session, state) {
   mount(el('div', { class: 'screen result' },
     el('section', { class: 'result-hero' },
       el('div', { class: 'result-level' }, `${session.title} · ${LEVELS[state.level].name}`),
+      el('div', { class: 'result-mascot' }, mascot(stars >= 2 ? 'happy' : 'smile', 'bounce')),
       el('div', { class: 'stars' }, [0, 1, 2].map((k) => el('span', { class: `star${k < stars ? '' : ' off'}` }, '⭐'))),
       el('div', { class: 'result-title' }, `${total}개 중 ${correct}개 맞았어요! ${message}`),
       el('div', { class: 'result-score' }, `${state.score}점`),
@@ -2116,7 +2148,7 @@ function showResult(session, state) {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 23;
+const APP_VERSION = 24;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

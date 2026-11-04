@@ -846,3 +846,40 @@ button:disabled { cursor: default; }
 /* ---------- 로고 (쑥쑥이) ---------- */
 .home-top h1.logo { flex: 1; min-width: 0; margin: 0; line-height: 0; }
 .logo svg { display: block; width: 100%; max-width: 250px; height: auto; }
+
+/* ---------- 쑥쑥이 캐릭터 ---------- */
+.mascot { display: inline-block; width: 64px; height: 64px; flex: none; }
+.mascot svg { display: block; width: 100%; height: 100%; }
+.mascot.bounce { animation: mascot-bounce .6s ease-out; }
+@keyframes mascot-bounce {
+  0% { transform: translateY(18px) scale(.6); opacity: 0; }
+  55% { transform: translateY(-12px) scale(1.05); opacity: 1; }
+  80% { transform: translateY(2px) scale(.98); }
+  100% { transform: none; }
+}
+.feedback .fb-icon { animation: none; }
+.feedback .mascot { width: 150px; height: 150px; }
+.schedule-title { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.schedule-title .mascot { width: 60px; height: 60px; }
+.bubble {
+  position: relative;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: var(--card);
+  font-size: 21px;
+}
+.bubble::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  border: 8px solid transparent;
+  border-right-color: var(--card);
+  border-left: 0;
+  transform: translateY(-50%);
+}
+.result-mascot { display: flex; justify-content: center; margin-bottom: 4px; }
+.result-mascot .mascot { width: 110px; height: 110px; }
+@media (prefers-reduced-motion: reduce) {
+  .mascot.bounce { animation: none; }
+}
