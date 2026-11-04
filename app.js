@@ -10,7 +10,34 @@ const LEVELS = [
 ];
 
 /* ---------- 유틸 ---------- */
-const rand = (n) => Math.floor(Math.random() * n);
+let rng = Math.random;
+const rand = (n) => Math.floor(rng() * n);
+
+// 같은 글자(날짜 등)를 넣으면 늘 같은 순서의 난수가 나옴
+function seededRng(text) {
+  let h = 1779033703 ^ text.length;
+  for (const ch of text) {
+    h = Math.imul(h ^ ch.charCodeAt(0), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function withRng(seed, fn) {
+  const prev = rng;
+  rng = seededRng(seed);
+  try {
+    return fn();
+  } finally {
+    rng = prev;
+  }
+}
 const pick = (arr) => arr[rand(arr.length)];
 const shuffle = (arr) => {
   const a = [...arr];
@@ -969,6 +996,91 @@ const GAMES = [copyGame, linesGame, memoryGame, patternGame, countGame, oddGame,
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
 
+/* ---------- 오늘의 학습 ---------- */
+// 하루에 놀이 4가지를 골라 3·3·2·2문제씩 (모두 10문제)
+const DAILY_COUNTS = [3, 3, 2, 2];
+const DAILY_TOTAL = DAILY_COUNTS.reduce((a, b) => a + b, 0);
+const WEEKDAYS = '일월화수목금토';
+
+const dateKey = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const daysAgo = (n) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+};
+const dailyKey = (date) => `daily:${date}`;
+
+// 같은 날에는 누가 언제 열어도 같은 놀이 · 같은 문제가 나오도록 날짜로 정함
+function dailyPlan(date) {
+  const games = withRng(`plan:${date}`, () => sample(GAMES, DAILY_COUNTS.length));
+  return games.flatMap((game, g) => {
+    const per = DAILY_COUNTS[g];
+    const total = game.total ?? TOTAL;
+    // 문제 번호를 놀이 전체 범위에 고르게 퍼뜨려서 쉬운 문제 → 조금 어려운 문제 순서로
+    return range(0, per - 1).map((j) => ({ game, index: Math.floor((j * total) / per) }));
+  });
+}
+
+function dailyStreak() {
+  let n = store.get(dailyKey(dateKey(daysAgo(0))), null) ? 0 : 1;
+  let streak = 0;
+  while (store.get(dailyKey(dateKey(daysAgo(n))), null)) {
+    streak++;
+    n++;
+  }
+  return streak;
+}
+
+function dailyCard() {
+  const today = new Date();
+  const date = dateKey(today);
+  const games = [...new Set(dailyPlan(date).map((r) => r.game))];
+  const done = store.get(dailyKey(date), null);
+  const streak = dailyStreak();
+
+  const week = range(0, 6).reverse().map((n) => {
+    const d = daysAgo(n);
+    const finished = store.get(dailyKey(dateKey(d)), null);
+    return el('div', { class: `wk${finished ? ' done' : ''}${n === 0 ? ' today' : ''}` },
+      el('span', { class: 'wk-day' }, WEEKDAYS[d.getDay()]),
+      el('span', { class: 'wk-mark' }, finished ? '⭐' : '·'));
+  });
+
+  return el('button', { class: `daily-card${done ? ' finished' : ''}`, onclick: playDaily },
+    el('div', { class: 'daily-top' },
+      el('span', { class: 'daily-tag' }, '📅 오늘의 학습'),
+      el('span', { class: 'daily-date' }, `${today.getMonth() + 1}월 ${today.getDate()}일 (${WEEKDAYS[today.getDay()]})`)),
+    el('div', { class: 'daily-games' },
+      games.map((g) => el('span', { class: 'daily-chip', style: `--c:${g.color}` }, `${g.icon} ${g.title}`))),
+    el('div', { class: 'daily-bottom' },
+      el('span', { class: 'daily-info' },
+        done ? `✅ 오늘 완료 · ${done.score}점` : `${DAILY_TOTAL}문제 · 약 5분`,
+        streak ? el('span', { class: 'daily-streak' }, ` · 🔥 ${streak}일 연속`) : null),
+      el('span', { class: 'daily-go' }, done ? '다시 하기 ›' : '시작하기 ›')),
+    el('div', { class: 'week' }, week),
+  );
+}
+
+function playDaily() {
+  const date = dateKey(new Date());
+  const level = settings.level;
+  playSession({
+    title: '오늘의 학습',
+    level,
+    rounds: dailyPlan(date),
+    seed: `${date}:${level}`,
+    showGameName: true,
+    restart: playDaily,
+    save(state) {
+      const prev = store.get(dailyKey(date), null);
+      if (!prev || state.score >= prev.score) {
+        store.set(dailyKey(date), { score: state.score, correct: state.correct, total: state.records.length, level });
+      }
+    },
+  });
+}
+
 /* ---------- 화면: 홈 ---------- */
 function showHome() {
   window.speechSynthesis?.cancel();
@@ -998,6 +1110,8 @@ function showHome() {
     el('p', { class: 'sub' }, '오늘은 어떤 놀이를 해볼까요?'),
     el('div', { class: 'level-label' }, '난이도'),
     levelPicker,
+    dailyCard(),
+    el('div', { class: 'level-label' }, '놀이 골라 하기'),
     el('div', { class: 'game-list' },
       GAMES.map((g) => {
         const best = store.get(bestKey(g, settings.level), null);
@@ -1010,18 +1124,34 @@ function showHome() {
           best == null ? null : el('div', { class: 'gc-best' }, `최고 ${best}점`));
       })),
     el('p', { class: 'parent-note' },
-      '👪 보호자 안내 · 놀이마다 5~10문제(약 3~5분)예요. 아이 옆에서 함께 소리 내어 이야기하며 풀고, ',
-      '정답보다 끝까지 생각해 본 과정을 칭찬해 주세요. 같은 단계 안에서도 뒤로 갈수록 조금씩 어려워져요. ',
+      '👪 보호자 안내 · 매일 ‘오늘의 학습’으로 여러 놀이를 10문제씩 섞어 풀어 보세요(약 5분). ',
+      '날마다 놀이 종류가 바뀌고, 같은 날에는 몇 번을 열어도 같은 문제가 나와요. ',
+      '아이 옆에서 함께 소리 내어 이야기하며 풀고, 정답보다 끝까지 생각해 본 과정을 칭찬해 주세요. ',
       '너무 쉬워하거나 어려워하면 위에서 난이도를 바꿔 주세요.'),
   ));
 }
 
 /* ---------- 화면: 놀이 ---------- */
 function playGame(game) {
-  const level = settings.level;
   const total = game.total ?? TOTAL;
+  playSession({
+    title: game.title,
+    level: settings.level,
+    rounds: range(0, total - 1).map((index) => ({ game, index })),
+    restart: () => playGame(game),
+    save(state) {
+      const best = store.get(bestKey(game, state.level), 0);
+      if (state.score > best) store.set(bestKey(game, state.level), state.score);
+    },
+  });
+}
+
+// session: { title, level, rounds: [{ game, index }], seed?, showGameName?, restart, save }
+function playSession(session) {
+  const { level, rounds } = session;
+  const total = rounds.length;
   const points = Math.round(100 / total);
-  const state = { level, index: 0, score: 0, records: [] };
+  const state = { level, index: 0, score: 0, correct: 0, records: [] };
   let rec = null;
   let locked = false;
   let timers = [];
@@ -1029,6 +1159,8 @@ function playGame(game) {
   const counter = el('div', { class: 'counter' });
   const barFill = el('div', { class: 'bar-fill' });
   const score = el('div', { class: 'score' });
+  const gameName = el('div', { class: 'round-chip' });
+  gameName.hidden = !session.showGameName;
   const stage = el('main', { class: 'stage' });
 
   const myScreen = mount(el('div', { class: 'screen game' },
@@ -1038,6 +1170,7 @@ function playGame(game) {
       el('div', { class: 'bar' }, barFill),
       score,
       el('button', { class: 'pill-btn', onclick: () => finish(false, 'pass') }, '패스')),
+    gameName,
     stage,
   ));
   const alive = () => screenId === myScreen;
@@ -1053,15 +1186,21 @@ function playGame(game) {
 
   function next() {
     if (state.index >= total) {
-      showResult(game, state);
+      session.save(state);
+      showResult(session, state);
       return;
     }
+    const { game, index } = rounds[state.index];
     counter.textContent = `${state.index + 1} / ${total}`;
     barFill.style.width = `${((state.index + 1) / total) * 100}%`;
     score.textContent = `${state.score}점`;
+    gameName.style.setProperty('--c', game.color);
+    gameName.textContent = `${game.icon} ${game.title}`;
     stage.replaceChildren();
     locked = false;
-    rec = game.round(state.index, ctx);
+    // 놀이가 rec을 나중에 고쳐 쓰므로 복사하지 않고 그대로 씀
+    const make = () => Object.assign(game.round(index, ctx), { game });
+    rec = session.seed ? withRng(`${session.seed}:${state.index}`, make) : make();
   }
 
   function finish(correct, kind) {
@@ -1071,7 +1210,10 @@ function playGame(game) {
     timers = [];
     const passed = kind === 'pass';
     state.records.push({ ...rec, correct, passed });
-    if (correct) state.score = Math.min(100, state.score + points);
+    if (correct) {
+      state.correct++;
+      state.score = Math.min(100, state.score + points);
+    }
     score.textContent = `${state.score}점`;
     feedback(kind ?? (correct ? 'good' : 'bad'), () => {
       if (!alive()) return;
@@ -1084,38 +1226,37 @@ function playGame(game) {
 }
 
 /* ---------- 화면: 결과 ---------- */
-function showResult(game, state) {
+function showResult(session, state) {
   const total = state.records.length;
-  const correct = state.records.filter((r) => r.correct).length;
+  const { correct } = state;
   const ratio = correct / total;
   const stars = ratio >= 0.9 ? 3 : ratio >= 0.6 ? 2 : ratio >= 0.3 ? 1 : 0;
-  const best = store.get(bestKey(game, state.level), 0);
-  if (state.score > best) store.set(bestKey(game, state.level), state.score);
 
   const message = ['다음엔 더 잘할 수 있어요!', '조금씩 늘고 있어요!', '정말 잘했어요!', '최고예요!'][stars];
   tone([523, 659, 784, 1047], 0.12);
   speak(`${total}개 중에 ${correct}개 맞았어요. ${message}`);
 
-  const badgeOf = (r) => game.badge?.(r)
+  const badgeOf = (r) => r.game.badge?.(r)
     ?? (r.passed ? ['pass', '패스'] : r.correct ? ['good', '정답'] : ['bad', '오답']);
 
   mount(el('div', { class: 'screen result' },
     el('section', { class: 'result-hero' },
-      el('div', { class: 'result-level' }, `${game.title} · ${LEVELS[state.level].name}`),
+      el('div', { class: 'result-level' }, `${session.title} · ${LEVELS[state.level].name}`),
       el('div', { class: 'stars' }, [0, 1, 2].map((k) => el('span', { class: `star${k < stars ? '' : ' off'}` }, '⭐'))),
       el('div', { class: 'result-title' }, `${total}개 중 ${correct}개 맞았어요! ${message}`),
       el('div', { class: 'result-score' }, `${state.score}점`),
       el('div', { class: 'result-actions' },
-        el('button', { class: 'btn-main', onclick: () => playGame(game) }, '다시 하기'),
-        el('button', { class: 'btn-main alt', onclick: showHome }, '다른 놀이'))),
+        el('button', { class: 'btn-main', onclick: session.restart }, '다시 하기'),
+        el('button', { class: 'btn-main alt', onclick: showHome }, '처음으로'))),
     el('section', { class: 'records' },
       state.records.map((r, k) => {
-        const [cls, text] = badgeOf(r) ?? ['pass', '패스'];
+        const [cls, text] = badgeOf(r);
         return el('article', { class: 'rcard' },
           el('div', { class: 'rcard-head' },
-            el('span', { class: 'rnum' }, String(k + 1)),
+            el('span', { class: 'rnum' }, String(k + 1),
+              session.showGameName ? el('span', { class: 'rgame' }, `${r.game.icon} ${r.game.title}`) : null),
             el('span', { class: `badge ${cls}` }, text)),
-          game.review(r));
+          r.game.review(r));
       })),
   ));
 }

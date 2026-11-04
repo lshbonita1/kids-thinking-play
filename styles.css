@@ -77,6 +77,64 @@ button:disabled { cursor: default; }
 .seg-name { font-size: 21px; }
 .seg-age { font-size: 14px; }
 
+/* ---------- 오늘의 학습 ---------- */
+.daily-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  margin-bottom: 28px;
+  padding: 20px;
+  text-align: left;
+  border: 3px solid var(--gold);
+  border-radius: 28px;
+  background: linear-gradient(160deg, #fff8e8, #fdf0d8);
+  transition: transform .12s;
+}
+.daily-card:active { transform: scale(.98); }
+.daily-card.finished { border-color: var(--accent); background: linear-gradient(160deg, #f1faf2, #e3f3e6); }
+.daily-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.daily-tag { font-size: 26px; }
+.daily-date { color: #8a7a62; font-size: 17px; }
+.daily-games { display: flex; flex-wrap: wrap; gap: 8px; }
+.daily-chip { padding: 6px 12px; border-radius: 999px; background: var(--c); font-size: 16px; }
+.daily-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.daily-info { color: #8a7a62; font-size: 17px; }
+.daily-streak { color: var(--orange); }
+.daily-go {
+  flex: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 19px;
+}
+.daily-card.finished .daily-go { background: var(--good); }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.wk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.wk.today { background: rgba(255, 255, 255, .7); color: var(--ink); }
+.wk-mark { font-size: 18px; line-height: 1.2; }
+
+.round-chip {
+  align-self: center;
+  width: fit-content;
+  margin: 18px auto -14px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--c, var(--card));
+  font-size: 18px;
+}
+.rgame { margin-left: 10px; font-size: 18px; }
+
 .game-list { display: flex; flex-direction: column; gap: 14px; }
 .game-card {
   display: flex;
