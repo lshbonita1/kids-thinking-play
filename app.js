@@ -591,17 +591,8 @@ const patternGame = {
     const board = patternBoard(seq, unit.length, { index: blank, node: blankNode }, PATTERN_TILE[unit.length]);
     const choiceRow = el('div', { class: 'choices' },
       choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, c)));
-    choiceRow.hidden = true;
-    const showBtn = el('button', {
-      class: 'btn-main',
-      onclick: () => {
-        showBtn.hidden = true;
-        choiceRow.hidden = false;
-        tone([520, 700], 0.08);
-      },
-    }, '보기 확인');
 
-    ctx.stage.append(prompt('빈칸에 들어갈 것은?'), board, showBtn, choiceRow);
+    ctx.stage.append(prompt('빈칸에 들어갈 것은?'), board, choiceRow);
 
     function choose(c) {
       rec.chosen = c;
