@@ -2014,6 +2014,298 @@ const moleGame = {
   },
 };
 
+/* ---------- 놀이: 몸 어디 있지? ---------- */
+const BODY_PART_NAMES = { eye: '눈', nose: '코', mouth: '입', ear: '귀', hair: '머리카락', hand: '손', foot: '발', tummy: '배' };
+// 단계별 그림(얼굴 · 온몸)과 물어보는 곳
+const BODY_LEVELS = [
+  { scene: 'face', parts: ['eye', 'nose', 'mouth'] },
+  { scene: 'face', parts: ['eye', 'nose', 'mouth', 'ear', 'hair'] },
+  { scene: 'body', parts: ['eye', 'mouth', 'hand', 'foot', 'tummy', 'hair'] },
+];
+
+// 얼굴 (200×200). 누르는 곳마다 눈에 보이는 그림보다 넉넉한 투명 영역을 둠
+const FACE_SVG = `
+  <g class="bp" data-part="ear"><circle cx="30" cy="108" r="19" fill="#f6d2b0"/><circle cx="170" cy="108" r="19" fill="#f6d2b0"/>
+    <circle cx="30" cy="108" r="24" fill="transparent"/><circle cx="170" cy="108" r="24" fill="transparent"/></g>
+  <circle cx="100" cy="110" r="72" fill="#fbe0c6"/>
+  <g class="bp" data-part="hair"><path d="M26 102 Q26 30 100 30 Q174 30 174 102 Q156 60 100 62 Q44 60 26 102Z" fill="#6b4f35"/></g>
+  <circle cx="62" cy="134" r="10" fill="#f6b5ac" opacity=".7"/><circle cx="138" cy="134" r="10" fill="#f6b5ac" opacity=".7"/>
+  <g class="bp" data-part="eye"><ellipse cx="72" cy="104" rx="9" ry="11" fill="#3b3226"/><ellipse cx="128" cy="104" rx="9" ry="11" fill="#3b3226"/>
+    <circle cx="75" cy="100" r="3" fill="#fff"/><circle cx="131" cy="100" r="3" fill="#fff"/>
+    <circle cx="72" cy="104" r="21" fill="transparent"/><circle cx="128" cy="104" r="21" fill="transparent"/></g>
+  <g class="bp" data-part="nose"><ellipse cx="100" cy="128" rx="9" ry="7" fill="#e8a98a"/><circle cx="100" cy="127" r="15" fill="transparent"/></g>
+  <g class="bp" data-part="mouth"><path d="M78 148 Q100 172 122 148" stroke="#d0574f" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <rect x="70" y="142" width="60" height="32" fill="transparent"/></g>`;
+
+const BODY_SCENES = {
+  face: { viewBox: '0 0 200 200', svg: FACE_SVG },
+  body: {
+    viewBox: '0 0 200 330',
+    svg: `
+      <rect x="20" y="132" width="44" height="22" rx="11" fill="#8fc1e8" transform="rotate(35 42 143)"/>
+      <rect x="136" y="132" width="44" height="22" rx="11" fill="#8fc1e8" transform="rotate(-35 158 143)"/>
+      <g class="bp" data-part="hand"><circle cx="26" cy="178" r="15" fill="#fbe0c6"/><circle cx="174" cy="178" r="15" fill="#fbe0c6"/>
+        <circle cx="26" cy="178" r="24" fill="transparent"/><circle cx="174" cy="178" r="24" fill="transparent"/></g>
+      <rect x="70" y="214" width="26" height="72" rx="10" fill="#6c8fb3"/><rect x="104" y="214" width="26" height="72" rx="10" fill="#6c8fb3"/>
+      <g class="bp" data-part="foot"><ellipse cx="78" cy="292" rx="24" ry="12" fill="#e07a5f"/><ellipse cx="122" cy="292" rx="24" ry="12" fill="#e07a5f"/>
+        <rect x="46" y="276" width="108" height="34" fill="transparent"/></g>
+      <g class="bp" data-part="tummy"><rect x="58" y="120" width="84" height="104" rx="26" fill="#8fc1e8"/>
+        <circle cx="100" cy="180" r="4" fill="#5d8db8"/></g>
+      <g transform="translate(40 2) scale(.6)">${FACE_SVG}</g>`,
+  },
+};
+
+function bodyScene(scene, extra = {}) {
+  const node = el('div', { class: `body-scene ${scene}${extra.mini ? ' mini' : ''}` });
+  node.innerHTML = `<svg viewBox="${BODY_SCENES[scene].viewBox}" role="img" aria-label="사람 그림">${BODY_SCENES[scene].svg}</svg>`;
+  if (extra.mark) node.querySelector(`[data-part="${extra.mark}"]`)?.classList.add('good');
+  return node;
+}
+
+const bodyGame = {
+  id: 'body',
+  title: '몸 어디 있지?',
+  desc: '눈, 코, 입은 어디 있을까요?',
+  skill: '말 이해 · 신체 개념',
+  icon: '👀',
+  color: '#fbe0c6',
+
+  round(i, ctx) {
+    const { scene, parts } = BODY_LEVELS[ctx.level];
+    const part = pick(parts);
+    const name = BODY_PART_NAMES[part];
+    const rec = { scene, part, chosen: null };
+    const board = bodyScene(scene);
+
+    ctx.stage.append(prompt(`${topicParticle(name)} 어디 있어요?`), board);
+
+    board.addEventListener('click', (e) => {
+      const g = e.target.closest('.bp');
+      if (!g || rec.chosen) return;
+      const target = board.querySelector(`[data-part="${part}"]`);
+      if (g.dataset.part !== part) {
+        g.classList.remove('bad');
+        void g.getBoundingClientRect();
+        g.classList.add('bad');
+        target.classList.add('hint');
+        ctx.miss(`반짝이는 곳이 ${name}${topicParticle(name).endsWith('은') ? '이에요' : '예요'}`);
+        return;
+      }
+      rec.chosen = part;
+      target.classList.remove('hint');
+      target.classList.add('good');
+      ctx.finish(true);
+    });
+
+    return rec;
+  },
+
+  review(rec) {
+    const name = BODY_PART_NAMES[rec.part];
+    return el('div', { class: 'review-center' },
+      el('div', {}, bodyScene(rec.scene, { mini: true, mark: rec.part }),
+        el('div', { class: 'review-note' }, rec.chosen ? `${name}${objectParticle(name)} 찾았어요` : `${topicParticle(name)} 여기 있어요`)));
+  },
+};
+
+/* ---------- 놀이: 큰 것, 작은 것 ---------- */
+// 크기만 보고 고르도록 배경 없는 그림 글자로 (사진은 작게 줄이면 알아보기 어려움)
+const SIZE_ITEMS = ['🍎', '🎈', '🐘', '🚗', '🐳', '🐸', '🍌', '🦋'];
+const SIZE_TILE = { 2: 'clamp(130px, 40vw, calc(180px * var(--k)))', 3: 'clamp(96px, 28vw, calc(140px * var(--k)))' };
+// 단계별 [앞 5문제, 뒤 5문제] 크기 비율 (크기 차이가 한눈에 보이게)
+const SIZE_SCALES = [
+  [[1, 0.45], [1, 0.5]],
+  [[1, 0.5], [1, 0.7, 0.42]],
+  [[1, 0.7, 0.42], [1, 0.74, 0.5]],
+];
+
+function sizeTile(item, scale, props = {}) {
+  return el('div', { class: 'tile size-tile', ...props },
+    el('span', { class: 'size-face', style: `transform:scale(${scale})` }, item));
+}
+
+const sizeGame = {
+  id: 'size',
+  title: '큰 것, 작은 것',
+  desc: '큰 것과 작은 것을 골라요',
+  skill: '크기 개념',
+  icon: '🐘',
+  color: '#e0e6f5',
+
+  round(i, ctx) {
+    const scales = shuffle(SIZE_SCALES[ctx.level][i < 5 ? 0 : 1]);
+    const item = pick(SIZE_ITEMS);
+    const ask = rand(2) ? 'big' : 'small';
+    const answer = scales.indexOf(ask === 'big' ? Math.max(...scales) : Math.min(...scales));
+    const rec = { item, scales, ask, answer, chosen: null };
+    const word = scales.length === 2 ? (ask === 'big' ? '큰 것' : '작은 것') : (ask === 'big' ? '가장 큰 것' : '가장 작은 것');
+
+    const buttons = scales.map((sc, k) => el('button', { class: 'tile choice size-tile', 'aria-label': `${k + 1}번`, onclick: () => choose(k) },
+      el('span', { class: 'size-face', style: `transform:scale(${sc})` }, item)));
+    ctx.stage.append(prompt(`${word}을 골라요`), choiceLabel(scales.length),
+      el('div', { class: 'choices', style: `--choice-t:${SIZE_TILE[scales.length]}` }, buttons));
+
+    function choose(k) {
+      if (k !== answer) {
+        retryChoice(ctx, buttons[k], buttons[answer]);
+        return;
+      }
+      rec.chosen = k;
+      buttons[k].classList.add('good');
+      ctx.finish(true);
+    }
+
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', {},
+      el('div', { class: 'size-review' }, rec.scales.map((sc, k) =>
+        sizeTile(rec.item, sc, { class: `tile size-tile${k === rec.answer ? ' good' : ''}`, style: '--t:56px' }))),
+      el('div', { class: 'review-note' }, rec.ask === 'big' ? '큰 것 고르기' : '작은 것 고르기'));
+  },
+};
+
+/* ---------- 놀이: 조각 퍼즐 ---------- */
+const PUZZLE_PHOTOS = ['🍎', '🎈', '🐘', '🚗', '🐳', '🐸', '🦋', '🐥', '🐶'];
+// 단계별 [앞 5문제, 뒤 5문제] [가로 조각 수, 세로 조각 수]
+const PUZZLE_GRIDS = [
+  [[2, 1], [2, 1]],
+  [[2, 1], [2, 2]],
+  [[2, 2], [3, 2]],
+];
+const PUZZLE_SIZE = 'clamp(200px, min(66vw, 38vh), calc(320px * var(--k)))';
+
+function puzzlePiece(src, cols, rows, n) {
+  const c = n % cols;
+  const r = Math.floor(n / cols);
+  return el('span', {
+    class: 'puzzle-img',
+    style: `background-image:url(${src});background-size:${cols * 100}% ${rows * 100}%;background-position:${cols > 1 ? (c / (cols - 1)) * 100 : 0}% ${rows > 1 ? (r / (rows - 1)) * 100 : 0}%`,
+  });
+}
+
+const puzzleGame = {
+  id: 'puzzle',
+  title: '조각 퍼즐',
+  desc: '조각을 옮겨 그림을 완성해요',
+  skill: '공간 지각 · 소근육',
+  icon: '🧩',
+  color: '#f9e3c9',
+
+  round(i, ctx) {
+    const [cols, rows] = PUZZLE_GRIDS[ctx.level][i < 5 ? 0 : 1];
+    const photo = pick(PUZZLE_PHOTOS);
+    const src = `photos/${PHOTOS[photo]}.jpg`;
+    const count = cols * rows;
+    const rec = { photo, cols, rows, misses: 0, done: false };
+    let order;
+    do order = shuffle(range(0, count - 1));
+    while (count > 1 && order.every((v, k) => v === k));
+    let selected = null;
+    let drag = null;
+    let placed = 0;
+
+    const slots = range(0, count - 1).map((n) => el('button', { class: 'puzzle-slot', 'aria-label': `${n + 1}번 자리`, onclick: () => selected != null && drop(selected, n) }));
+    const board = el('div', {
+      class: `puzzle-board${ctx.level < 2 ? ' guide' : ''}`,
+      style: `--p:${PUZZLE_SIZE};grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr);--guide:url(${src})`,
+    }, slots);
+    const pieces = order.map((n) => el('button', {
+      class: 'puzzle-piece',
+      'aria-label': '퍼즐 조각',
+      style: `width:calc(var(--p) / ${cols});height:calc(var(--p) / ${rows})`,
+    }, puzzlePiece(src, cols, rows, n)));
+
+    ctx.stage.append(
+      prompt('조각을 옮겨 그림을 완성해요'),
+      board,
+      el('div', { class: 'puzzle-pieces', style: `--p:calc(${PUZZLE_SIZE} * .8)` }, pieces),
+    );
+
+    const hit = (node, e) => {
+      const r = node.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    };
+
+    function select(k) {
+      selected = selected === k ? null : k;
+      pieces.forEach((p, j) => p.classList.toggle('sel', j === selected));
+    }
+
+    function drop(k, slot) {
+      selected = null;
+      pieces.forEach((p) => p.classList.remove('sel'));
+      if (order[k] !== slot) {
+        rec.misses++;
+        slots.forEach((s, j) => s.classList.toggle('hint', j === order[k]));
+        ctx.miss('반짝이는 자리에 놓아 볼까요?');
+        return;
+      }
+      pieces[k].classList.add('used');
+      slots.forEach((s) => s.classList.remove('hint'));
+      slots[slot].replaceChildren(puzzlePiece(src, cols, rows, slot));
+      slots[slot].classList.add('filled', 'pop');
+      tone([520 + placed * 80], 0.07);
+      if (++placed === count) {
+        rec.done = true;
+        board.classList.add('complete');
+        ctx.later(() => ctx.finish(true), 500);
+      }
+    }
+
+    pieces.forEach((p, k) => {
+      const reset = () => {
+        drag = null;
+        p.classList.remove('dragging');
+        p.style.transform = '';
+        slots.forEach((s) => s.classList.remove('over'));
+      };
+      p.addEventListener('pointerdown', (e) => {
+        if (p.classList.contains('used') || rec.done) return;
+        e.preventDefault();
+        p.setPointerCapture(e.pointerId);
+        drag = { k, x0: e.clientX, y0: e.clientY, moved: false };
+        p.classList.add('dragging');
+      });
+      p.addEventListener('pointermove', (e) => {
+        if (drag?.k !== k) return;
+        const dx = e.clientX - drag.x0;
+        const dy = e.clientY - drag.y0;
+        if (Math.hypot(dx, dy) > 8) drag.moved = true;
+        p.style.transform = `translate(${dx}px, ${dy}px)`;
+        slots.forEach((s) => s.classList.toggle('over', !s.classList.contains('filled') && hit(s, e)));
+      });
+      p.addEventListener('pointerup', (e) => {
+        if (drag?.k !== k) return;
+        const { moved } = drag;
+        reset();
+        // 끌지 않고 톡 누르면 고르기만 하고, 자리를 눌러서 놓을 수도 있음
+        if (!moved) { select(k); return; }
+        const s = slots.findIndex((sn) => !sn.classList.contains('filled') && hit(sn, e));
+        if (s >= 0) drop(k, s);
+      });
+      p.addEventListener('pointercancel', reset);
+    });
+
+    return rec;
+  },
+
+  review(rec) {
+    const note = !rec.done ? '끝까지 하지 못했어요'
+      : rec.misses === 0 ? '한 번도 안 틀리고 완성했어요'
+      : `${rec.misses}번 틀리고 완성했어요`;
+    return el('div', {},
+      el('div', { class: 'review-items' }, pic(rec.photo), el('span', {}, ` ${rec.cols * rec.rows}조각`)),
+      el('div', { class: 'review-note' }, note));
+  },
+
+  badge(rec) {
+    if (rec.passed) return null;
+    return rec.correct ? ['good', '완성'] : ['pass', '완성'];
+  },
+};
+
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
   memory: (r) => r.original.join(),
@@ -2029,6 +2321,9 @@ const QUESTION_KEYS = {
   match: (r) => r.pair.q,
   order: (r) => `${r.items.map((it) => `${it.label}${it.scale ?? ''}`).join()}|${r.order.join()}`,
   routine: (r) => `${r.items.map((it) => it.label).join()}|${r.order.join()}`,
+  body: (r) => `${r.scene}|${r.part}`,
+  size: (r) => `${r.item}|${r.ask}|${r.scales.join()}`,
+  puzzle: (r) => `${r.photo}|${r.cols}x${r.rows}`,
   balloon: (r) => `${r.color}|${r.n}`,
   mole: (r) => `${r.target}|${r.decoy}`,
   trace: (r) => `${r.shape}|${r.flip}|${r.pair.join('')}`,
@@ -2040,6 +2335,7 @@ const questionKey = (game, r) => `${game.id}:${(QUESTION_KEYS[game.id] ?? JSON.s
 const GAMES = [
   copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, spaceGame, memoryGame, patternGame,
   countGame, oddGame, flipGame, shadowGame, orderGame, traceGame, sortGame, balloonGame, moleGame,
+  bodyGame, sizeGame, puzzleGame,
 ];
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
@@ -2170,6 +2466,40 @@ function dailyCard() {
   );
 }
 
+/* ---------- 칭찬 스티커판 ---------- */
+// 오늘의 학습을 처음 끝낸 날마다 스티커 1개. 10개를 모을 때마다 쑥쑥이가 한 단계 자람
+const STICKERS = ['⭐', '🍓', '🐥', '🌈', '🎈', '🦋', '🍀', '🐳', '🌻', '🚗'];
+const GROW_STAGES = [['🌱', '새싹'], ['🌿', '잎이 난 새싹'], ['🌷', '꽃'], ['🌳', '나무'], ['🍎', '열매 나무']];
+const STICKERS_PER_STAGE = 10;
+
+function stickerCount() {
+  let n = 0;
+  try {
+    for (let k = 0; k < localStorage.length; k++) if (localStorage.key(k).startsWith('daily:')) n++;
+  } catch {}
+  return n;
+}
+
+function stickerCard() {
+  const n = stickerCount();
+  const stage = Math.min(Math.floor(n / STICKERS_PER_STAGE), GROW_STAGES.length - 1);
+  const grownUp = n >= GROW_STAGES.length * STICKERS_PER_STAGE;
+  const onBoard = grownUp ? STICKERS_PER_STAGE : n % STICKERS_PER_STAGE;
+  const [icon, name] = GROW_STAGES[stage];
+  const note = grownUp ? '쑥쑥이가 다 자랐어요! 🎉'
+    : stage > 0 && onBoard === 0 ? '쑥쑥이가 한 뼘 자랐어요! 🎉'
+    : `${STICKERS_PER_STAGE - onBoard}개 더 모으면 쑥쑥이가 자라요`;
+  return el('section', { class: 'sticker-card' },
+    el('div', { class: 'sticker-head' },
+      el('span', { class: 'sticker-grow', title: name }, icon),
+      el('div', { class: 'sticker-text' },
+        el('b', {}, '칭찬 스티커'),
+        el('span', {}, note))),
+    el('div', { class: 'sticker-board' }, range(0, STICKERS_PER_STAGE - 1).map((k) =>
+      el('span', { class: `sticker${k < onBoard ? ' on' : ''}` },
+        k < onBoard ? STICKERS[(n - onBoard + k) % STICKERS.length] : ''))));
+}
+
 function playDaily() {
   const date = dateKey(new Date());
   const level = settings.level;
@@ -2183,6 +2513,7 @@ function playDaily() {
     restart: playDaily,
     save(state) {
       const prev = store.get(dailyKey(date), null);
+      if (!prev) state.newSticker = true; // 오늘 처음 끝냄 → 칭찬 스티커
       if (!prev || state.score >= prev.score) {
         store.set(dailyKey(date), { score: state.score, correct: state.correct, total: state.records.length, level });
       }
@@ -2194,12 +2525,12 @@ function playDaily() {
 // 놀이를 영역별로 묶음 (보호자가 이해하기 쉬운 말로)
 const CATEGORIES = [
   { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame] },
-  { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame] },
+  { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame, puzzleGame] },
   { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame] },
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
-  { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame] },
+  { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame] },
-  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, matchGame] },
+  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, matchGame, bodyGame] },
   { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, routineGame] },
 ];
 
@@ -2294,6 +2625,7 @@ function todayTab() {
       el('button', { class: 'pill-btn guide-btn', 'aria-label': '사용 방법', title: '사용 방법', onclick: () => showGuide('howto') }, '📖')),
     levelPicker('compact'),
     dailyCard(),
+    stickerCard(),
     gamePicks(),
     shareCard(),
   ];
@@ -2904,6 +3236,7 @@ function showResult(session, state) {
       el('div', { class: 'stars' }, [0, 1, 2].map((k) => el('span', { class: `star${k < stars ? '' : ' off'}` }, '⭐'))),
       el('div', { class: 'result-title' }, `${total}개 중 ${correct}개 맞았어요! ${message}`),
       el('div', { class: 'result-score' }, `${state.score}점`),
+      state.newSticker ? el('div', { class: 'result-sticker pop' }, `🎁 칭찬 스티커를 받았어요! (모두 ${stickerCount()}개)`) : null,
       el('div', { class: 'result-actions' },
         el('button', { class: 'btn-main', onclick: session.restart }, '다시 하기'),
         el('button', { class: 'btn-main alt', onclick: showHome }, '처음으로'))),
@@ -2953,7 +3286,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 52;
+const APP_VERSION = 53;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
