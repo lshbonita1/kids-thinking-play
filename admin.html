@@ -28,6 +28,10 @@
     .btn { padding: 12px 16px; border: 2px solid var(--line); border-radius: 16px; background: var(--card); color: var(--ink); font-family: var(--display); font-size: 18px; }
     .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
     .btn:disabled { opacity: .5; cursor: default; }
+    .jump { display: flex; flex-wrap: wrap; gap: 8px; }
+    .jump a { padding: 8px 14px; border: 2px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); text-decoration: none; font-size: 15px; }
+    .jump b { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: #e3a25a; color: #fff; font-size: 12px; font-weight: 400; }
+    .jump b:empty { display: none; }
     .fb-item { padding: 14px 0; border-top: 1px solid var(--line); }
     .fb-item.hidden-post { opacity: .55; }
     .fb-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; color: var(--muted); font-size: 14px; }
@@ -85,6 +89,13 @@
     </section>
 
     <main id="dash" hidden style="display:flex;flex-direction:column;gap:16px">
+      <nav class="jump">
+        <a href="#sec-feedback">💬 의견 게시판 <b id="fb-badge"></b></a>
+        <a href="#sec-visits">📊 방문</a>
+        <a href="#sec-regions">🗺️ 지역</a>
+        <a href="#sec-games">🧩 놀이</a>
+        <a href="#sec-recent">📜 로그</a>
+      </nav>
       <section class="card">
         <h2>📈 오늘의 핵심 지표</h2>
         <table>
@@ -93,7 +104,13 @@
         </table>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-feedback">
+        <h2>💬 의견 게시판 <span class="muted" id="fb-count"></span></h2>
+        <p class="muted">답글은 사이트의 의견 게시판에 '🌱 만든 사람'으로 보여요. 숨긴 글은 사이트에서 안 보여요.</p>
+        <div id="fb-admin"></div>
+      </section>
+
+      <section class="card" id="sec-visits">
         <h2>📊 최근 2주 방문</h2>
         <div class="chart" id="chart" role="img" aria-label="최근 14일 날짜별 방문 로그 수"></div>
         <p class="muted" id="chart-note"></p>
@@ -112,7 +129,7 @@
         </details>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-regions">
         <h2>🗺️ 지역별 접속 분포 (IP 기준 추정)</h2>
         <p class="muted">최근 2주 동안 서로 다른 IP를 지역별로 묶은 비중이에요. 휴대폰 통신사 IP는 실제 위치가 아니라 통신사 기지국 위치로 잡히는 경우가 많아 참고용으로만 봐 주세요.</p>
         <div class="map-info" id="map-info">지역을 눌러 보세요</div>
@@ -125,7 +142,7 @@
         </details>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-games">
         <h2>🧩 놀이별 완료 (최근 2주)</h2>
         <table><thead><tr><th>놀이</th><th class="num" style="font-size:14px">완료</th><th class="delta">평균 점수</th></tr></thead><tbody id="games"></tbody></table>
       </section>
@@ -140,15 +157,9 @@
         <table><tbody id="devices"></tbody></table>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-recent">
         <h2>📜 최근 로그 50건</h2>
         <div class="scroll"><table class="log"><thead><tr><th>시간</th><th>종류</th><th>기기</th><th>내용</th><th>IP</th><th>기기 번호</th></tr></thead><tbody id="recent"></tbody></table></div>
-      </section>
-
-      <section class="card">
-        <h2>💬 의견 게시판 <span class="muted" id="fb-count"></span></h2>
-        <p class="muted">답글은 사이트의 의견 게시판에 '🌱 만든 사람'으로 보여요. 숨긴 글은 사이트에서 안 보여요.</p>
-        <div id="fb-admin"></div>
       </section>
 
       <section class="card">
@@ -316,6 +327,9 @@
         if (!res.ok) throw new Error(data.detail || data.error || res.status);
         const posts = data.posts;
         $('fb-count').textContent = `${fmt(posts.length)}개`;
+        // 아직 답글 없는 글 수를 바로가기에 표시
+        const waiting = posts.filter((p) => !p.admin_reply && !p.is_hidden).length;
+        $('fb-badge').textContent = waiting ? String(waiting) : '';
         $('fb-admin').innerHTML = posts.length ? posts.map((p) => `
           <div class="fb-item${p.is_hidden ? ' hidden-post' : ''}" data-id="${p.id}">
             <div class="fb-meta"><span>${FB_KINDS[p.kind] || p.kind}</span><span>${esc(p.nickname || '보호자')}</span>
