@@ -58,6 +58,8 @@ export default async function handler(req, res) {
     });
     res.status(201).json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: '잠시 뒤 다시 해 주세요.', detail: String(e.message || e) });
+    // 누구나 부르는 주소라 서버 오류 내용은 보여 주지 않고 기록만 남김
+    console.error('feedback', e);
+    res.status(500).json({ error: '잠시 뒤 다시 해 주세요.' });
   }
 }
