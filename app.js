@@ -3269,7 +3269,12 @@ function todayTab() {
     feedbackCard(),
     shareCard(),
     el('footer', { class: 'home-foot' },
-      el('a', { class: 'faq-btn', href: 'faq.html' }, el('span', {}, '❓'), el('b', {}, '자주 묻는 질문'), el('span', { class: 'faq-go' }, '›')),
+      el('a', { class: 'faq-btn', href: 'faq.html' },
+        el('span', { class: 'faq-icon' }, '🙋'),
+        el('span', { class: 'faq-text' },
+          el('b', {}, '자주 묻는 질문'),
+          el('small', {}, '무료인가요? 기록은 어디에 저장되나요? 궁금한 점을 모았어요')),
+        el('span', { class: 'faq-go' }, '›')),
       el('div', { class: 'home-foot-links' },
         el('a', { href: 'privacy.html' }, '개인정보처리방침'), ' · ', el('span', {}, 'ssukssuknori.app'))),
   ];
@@ -4721,7 +4726,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 82;
+const APP_VERSION = 83;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;
