@@ -2449,6 +2449,62 @@ const imitateGame = {
   },
 };
 
+/* ---------- 놀이: 두 단계 지시 따르기 ---------- */
+// 단계별 그림 수, 차례로 누를 수
+const STEPS_PICS = [4, 6, 6];
+const STEPS_COUNT = [2, 2, 3];
+
+const stepsGame = {
+  id: 'steps',
+  title: '차례대로 눌러요',
+  desc: '말을 듣고 순서대로 눌러요',
+  skill: '듣기 · 기억',
+  icon: '👆',
+  color: '#e6e0f7',
+
+  round(i, ctx) {
+    const words = sample(LISTEN_WORDS, STEPS_PICS[ctx.level]);
+    const seq = words.slice(0, STEPS_COUNT[ctx.level]);
+    const shown = shuffle(words);
+    const say = `${seq.map(([w]) => `${w}${objectParticle(w)}`).join(' 누르고, ')} 눌러요`;
+    const rec = { seq: seq.map(([, e]) => e), words: seq.map(([w]) => w), say, done: false };
+    const render = photoRenderer(shown.map(([, e]) => e));
+    let at = 0;
+
+    const buttons = shown.map(([w, e]) => el('button', { class: 'tile choice steps-tile', 'aria-label': w, onclick: () => tap(e) },
+      render(e), el('span', { class: 'steps-num' })));
+    ctx.stage.append(prompt(say),
+      el('div', { class: 'choices', style: choicesStyle(shown.length > 4 ? 3 : 2) }, buttons));
+
+    function tap(e) {
+      const k = shown.findIndex(([, x]) => x === e);
+      if (buttons[k].classList.contains('done')) return;
+      if (e !== rec.seq[at]) {
+        buttons.forEach((b) => b.classList.remove('hint'));
+        buttons[shown.findIndex(([, x]) => x === rec.seq[at])].classList.add('hint');
+        ctx.miss(`${rec.words[at]}${objectParticle(rec.words[at])} 먼저 눌러요`);
+        return;
+      }
+      buttons.forEach((b) => b.classList.remove('hint'));
+      buttons[k].classList.add('done', 'good');
+      buttons[k].querySelector('.steps-num').textContent = String(at + 1);
+      tone([600 + at * 120], 0.07);
+      if (++at === rec.seq.length) {
+        rec.done = true;
+        ctx.finish(true);
+      }
+    }
+
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', {},
+      el('div', { class: 'review-items' }, rec.seq.map((e, k) => el('span', {}, `${k + 1}`, pic(e)))),
+      el('div', { class: 'review-note' }, rec.say));
+  },
+};
+
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
   memory: (r) => r.original.join(),
@@ -2464,6 +2520,7 @@ const QUESTION_KEYS = {
   match: (r) => r.pair.q,
   order: (r) => `${r.items.map((it) => `${it.label}${it.scale ?? ''}`).join()}|${r.order.join()}`,
   routine: (r) => `${r.items.map((it) => it.label).join()}|${r.order.join()}`,
+  steps: (r) => r.seq.join(),
   use: (r) => `${r.ask}|${r.answer}|${r.choices.length}`,
   imitate: (r) => r.acts.join(),
   body: (r) => `${r.scene}|${r.part}`,
@@ -2480,7 +2537,7 @@ const questionKey = (game, r) => `${game.id}:${(QUESTION_KEYS[game.id] ?? JSON.s
 const GAMES = [
   copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, spaceGame, memoryGame, patternGame,
   countGame, oddGame, flipGame, shadowGame, orderGame, traceGame, sortGame, balloonGame, moleGame,
-  bodyGame, sizeGame, puzzleGame, useGame, imitateGame,
+  bodyGame, sizeGame, puzzleGame, useGame, imitateGame, stepsGame,
 ];
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
@@ -2675,7 +2732,7 @@ const CATEGORIES = [
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
   { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame] },
-  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, matchGame, bodyGame, useGame] },
+  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, matchGame, bodyGame, useGame, stepsGame] },
   { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, routineGame] },
 ];
 
@@ -2774,6 +2831,7 @@ function todayTab() {
     dailyCard(),
     stickerCard(),
     gamePicks(),
+    helperCard(),
     shareCard(),
   ];
 }
@@ -3206,7 +3264,234 @@ function talkTab() {
     ...TALK_GROUPS.map((g) => el('section', { class: 'talk-group' },
       el('h2', {}, g.name),
       el('div', { class: 'talk-grid' }, g.cards.map((c) => card(c, g.color))))),
+    helperCard(),
   ];
+}
+
+/* ---------- 생활 도우미: 그림 이야기 · 먼저 다음 · 숨 쉬기 ---------- */
+function helperCard() {
+  return el('section', { class: 'helper-card' },
+    el('h2', {}, '🧰 생활 도우미'),
+    el('div', { class: 'helper-grid' },
+      el('button', { class: 'helper-btn', style: '--c:#fdeccf', onclick: () => showStories() }, el('span', {}, '📖'), el('b', {}, '그림 이야기')),
+      el('button', { class: 'helper-btn', style: '--c:#dbeefd', onclick: showFirstThen }, el('span', {}, '➡️'), el('b', {}, '먼저 · 다음')),
+      el('button', { class: 'helper-btn', style: '--c:#e3f3e6', onclick: showBreathing }, el('span', {}, '🎈'), el('b', {}, '숨 쉬기'))));
+}
+
+function toolScreen(title, ...kids) {
+  window.speechSynthesis?.cancel();
+  return mount(el('div', { class: 'screen guide tool' },
+    el('header', { class: 'guide-top' },
+      el('button', { class: 'icon-btn', 'aria-label': '돌아가기', onclick: () => showHome() }, '←'),
+      el('h1', {}, title)),
+    ...kids));
+}
+
+// 처음 가 보는 곳 · 지켜야 할 일을 미리 그림으로 보여 주는 짧은 이야기
+const STORIES = [
+  { icon: '🏥', title: '병원에 가요', pages: [
+    ['🤒', '몸이 아프면 병원에 가요.'],
+    ['🪑', '이름을 부를 때까지 의자에 앉아 기다려요.'],
+    ['🩺', '의사 선생님이 "아" 해 보래요. 입을 크게 벌려요.'],
+    ['💊', '약을 먹으면 몸이 금방 나아요.'],
+    ['🌟', '다 끝났어요! 잘 참았어요.'],
+  ] },
+  { icon: '🦷', title: '치과에 가요', pages: [
+    ['🦷', '이를 보러 치과에 가요.'],
+    ['🛋️', '커다란 의자에 누워요.'],
+    ['💡', '밝은 불이 켜져요. 눈을 감아도 괜찮아요.'],
+    ['😮', '입을 "아" 크게 벌리고 기다려요.'],
+    ['✨', '이가 반짝반짝 깨끗해졌어요!'],
+  ] },
+  { icon: '💇', title: '미용실에 가요', pages: [
+    ['💇', '머리가 길면 미용실에 가요.'],
+    ['🪑', '의자에 앉아서 가만히 있어요.'],
+    ['✂️', '가위가 싹둑싹둑 소리를 내요. 아프지 않아요.'],
+    ['💨', '드라이어가 윙 하고 따뜻한 바람을 불어요.'],
+    ['🪞', '거울을 봐요. 정말 멋져요!'],
+  ] },
+  { icon: '🛝', title: '차례를 기다려요', pages: [
+    ['🛝', '미끄럼틀에 친구들이 줄을 서 있어요.'],
+    ['🧍', '나도 맨 뒤에 서요.'],
+    ['⏳', '내 차례가 올 때까지 기다려요.'],
+    ['😄', '내 차례예요! 신나게 타요.'],
+    ['👏', '잘 기다렸어요. 최고예요!'],
+  ] },
+  { icon: '🛒', title: '마트에 가요', pages: [
+    ['🛒', '엄마 아빠랑 마트에 가요.'],
+    ['🤝', '손을 꼭 잡고 함께 걸어요.'],
+    ['🍎', '살 것을 카트에 담아요.'],
+    ['💳', '계산대에서 차례를 기다려요.'],
+    ['🏠', '다 사면 집으로 가요.'],
+  ] },
+];
+
+function showStories(story = null, page = 0) {
+  if (!story) {
+    toolScreen('그림 이야기',
+      el('p', { class: 'sub' }, '처음 가는 곳, 지켜야 할 일을 미리 그림으로 봐요'),
+      el('div', { class: 'story-list' }, STORIES.map((s) =>
+        el('button', { class: 'story-item', onclick: () => showStories(s, 0) }, el('span', {}, s.icon), el('b', {}, s.title)))));
+    return;
+  }
+  const [icon, text] = story.pages[page];
+  const last = page === story.pages.length - 1;
+  toolScreen(story.title,
+    el('section', { class: 'story-page' },
+      el('div', { class: 'story-scene pop' }, icon),
+      el('p', { class: 'story-text' }, text),
+      el('button', { class: 'speak-btn', 'aria-label': '다시 듣기', onclick: () => speak(text) }, '🔊')),
+    el('div', { class: 'story-dots' }, story.pages.map((_, k) => el('i', { class: k === page ? 'on' : '' }))),
+    el('div', { class: 'btn-row' },
+      el('button', { class: 'btn-main alt', disabled: page === 0, onclick: () => showStories(story, page - 1) }, '◀ 앞으로'),
+      last
+        ? el('button', { class: 'btn-main', onclick: () => showStories() }, '✅ 다 읽었어요')
+        : el('button', { class: 'btn-main', onclick: () => showStories(story, page + 1) }, '다음 ▶')));
+  speak(text);
+}
+
+// 먼저 할 일 → 다음에 할 일 (좋아하는 일을 '다음'에 두면 먼저 할 일을 하기 쉬워짐)
+const FIRST_THEN_ITEMS = [
+  ['🪥', '양치'], ['🍚', '밥 먹기'], ['👕', '옷 입기'], ['🛁', '목욕'], ['🚽', '화장실'], ['🧸', '장난감 정리'],
+  ['🌱', '쑥쑥 놀이'], ['📚', '책 읽기'], ['🛝', '놀이터'], ['📺', '텔레비전'], ['🍪', '간식'], ['😴', '잠자기'],
+];
+const FIRST_THEN_TIMES = [0, 1, 3, 5];
+
+function showFirstThen() {
+  const saved = store.get('firstThen', { first: 0, then: 8, minutes: 0 });
+  const st = { ...saved, slot: 'first', running: false, doneFirst: false, endAt: 0 };
+  const box = (slot) => {
+    const [icon, name] = FIRST_THEN_ITEMS[st[slot]];
+    return el('button', {
+      class: `ft-box${st.slot === slot && !st.running ? ' sel' : ''}${slot === 'first' && st.doneFirst ? ' done' : ''}${slot === 'then' && st.doneFirst ? ' now' : ''}`,
+      onclick: () => { if (!st.running) { st.slot = slot; draw(); } },
+    },
+    el('span', { class: 'ft-label' }, slot === 'first' ? '먼저' : '다음'),
+    el('span', { class: 'ft-icon' }, slot === 'first' && st.doneFirst ? '✅' : icon),
+    el('b', {}, name),
+    slot === 'first' && st.running && st.minutes ? el('span', { class: 'ft-timer' }) : null);
+  };
+  const root = el('div', { class: 'ft-wrap' });
+  let tick = null;
+
+  function say() {
+    speak(`먼저 ${FIRST_THEN_ITEMS[st.first][1]}, 다음에 ${FIRST_THEN_ITEMS[st.then][1]}!`);
+  }
+
+  function draw() {
+    const kids = [
+      el('div', { class: 'ft-boards' }, box('first'), el('span', { class: 'ft-arrow' }, '➜'), box('then')),
+    ];
+    if (!st.running) {
+      kids.push(
+        el('p', { class: 'ft-help' }, `${st.slot === 'first' ? '먼저' : '다음'} 칸에 넣을 그림을 골라요`),
+        el('div', { class: 'ft-pick' }, FIRST_THEN_ITEMS.map(([icon, name], k) =>
+          el('button', { class: `ft-item${st[st.slot] === k ? ' on' : ''}`, onclick: () => {
+            st[st.slot] = k;
+            if (st.slot === 'first') st.slot = 'then';
+            draw();
+          } }, el('span', {}, icon), el('small', {}, name)))),
+        el('div', { class: 'ft-times' }, el('span', {}, '⏱️ 먼저 할 시간'),
+          FIRST_THEN_TIMES.map((m) => el('button', { class: `chip${st.minutes === m ? ' on' : ''}`, onclick: () => { st.minutes = m; draw(); } }, m ? `${m}분` : '없음'))),
+        el('button', { class: 'btn-main', onclick: start }, '▶ 보여 주기'));
+    } else {
+      kids.push(st.doneFirst
+        ? el('div', { class: 'btn-row' },
+          el('button', { class: 'btn-main alt', onclick: () => { st.running = false; st.doneFirst = false; draw(); } }, '처음부터'))
+        : el('div', { class: 'btn-row' },
+          el('button', { class: 'btn-main alt', onclick: say }, '🔊 다시 말하기'),
+          el('button', { class: 'btn-main', onclick: finishFirst }, '✅ 먼저 끝!')));
+    }
+    root.replaceChildren(...kids);
+    updateTimer();
+  }
+
+  function start() {
+    store.set('firstThen', { first: st.first, then: st.then, minutes: st.minutes });
+    st.running = true;
+    st.doneFirst = false;
+    st.endAt = st.minutes ? Date.now() + st.minutes * 60000 : 0;
+    draw();
+    say();
+    clearInterval(tick);
+    if (st.minutes) tick = setInterval(updateTimer, 500);
+  }
+
+  function updateTimer() {
+    const t = root.querySelector('.ft-timer');
+    if (!root.isConnected && tick) { clearInterval(tick); return; }
+    if (!t || !st.endAt) return;
+    const left = Math.max(0, st.endAt - Date.now());
+    t.style.setProperty('--p', `${(left / (st.minutes * 60000)) * 100}%`);
+    t.textContent = `${Math.floor(left / 60000)}:${String(Math.ceil((left % 60000) / 1000) % 60).padStart(2, '0')}`;
+    if (left === 0) {
+      clearInterval(tick);
+      st.endAt = 0;
+      tone([660, 880, 660], 0.15);
+      speak(`${FIRST_THEN_ITEMS[st.first][1]} 시간이 끝났어요`, true);
+    }
+  }
+
+  function finishFirst() {
+    clearInterval(tick);
+    st.doneFirst = true;
+    st.endAt = 0;
+    draw();
+    tone([523, 659, 784], 0.12);
+    speak(`잘했어요! 이제 ${FIRST_THEN_ITEMS[st.then][1]}!`);
+  }
+
+  toolScreen('먼저 · 다음', root);
+  draw();
+}
+
+// 풍선이 커지면 숨을 들이쉬고, 작아지면 내쉬어요 (4초씩, 5번)
+function showBreathing() {
+  const ROUNDS = 5;
+  const PHASE = 4000;
+  const ball = el('div', { class: 'breath-ball' }, '🎈');
+  const word = el('div', { class: 'breath-word' }, '준비됐나요?');
+  const count = el('div', { class: 'breath-count' }, range(1, ROUNDS).map(() => el('i')));
+  const btn = el('button', { class: 'btn-main', onclick: start }, '▶ 시작하기');
+  let timer = null;
+  let n = 0;
+
+  function step(phase) {
+    if (!ball.isConnected) return;
+    if (phase === 'in') {
+      ball.className = 'breath-ball grow';
+      word.textContent = '코로 숨을 들이쉬어요';
+      speak('들이쉬고');
+      timer = setTimeout(() => step('out'), PHASE);
+    } else {
+      ball.className = 'breath-ball shrink';
+      word.textContent = '입으로 후 내쉬어요';
+      speak('후 내쉬고');
+      timer = setTimeout(() => {
+        count.children[n]?.classList.add('on');
+        if (++n < ROUNDS) step('in');
+        else {
+          ball.className = 'breath-ball';
+          word.textContent = '잘했어요! 마음이 편안해졌어요 😊';
+          speak('잘했어요. 마음이 편안해졌어요.');
+          btn.textContent = '한 번 더 하기';
+          btn.disabled = false;
+        }
+      }, PHASE);
+    }
+  }
+
+  function start() {
+    clearTimeout(timer);
+    n = 0;
+    [...count.children].forEach((c) => c.classList.remove('on'));
+    btn.disabled = true;
+    step('in');
+  }
+
+  toolScreen('숨 쉬기',
+    el('p', { class: 'sub' }, '속상하거나 화날 때, 풍선과 함께 천천히 숨 쉬어요'),
+    el('div', { class: 'breath-stage' }, ball), word, count, btn);
 }
 
 /* ---------- 화면: 놀이 ---------- */
@@ -3551,7 +3836,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 59;
+const APP_VERSION = 60;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
