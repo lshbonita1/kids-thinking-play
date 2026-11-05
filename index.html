@@ -24,12 +24,14 @@
   <meta name="apple-mobile-web-app-title" content="쑥쑥 생각놀이">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <!-- 글꼴은 화면을 먼저 그린 뒤에 덮어씀 (글꼴 파일을 기다리느라 첫 화면이 늦어지지 않게) -->
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet"></noscript>
   <!-- 고칠 때마다 v 값을 바꾸면 휴대폰이 예전 파일 대신 새 파일을 받아요 (app.js의 APP_VERSION도 같은 숫자로) -->
-  <link rel="stylesheet" href="styles.css?v=77">
+  <link rel="stylesheet" href="styles.css?v=78">
 </head>
 <body>
   <div id="app"></div>
-  <script src="app.js?v=77"></script>
+  <script src="app.js?v=78"></script>
 </body>
 </html>

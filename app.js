@@ -4713,10 +4713,14 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 77;
+const APP_VERSION = 78;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
+let lastUpdateCheck = 0;
 async function checkForUpdate() {
+  // 페이지를 열 때와 화면이 다시 보일 때가 겹치므로 1분 안에는 한 번만 확인
+  if (Date.now() - lastUpdateCheck < 60000) return;
+  lastUpdateCheck = Date.now();
   try {
     const res = await fetch(`./?check=${Date.now()}`, { cache: 'no-store' });
     const latest = Number((await res.text()).match(/app\.js\?v=(\d+)/)?.[1]);
