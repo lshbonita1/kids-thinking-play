@@ -1428,3 +1428,80 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .test-why.muted { color: var(--muted); font-size: 14px; }
 .result-actions.stack { flex-direction: column; align-items: stretch; width: 100%; max-width: 360px; margin-left: auto; margin-right: auto; }
 .result-actions.stack .btn-main { width: 100%; }
+
+/* 메뉴 5칸 (말하기 추가) */
+.tab-bar { grid-template-columns: repeat(5, 1fr); padding-left: 4px; padding-right: 4px; }
+.tab-btn { font-size: 14px; }
+.tab-icon { font-size: 24px; }
+
+/* ---------- 말하기 카드 ---------- */
+.talk-said {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 72px;
+  margin-bottom: 14px;
+  padding: 10px 16px;
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+}
+.talk-said-hint { color: var(--muted); font-size: 16px; }
+.talk-said-icon { font-size: 40px; line-height: 1; }
+.talk-said b { font-weight: 400; font-size: 26px; }
+.talk-yesno { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.talk-group h2 { margin: 6px 0 8px; color: var(--muted); font-weight: 400; font-size: 17px; }
+.talk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.talk-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 108px;
+  padding: 10px 6px;
+  border: 2px solid rgba(0, 0, 0, .04);
+  border-radius: 20px;
+  background: var(--c);
+  transition: transform .12s;
+}
+.talk-card:active { transform: scale(.95); }
+.talk-card.big { flex-direction: row; min-height: 76px; gap: 10px; }
+.talk-card.big .talk-text { font-size: 24px; }
+.talk-icon { font-size: 40px; line-height: 1; }
+.talk-text { font-size: 16px; line-height: 1.25; word-break: keep-all; }
+@media (min-width: 700px) {
+  .talk-grid { grid-template-columns: repeat(5, 1fr); }
+  .talk-card { min-height: 130px; }
+  .talk-icon { font-size: 48px; }
+}
+
+/* ---------- 무엇에 쓰는 걸까? ---------- */
+.review-items .use-answer { padding: 0 4px; border-radius: 8px; background: var(--good-bg); }
+
+/* ---------- 쑥쑥이 따라 하기 ---------- */
+.imitate-show { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 4px 0 10px; }
+.imitate-mascot { width: 90px; }
+.imitate-act { font-size: min(32vw, 34vh, calc(150px * var(--k))); line-height: 1.1; }
+.imitate-name { font-size: 22px; }
+.imitate-name span { color: var(--muted); }
+.imitate-name span.on { color: var(--ink); }
+.imitate-tip { margin-bottom: 12px; color: var(--muted); font-size: 15px; text-align: center; }
+.anim-clap { animation: im-clap .5s ease-in-out infinite; }
+.anim-wave { animation: im-wave .8s ease-in-out infinite; transform-origin: 70% 90%; }
+.anim-up { animation: im-up .9s ease-in-out infinite; }
+.anim-bob { animation: im-bob 1s ease-in-out infinite; }
+.anim-stomp { animation: im-stomp .6s ease-in infinite; }
+.anim-poke { animation: im-poke .8s ease-in-out infinite; }
+.anim-beat { animation: im-beat .8s ease-in-out infinite; }
+@keyframes im-clap { 0%, 100% { transform: scale(1); } 50% { transform: scale(.82); } }
+@keyframes im-wave { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(16deg); } }
+@keyframes im-up { 0%, 100% { transform: translateY(10px); } 50% { transform: translateY(-14px); } }
+@keyframes im-bob { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+@keyframes im-stomp { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-18px); } 60% { transform: translateY(0) scaleY(.92); } }
+@keyframes im-poke { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px) scale(1.06); } }
+@keyframes im-beat { 0%, 100% { transform: scale(1); } 30% { transform: scale(1.15); } 60% { transform: scale(.98); } }

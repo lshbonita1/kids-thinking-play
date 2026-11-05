@@ -126,8 +126,9 @@ if ('speechSynthesis' in window) {
   speechSynthesis.addEventListener?.('voiceschanged', pickKoreanVoice);
 }
 
-function speak(text) {
-  if (!settings.sound || !('speechSynthesis' in window)) return;
+// force: 말하기 카드처럼 소리 설정과 상관없이 꼭 말해야 할 때
+function speak(text, force = false) {
+  if ((!settings.sound && !force) || !('speechSynthesis' in window)) return;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ko-KR';
   if (koVoice) u.voice = koVoice;
@@ -2319,6 +2320,135 @@ const puzzleGame = {
   },
 };
 
+/* ---------- 놀이: 무엇에 쓰는 걸까? (기능 · 종류로 고르기) ---------- */
+// 그림마다 해당하는 쓰임 (비행기처럼 두 가지에 다 맞는 것은 다른 문제의 보기로 나오지 않게)
+const USE_ITEMS = {
+  '🍎': ['eat'], '🍌': ['eat'], '🍇': ['eat'], '🥕': ['eat'], '🍉': ['eat'], '🍪': ['eat'],
+  '🚗': ['ride'], '🚌': ['ride'], '🚲': ['ride'], '⛵': ['ride'], '🚂': ['ride'], '✈️': ['ride', 'fly'],
+  '👕': ['wear'], '👗': ['wear'], '👖': ['wear'], '🧥': ['wear'],
+  '🦋': ['fly'], '🐝': ['fly'], '🐦': ['fly'], '🎈': ['fly'],
+  '🪥': ['wash'], '🧼': ['wash'], '🛁': ['wash'],
+};
+const USE_ASKS = [
+  { id: 'eat', say: '먹는 것을 골라요' },
+  { id: 'ride', say: '타는 것을 골라요' },
+  { id: 'wear', say: '입는 것을 골라요' },
+  { id: 'fly', say: '하늘을 나는 것을 골라요' },
+  { id: 'wash', say: '씻을 때 쓰는 것을 골라요' },
+];
+// 단계별 [앞 5문제, 뒤 5문제] 보기 개수, 나오는 쓰임
+const USE_CHOICES = [[2, 2], [2, 3], [3, 4]];
+const USE_LEVEL_ASKS = [['eat', 'ride', 'wear'], ['eat', 'ride', 'wear', 'fly'], ['eat', 'ride', 'wear', 'fly', 'wash']];
+
+const useGame = {
+  id: 'use',
+  title: '무엇에 쓰는 걸까?',
+  desc: '먹는 것, 타는 것을 골라요',
+  skill: '말 이해 · 생각하기',
+  icon: '🍽️',
+  color: '#fde7d2',
+
+  round(i, ctx) {
+    const ask = pick(USE_ASKS.filter((a) => USE_LEVEL_ASKS[ctx.level].includes(a.id)));
+    const items = Object.keys(USE_ITEMS);
+    const answer = pick(items.filter((e) => USE_ITEMS[e].includes(ask.id)));
+    const count = USE_CHOICES[ctx.level][i < 5 ? 0 : 1];
+    // 보기는 서로 다른 쓰임에서 하나씩 (같은 쓰임 그림이 두 개면 헷갈림)
+    const otherAsks = shuffle(USE_LEVEL_ASKS[ctx.level].filter((a) => a !== ask.id));
+    const wrongs = otherAsks.slice(0, count - 1).map((a) => pick(items.filter((e) => USE_ITEMS[e].includes(a) && !USE_ITEMS[e].includes(ask.id))));
+    while (wrongs.length < count - 1) {
+      wrongs.push(pick(items.filter((e) => !USE_ITEMS[e].includes(ask.id) && !wrongs.includes(e))));
+    }
+    const choices = shuffle([answer, ...wrongs]);
+    const rec = { ask: ask.id, say: ask.say, answer, choices, chosen: null };
+    const render = photoRenderer(choices);
+
+    const buttons = choices.map((c) => el('button', { class: 'tile choice', 'aria-label': c, onclick: () => choose(c) }, render(c)));
+    ctx.stage.append(prompt(ask.say), choiceLabel(choices.length),
+      el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons));
+
+    function choose(c) {
+      const btn = buttons[choices.indexOf(c)];
+      if (c !== answer) {
+        retryChoice(ctx, btn, buttons[choices.indexOf(answer)]);
+        return;
+      }
+      rec.chosen = c;
+      btn.classList.add('good');
+      ctx.finish(true);
+    }
+
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', {},
+      el('div', { class: 'review-items' }, rec.choices.map((c) =>
+        el('span', { class: c === rec.answer ? 'use-answer' : '' }, photoRenderer(rec.choices)(c)))),
+      el('div', { class: 'review-note' }, `${rec.say.replace('을 골라요', '')}: ${rec.answer}`));
+  },
+};
+
+/* ---------- 놀이: 쑥쑥이 따라 하기 (동작 모방) ---------- */
+// 쑥쑥이가 보여 주는 동작을 아이가 따라 하면 보호자가 '했어요'를 누름
+const IMITATE_ACTIONS = [
+  { icon: '👏', say: '박수 짝짝', anim: 'clap' },
+  { icon: '👋', say: '손 흔들기', anim: 'wave' },
+  { icon: '🙌', say: '만세', anim: 'up' },
+  { icon: '🙆', say: '머리에 손 올리기', anim: 'bob' },
+  { icon: '🦶', say: '발 쿵쿵', anim: 'stomp' },
+  { icon: '👃', say: '코 콕', anim: 'poke' },
+  { icon: '😝', say: '메롱', anim: 'bob' },
+  { icon: '🫶', say: '하트 만들기', anim: 'beat' },
+];
+// 단계별 한 번에 보여 주는 동작 수
+const IMITATE_STEPS = [1, 1, 2];
+
+const imitateGame = {
+  id: 'imitate',
+  title: '쑥쑥이 따라 하기',
+  desc: '쑥쑥이처럼 몸으로 따라 해요',
+  skill: '모방 · 몸 놀이',
+  icon: '👏',
+  color: '#e2f1fb',
+
+  round(i, ctx) {
+    const acts = sample(IMITATE_ACTIONS, IMITATE_STEPS[ctx.level]);
+    const say = acts.length === 1 ? `${acts[0].say}! 따라 해 봐요` : `${acts[0].say} 하고, ${acts[1].say}! 따라 해 봐요`;
+    const rec = { acts: acts.map((a) => a.icon), say, done: false };
+    let k = 0;
+
+    const show = el('div', { class: 'imitate-show' });
+    function play() {
+      // 동작이 두 개면 차례로 보여 줌
+      const a = acts[k % acts.length];
+      show.replaceChildren(
+        el('div', { class: 'imitate-mascot' }, mascot('happy', 'bounce')),
+        el('div', { class: `imitate-act anim-${a.anim}` }, a.icon),
+        el('div', { class: 'imitate-name' }, acts.map((x, j) => el('span', { class: x === a ? 'on' : '' }, x.say)).flatMap((n, j) => (j ? [' → ', n] : [n]))));
+      if (acts.length > 1 && ++k < acts.length) ctx.later(play, 1800);
+    }
+    play();
+
+    ctx.stage.append(
+      prompt(say),
+      show,
+      el('div', { class: 'imitate-tip' }, '👪 아이가 따라 하면 [했어요]를 눌러 주세요'),
+      el('div', { class: 'btn-row' },
+        el('button', { class: 'btn-main alt', onclick: () => { k = 0; play(); speak(say); } }, '🔁 다시 보기'),
+        el('button', { class: 'btn-main', onclick: () => { rec.done = true; ctx.finish(true); } }, '✅ 했어요!')),
+    );
+
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', {},
+      el('div', { class: 'review-items' }, rec.acts.join(' ')),
+      el('div', { class: 'review-note' }, rec.say.replace('! 따라 해 봐요', '')));
+  },
+};
+
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
   memory: (r) => r.original.join(),
@@ -2334,6 +2464,8 @@ const QUESTION_KEYS = {
   match: (r) => r.pair.q,
   order: (r) => `${r.items.map((it) => `${it.label}${it.scale ?? ''}`).join()}|${r.order.join()}`,
   routine: (r) => `${r.items.map((it) => it.label).join()}|${r.order.join()}`,
+  use: (r) => `${r.ask}|${r.answer}|${r.choices.length}`,
+  imitate: (r) => r.acts.join(),
   body: (r) => `${r.scene}|${r.part}`,
   size: (r) => `${r.item}|${r.ask}|${r.scales.join()}`,
   puzzle: (r) => `${r.photo}|${r.cols}x${r.rows}`,
@@ -2348,7 +2480,7 @@ const questionKey = (game, r) => `${game.id}:${(QUESTION_KEYS[game.id] ?? JSON.s
 const GAMES = [
   copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, spaceGame, memoryGame, patternGame,
   countGame, oddGame, flipGame, shadowGame, orderGame, traceGame, sortGame, balloonGame, moleGame,
-  bodyGame, sizeGame, puzzleGame,
+  bodyGame, sizeGame, puzzleGame, useGame, imitateGame,
 ];
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
@@ -2537,19 +2669,20 @@ function playDaily() {
 /* ---------- 화면: 홈 ---------- */
 // 놀이를 영역별로 묶음 (보호자가 이해하기 쉬운 말로)
 const CATEGORIES = [
-  { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame] },
+  { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame, imitateGame] },
   { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame, puzzleGame] },
   { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame] },
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
   { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame] },
-  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, matchGame, bodyGame] },
+  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, matchGame, bodyGame, useGame] },
   { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, routineGame] },
 ];
 
 const HOME_TABS = [
   { id: 'today', icon: '🏠', name: '오늘' },
   { id: 'games', icon: '🧩', name: '놀이' },
+  { id: 'talk', icon: '🗣️', name: '말하기' },
   { id: 'records', icon: '📊', name: '기록' },
   { id: 'settings', icon: '⚙️', name: '설정' },
 ];
@@ -3039,8 +3172,41 @@ function showHome(tab) {
   // 버튼에서 바로 불리면 이벤트가 넘어오므로, 글자가 아니면 마지막으로 본 탭으로
   if (typeof tab !== 'string' || !HOME_TABS.some((t) => t.id === tab)) tab = store.get('homeTab', 'today');
   store.set('homeTab', tab);
-  const content = { today: todayTab, games: gamesTab, records: recordsTab, settings: settingsTab }[tab]();
+  const content = { today: todayTab, games: gamesTab, talk: talkTab, records: recordsTab, settings: settingsTab }[tab]();
   mount(el('div', { class: 'screen home' }, ...content, tabBar(tab)));
+}
+
+/* ---------- 말하기 카드 (그림을 누르면 대신 말해 줌) ---------- */
+// 말이 아직 어려운 아이가 그림을 눌러 하고 싶은 말을 전하는 도구 (설정에서 소리를 꺼도 말함)
+const TALK_GROUPS = [
+  { name: '필요해요', color: '#dbeefd', cards: [['💧', '물 주세요'], ['🍚', '밥 주세요'], ['🍪', '간식 주세요'], ['🚽', '화장실 가고 싶어요'], ['😴', '졸려요']] },
+  { name: '부탁해요', color: '#fdeccf', cards: [['➕', '더 주세요'], ['✋', '그만할래요'], ['🙏', '도와주세요'], ['🤗', '안아 주세요'], ['🛋️', '쉬고 싶어요']] },
+  { name: '내 기분', color: '#fde2e2', cards: [['😄', '좋아요'], ['😣', '싫어요'], ['🤕', '아파요'], ['😢', '슬퍼요'], ['😠', '화나요']] },
+  { name: '하고 싶어요', color: '#e3f3e6', cards: [['⚽', '공놀이 하고 싶어요'], ['📚', '책 읽고 싶어요'], ['🛝', '놀이터 가고 싶어요'], ['🎵', '노래 듣고 싶어요'], ['🏠', '집에 가고 싶어요']] },
+];
+
+function talkTab() {
+  const said = el('div', { class: 'talk-said', 'aria-live': 'polite' }, el('span', { class: 'talk-said-hint' }, '그림을 누르면 말해 줘요'));
+  const say = (icon, text, node) => {
+    speak(text, true);
+    said.replaceChildren(el('span', { class: 'talk-said-icon' }, icon), el('b', {}, text));
+    node.classList.remove('pop');
+    void node.offsetWidth;
+    node.classList.add('pop');
+  };
+  const card = ([icon, text], color, cls = '') => {
+    const node = el('button', { class: `talk-card ${cls}`, style: `--c:${color}`, onclick: () => say(icon, text, node) },
+      el('span', { class: 'talk-icon' }, icon), el('span', { class: 'talk-text' }, text));
+    return node;
+  };
+  return [
+    ...tabHeader('말하기', '하고 싶은 말을 그림으로 눌러요'),
+    said,
+    el('div', { class: 'talk-yesno' }, card(['👍', '네'], '#d5f0dc', 'big'), card(['👎', '아니요'], '#fbdcdc', 'big')),
+    ...TALK_GROUPS.map((g) => el('section', { class: 'talk-group' },
+      el('h2', {}, g.name),
+      el('div', { class: 'talk-grid' }, g.cards.map((c) => card(c, g.color))))),
+  ];
 }
 
 /* ---------- 화면: 놀이 ---------- */
@@ -3385,7 +3551,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 58;
+const APP_VERSION = 59;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
