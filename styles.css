@@ -1839,3 +1839,22 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .seo-intro { max-width: 560px; margin: 0 auto; padding: 24px 16px; color: var(--ink); line-height: 1.6; }
 .seo-intro h1 { font-size: 26px; }
 a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
+
+/* 오늘 탭 맨 아래: 자주 묻는 질문 */
+.home-foot { margin: 18px 0 8px; }
+.faq-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--ink);
+  text-decoration: none;
+}
+.faq-btn span:first-child { font-size: 22px; }
+.faq-btn b { font-weight: 400; font-size: 18px; }
+.faq-go { margin-left: auto; color: var(--muted); font-size: 22px; }
+.home-foot-links { margin-top: 12px; color: var(--muted); font-size: 13px; text-align: center; }
+.home-foot-links a { color: var(--muted); }
