@@ -2832,6 +2832,7 @@ function todayTab() {
     stickerCard(),
     gamePicks(),
     helperCard(),
+    feedbackCard(),
     shareCard(),
   ];
 }
@@ -3114,6 +3115,8 @@ function settingsTab() {
       levelTestLink()),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '👪 보호자 안내'),
+      el('button', { class: 'more-games', onclick: showFeedback },
+        el('span', {}, '💬 의견 게시판'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: () => showGuide('about') },
         el('span', {}, '🌱 쑥쑥 생각놀이 소개'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: () => showGuide('howto') },
@@ -3594,6 +3597,87 @@ function showBreathing() {
     el('div', { class: 'breath-stage' }, ball), word, count, btn);
 }
 
+/* ---------- 의견 게시판 ('이런 놀이도 만들어 주세요') ---------- */
+const FEEDBACK_KINDS = [['idea', '💡 놀이 제안'], ['issue', '🛠️ 불편한 점'], ['etc', '💌 칭찬 · 기타']];
+
+function feedbackCard() {
+  return el('button', { class: 'feedback-card', onclick: showFeedback },
+    el('span', { class: 'feedback-card-icon' }, '💬'),
+    el('span', { class: 'feedback-card-text' }, el('b', {}, '이런 놀이도 만들어 주세요'), el('small', {}, '의견 게시판에 남겨 주시면 하나하나 읽어요')),
+    el('span', { class: 'feedback-card-go' }, '›'));
+}
+
+function showFeedback() {
+  let kind = 'idea';
+  const kindRow = el('div', { class: 'fb-kinds' });
+  const drawKinds = () => kindRow.replaceChildren(...FEEDBACK_KINDS.map(([id, name]) =>
+    el('button', { class: `chip${kind === id ? ' on' : ''}`, onclick: () => { kind = id; drawKinds(); } }, name)));
+  drawKinds();
+  const message = el('textarea', { class: 'fb-message', maxlength: '500', rows: '4', placeholder: '예) 동물 소리 듣고 찾는 놀이가 있으면 좋겠어요' });
+  const nickname = el('input', { class: 'fb-nick', maxlength: '12', placeholder: '닉네임 (안 써도 돼요)' });
+  const status = el('p', { class: 'fb-status', role: 'status' });
+  const send = el('button', { class: 'btn-main', onclick: submit }, '의견 남기기');
+  const list = el('div', { class: 'fb-list' }, el('p', { class: 'muted' }, '불러오는 중이에요…'));
+
+  async function submit() {
+    if (message.value.trim().length < 2) {
+      status.textContent = '의견을 두 글자 이상 적어 주세요.';
+      message.focus();
+      return;
+    }
+    send.disabled = true;
+    status.textContent = '';
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind, message: message.value, nickname: nickname.value, vid: visitorId() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '잠시 뒤 다시 해 주세요.');
+      message.value = '';
+      toast('고마워요! 의견이 잘 남겨졌어요 🌱');
+      loadList();
+    } catch (e) {
+      status.textContent = e.message;
+    } finally {
+      send.disabled = false;
+    }
+  }
+
+  async function loadList() {
+    try {
+      const res = await fetch('/api/feedback', { cache: 'no-store' });
+      if (!res.ok) throw new Error();
+      const { posts } = await res.json();
+      list.replaceChildren(...(posts.length ? posts.map(feedbackPost) : [el('p', { class: 'muted' }, '아직 남겨진 의견이 없어요. 첫 의견을 남겨 주세요!')]));
+    } catch {
+      list.replaceChildren(el('p', { class: 'muted' }, '의견을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.'));
+    }
+  }
+
+  toolScreen('의견 게시판',
+    el('p', { class: 'sub' }, '있었으면 하는 놀이, 불편한 점을 알려 주세요. 하나하나 읽고 고쳐 나갈게요.'),
+    el('section', { class: 'fb-form' },
+      kindRow, message, nickname,
+      el('p', { class: 'fb-note' }, '🔒 아이 이름, 연락처 같은 개인정보는 적지 말아 주세요. 남긴 글은 모두가 볼 수 있어요.'),
+      status, send),
+    el('h2', { class: 'fb-title' }, '남겨 주신 의견'),
+    list);
+  loadList();
+}
+
+function feedbackPost(p) {
+  const kindName = (FEEDBACK_KINDS.find(([id]) => id === p.kind) ?? FEEDBACK_KINDS[0])[1];
+  const day = new Date(p.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+  return el('article', { class: 'fb-post' },
+    el('div', { class: 'fb-post-head' },
+      el('span', { class: `fb-kind ${p.kind}` }, kindName),
+      el('span', { class: 'fb-who' }, `${p.nickname || '보호자'} · ${day}`)),
+    el('p', { class: 'fb-text' }, p.message),
+    p.admin_reply ? el('div', { class: 'fb-reply' }, el('b', {}, '🌱 만든 사람'), el('p', {}, p.admin_reply)) : null);
+}
+
 /* ---------- 화면: 놀이 ---------- */
 function playGame(game) {
   const total = game.total ?? TOTAL;
@@ -3936,7 +4020,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 62;
+const APP_VERSION = 63;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

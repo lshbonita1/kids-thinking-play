@@ -1,25 +1,17 @@
 // GET /api/admin-stats — 관리자 통계 (Authorization: Bearer <ADMIN_TOKEN>)
 import { sbSelectAll, VISITS_TABLE } from '../lib/supabase.js';
 import { EXCLUDED_VISIT_IPS, looksLikeBotIsp, fetchIpGeo, CITY_NAME_KO } from '../lib/geo.js';
+import { isAdmin } from '../lib/request.js';
 
 const DAY_MS = 86400000;
 const KEEP_DAYS = 180; // 통계에 쓰는 기간 (개인정보처리방침의 보관 기간과 같게)
 const kstDay = (ms) => new Date(ms + 9 * 3600000).toISOString().slice(0, 10);
 
-// 시간 차이로 비밀번호를 알아내지 못하도록 끝까지 비교
-function sameText(a = '', b = '') {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
 const distinct = (rows, key) => new Set(rows.map((r) => r[key]).filter(Boolean)).size;
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!process.env.ADMIN_TOKEN || !sameText(token, process.env.ADMIN_TOKEN)) {
+  if (!isAdmin(req)) {
     res.status(401).json({ error: '비밀번호가 맞지 않아요.' });
     return;
   }

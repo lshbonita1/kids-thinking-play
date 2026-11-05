@@ -1604,3 +1604,53 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .breath-ball { font-size: min(50vw, 30vh, 220px); line-height: 1.25; padding: .05em .1em; transform: scale(.5); transform-origin: center; }
 .breath-ball.grow { transform: scale(1); }
 .breath-ball.shrink { transform: scale(.45); }
+
+/* ---------- 의견 게시판 ---------- */
+.feedback-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 2px solid #f3d9b0;
+  border-radius: 22px;
+  background: #fff7ea;
+  text-align: left;
+}
+.feedback-card-icon { display: grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 50%; background: #fff; font-size: 24px; }
+.feedback-card-text { display: flex; flex: 1; flex-direction: column; gap: 2px; }
+.feedback-card-text b { font-weight: 400; font-size: 18px; }
+.feedback-card-text small { color: #9a7b3c; font-size: 14px; }
+.feedback-card-go { color: var(--muted); font-size: 24px; }
+.fb-form { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 2px solid var(--line); border-radius: 22px; background: #fff; }
+.fb-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.fb-kinds .chip { font-size: 15px; padding: 7px 12px; }
+.fb-message, .fb-nick {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+  font-size: 17px;
+  box-sizing: border-box;
+}
+.fb-message { resize: vertical; min-height: 110px; line-height: 1.5; }
+.fb-message:focus, .fb-nick:focus { outline: none; border-color: var(--orange); }
+.fb-note { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.fb-status:empty { display: none; }
+.fb-status { margin: 0; color: #c0504d; font-size: 15px; }
+.fb-title { margin: 24px 0 10px; font-weight: 400; font-size: 21px; }
+.fb-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 24px; }
+.fb-post { padding: 14px 16px; border: 2px solid var(--line); border-radius: 20px; background: #fff; }
+.fb-post-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+.fb-kind { padding: 3px 10px; border-radius: 999px; background: #fff3c4; font-size: 13px; }
+.fb-kind.issue { background: #fde2e2; }
+.fb-kind.etc { background: #e4dbf3; }
+.fb-who { color: var(--muted); font-size: 14px; }
+.fb-text { margin: 0; font-size: 17px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.fb-reply { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: var(--good-bg); }
+.fb-reply b { color: var(--good); font-weight: 400; font-size: 15px; }
+.fb-reply p { margin: 4px 0 0; font-size: 16px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }

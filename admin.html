@@ -28,6 +28,13 @@
     .btn { padding: 12px 16px; border: 2px solid var(--line); border-radius: 16px; background: var(--card); color: var(--ink); font-family: var(--display); font-size: 18px; }
     .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
     .btn:disabled { opacity: .5; cursor: default; }
+    .fb-item { padding: 14px 0; border-top: 1px solid var(--line); }
+    .fb-item.hidden-post { opacity: .55; }
+    .fb-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; color: var(--muted); font-size: 14px; }
+    .fb-msg { margin: 6px 0 8px; white-space: pre-wrap; word-break: break-word; }
+    .fb-item textarea { width: 100%; box-sizing: border-box; min-height: 64px; padding: 10px; border: 2px solid var(--line); border-radius: 12px; font: inherit; }
+    .fb-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .fb-actions .btn { padding: 8px 12px; font-size: 15px; }
     table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
     th { text-align: left; color: var(--muted); font-weight: 400; font-size: 14px; padding: 6px 4px; border-bottom: 2px solid var(--line); }
     td { padding: 12px 4px; border-bottom: 1px solid var(--line); }
@@ -136,6 +143,12 @@
       <section class="card">
         <h2>📜 최근 로그 50건</h2>
         <div class="scroll"><table class="log"><thead><tr><th>시간</th><th>종류</th><th>기기</th><th>내용</th><th>IP</th><th>기기 번호</th></tr></thead><tbody id="recent"></tbody></table></div>
+      </section>
+
+      <section class="card">
+        <h2>💬 의견 게시판 <span class="muted" id="fb-count"></span></h2>
+        <p class="muted">답글은 사이트의 의견 게시판에 '🌱 만든 사람'으로 보여요. 숨긴 글은 사이트에서 안 보여요.</p>
+        <div id="fb-admin"></div>
       </section>
 
       <section class="card">
@@ -287,12 +300,59 @@
         if (!res.ok) throw new Error(data.error || res.status);
         $('login').hidden = true; $('dash').hidden = false; $('refresh').hidden = false;
         render(data);
+        loadFeedback();
       } catch (e) {
         showLogin(`통계를 불러오지 못했어요. 잠시 뒤 다시 해 주세요. (${e.message})`);
       } finally {
         $('refresh').disabled = false;
       }
     }
+
+    const FB_KINDS = { idea: '💡 놀이 제안', issue: '🛠️ 불편한 점', etc: '💌 칭찬 · 기타' };
+    async function loadFeedback() {
+      try {
+        const res = await fetch(`${API}/admin-feedback`, { headers: { Authorization: `Bearer ${getToken()}` }, cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.error || res.status);
+        const posts = data.posts;
+        $('fb-count').textContent = `${fmt(posts.length)}개`;
+        $('fb-admin').innerHTML = posts.length ? posts.map((p) => `
+          <div class="fb-item${p.is_hidden ? ' hidden-post' : ''}" data-id="${p.id}">
+            <div class="fb-meta"><span>${FB_KINDS[p.kind] || p.kind}</span><span>${esc(p.nickname || '보호자')}</span>
+              <span>${new Date(p.created_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              <span>${esc(p.ip_address || '')}</span>${p.is_hidden ? '<span>🙈 숨김</span>' : ''}</div>
+            <div class="fb-msg">${esc(p.message)}</div>
+            <textarea placeholder="답글 (비우고 저장하면 답글이 지워져요)">${esc(p.admin_reply || '')}</textarea>
+            <div class="fb-actions">
+              <button class="btn primary" data-act="reply">답글 저장</button>
+              <button class="btn" data-act="${p.is_hidden ? 'show' : 'hide'}">${p.is_hidden ? '다시 보이기' : '숨기기'}</button>
+              <button class="btn" data-act="delete">삭제</button>
+            </div>
+          </div>`).join('') : '<p class="muted">아직 남겨진 의견이 없어요.</p>';
+      } catch (e) {
+        $('fb-admin').innerHTML = `<p class="muted">의견을 불러오지 못했어요. (${esc(e.message)}) Supabase에 ssuk_feedback 표를 만들었는지 확인해 주세요.</p>`;
+      }
+    }
+    $('fb-admin').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-act]');
+      if (!btn) return;
+      const item = btn.closest('.fb-item');
+      const action = btn.dataset.act;
+      if (action === 'delete' && !confirm('이 의견을 지울까요? 되돌릴 수 없어요.')) return;
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API}/admin-feedback`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: Number(item.dataset.id), action, reply: item.querySelector('textarea').value }),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+        await loadFeedback();
+      } catch (err) {
+        alert(`처리하지 못했어요. (${err.message})`);
+        btn.disabled = false;
+      }
+    });
 
     function showLogin(message) {
       $('login').hidden = false; $('dash').hidden = true; $('refresh').hidden = true;

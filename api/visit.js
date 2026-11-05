@@ -1,14 +1,9 @@
 // POST /api/visit — 방문 · 놀이 완료 기록 (뉴스런 api/dates.js?visit=1과 같은 방식)
 // 사이트가 열릴 때 한 번(visit), 놀이를 끝까지 하면 한 번(play) 불림. 실패해도 사이트에는 영향 없음.
 import { sbInsert, sbDelete, VISITS_TABLE } from '../lib/supabase.js';
+import { getClientIp, readBody } from '../lib/request.js';
 
 const KEEP_DAYS = 180; // 개인정보처리방침의 보관 기간 (6개월)
-
-function getClientIp(req) {
-  const xff = req.headers['x-forwarded-for'];
-  if (xff) return xff.split(',')[0].trim();
-  return (req.socket && req.socket.remoteAddress) || null;
-}
 
 // 브라우저 정보는 기기 종류 · 브라우저 이름만 남김
 function deviceOf(ua = '') {
@@ -46,11 +41,7 @@ export default async function handler(req, res) {
   }
   try {
     // sendBeacon은 글자(text/plain)로 보내서 직접 읽어 줌
-    let body = req.body;
-    if (typeof body === 'string') {
-      try { body = JSON.parse(body); } catch { body = {}; }
-    }
-    body = body || {};
+    const body = readBody(req);
     const ua = req.headers['user-agent'] || '';
     const from = hostOf(req.headers.origin || req.headers.referer || '');
     if (BOT_UA.test(ua) || (from && !SITE_HOST.test(from))) {
