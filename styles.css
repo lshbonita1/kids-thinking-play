@@ -1654,3 +1654,78 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .fb-reply { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: var(--good-bg); }
 .fb-reply b { color: var(--good); font-weight: 400; font-size: 15px; }
 .fb-reply p { margin: 4px 0 0; font-size: 16px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+
+/* ---------- 듣고 고르는 놀이 (소리 · 동작 · 색깔 모양 · 숫자) ---------- */
+.choice-review { display: flex; justify-content: center; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sound-play { display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 10px; padding: 10px 20px; border: 2px solid #f3d9b0; border-radius: 999px; background: #fff7ea; font-size: 22px; }
+.sound-play b { font-weight: 400; }
+.shape-pic { display: grid; place-items: center; width: 70%; height: 70%; }
+.shape-pic svg { width: 100%; height: 100%; }
+.choice-review .shape-pic { width: 34px; height: 34px; }
+.num-big { margin: 0 auto 8px; color: #3b82f6; font-family: var(--display); font-size: min(26vw, 18vh, calc(110px * var(--k))); line-height: 1; text-align: center; }
+.num-dots { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 2px; width: 86%; height: 86%; font-size: calc(var(--t, 80px) * .26); line-height: 1; }
+.num-dots.n1 { font-size: calc(var(--t, 80px) * .5); }
+.num-dots.n2 { font-size: calc(var(--t, 80px) * .38); }
+.choice-review .num-dots { width: auto; height: auto; font-size: 13px; padding: 4px; }
+
+/* ---------- 반대말 · 이럴 땐 ---------- */
+.opp-pic { display: grid; place-items: center; width: 82%; height: 82%; }
+.opp-pic svg { width: 100%; height: 100%; }
+.choice-review .opp-pic { width: 36px; height: 36px; }
+.need-scene { margin: 0 auto 6px; font-size: min(24vw, 16vh, calc(100px * var(--k))); line-height: 1.1; text-align: center; }
+
+/* ---------- 번갈아 쌓기 ---------- */
+.turn-tower { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; min-height: min(46vh, 330px); margin: 4px 0 10px; padding-bottom: 6px; border-bottom: 6px solid #d9b07c; }
+.turn-block { display: grid; place-items: center; width: min(46vw, 180px); height: min(6vh, 40px); border-radius: 10px; background: var(--c); box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .15); font-size: 20px; }
+.turn-who { display: flex; justify-content: center; min-height: 44px; margin-bottom: 10px; font-size: 22px; }
+.turn-who .turn-wait { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.turn-who .turn-wait .mascot, .turn-who .turn-wait svg { width: 38px; height: 38px; }
+.turn-mine { color: var(--good); }
+.turn-btn { display: block; width: 100%; padding: 18px; border-radius: 20px; background: #ffd76e; color: #5b4320; box-shadow: 0 5px 0 #e9b44c; font-size: 24px; }
+.turn-btn.waiting { background: #ece6da; color: var(--muted); box-shadow: 0 5px 0 #d6cebf; }
+.turn-btn.nope, .wait-box.nope { animation: mole-nope .4s; }
+
+/* ---------- 기다리기 연습 ---------- */
+.wait-glass { display: flex; align-items: center; gap: 12px; width: min(100%, 420px); margin: 6px auto 18px; }
+.wait-bar { flex: 1; height: 26px; overflow: hidden; border-radius: 999px; background: #f1ede4; }
+.wait-fill { width: 100%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #f6c453, #e3a25a); }
+.wait-left { min-width: 40px; color: var(--orange); font-family: var(--display); font-size: 34px; text-align: right; }
+.wait-box { display: grid; place-items: center; width: min(52vw, 32vh, 220px); aspect-ratio: 1; margin: 0 auto 10px; border: 3px dashed #e6cfa6; border-radius: 32px; background: #fffaf0; font-size: min(30vw, 18vh, 130px); line-height: 1; }
+.wait-box.opened { border-style: solid; border-color: var(--good); background: var(--good-bg); }
+
+/* ---------- 다 하면 뭐 할까? ---------- */
+.reward-line { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 2px dashed #f3c6d3; border-radius: 16px; background: #fff5f8; font-size: 16px; text-align: left; }
+.reward-line b { font-weight: 400; font-size: 18px; }
+.reward-line small { margin-left: auto; color: var(--muted); font-size: 14px; }
+.reward-line.set { border-style: solid; }
+.reward-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.reward-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 8px; border: 2px solid var(--line); border-radius: 22px; background: #fff; }
+.reward-item span { font-size: 48px; line-height: 1; }
+.reward-item b { font-weight: 400; font-size: 18px; }
+.reward-item.on { border-color: #f29bb3; background: #fff1f5; }
+.reward-chip { margin: 10px auto 0; padding: 8px 16px; border-radius: 999px; background: #fff1f5; color: #8f2b4b; font-size: 18px; text-align: center; }
+.result-reward { margin-top: 10px; padding: 10px 16px; border-radius: 16px; background: #fff1f5; color: #8f2b4b; font-size: 18px; }
+.helper-grid { grid-template-columns: repeat(3, 1fr); }
+.helper-btn b { word-break: keep-all; font-size: 15px; }
+
+/* ---------- 기록 한 장 ---------- */
+.report-link { display: block; width: 100%; margin: -6px 0 14px; padding: 10px 14px; border: 2px solid #d9cbf0; border-radius: 16px; background: #f4effc; color: #5b4a86; font-size: 16px; }
+.report { padding: 16px; border: 2px solid var(--line); border-radius: 22px; background: #fff; }
+.report-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+.report-head b { font-weight: 400; font-size: 20px; }
+.report-head span { color: var(--muted); font-size: 14px; }
+.report-facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 14px 0; font-size: 15px; }
+.report-facts dt { color: var(--muted); }
+.report-facts dd { margin: 0; }
+.report-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.report-table th, .report-table td { padding: 7px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+.report-table th:first-child, .report-table td:first-child { text-align: left; }
+.report-table th { color: var(--muted); font-weight: 400; }
+.report-note { margin: 12px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.report-actions { margin-top: 14px; }
+.report-tip { color: var(--muted); font-size: 14px; text-align: center; }
+@media print {
+  body { background: #fff; }
+  .guide-top .icon-btn, .report-actions, .report-tip, .tab-bar { display: none !important; }
+  .report { border: 0; padding: 0; }
+}

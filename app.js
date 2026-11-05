@@ -2505,6 +2505,428 @@ const stepsGame = {
   },
 };
 
+/* ---------- 듣고 고르는 놀이의 공통 진행 ---------- */
+// 보기 개수별 보기 크기 (그림 하나만 보고 고르므로 크게)
+const BIG_CHOICE = {
+  2: 'clamp(124px, 38vw, calc(170px * var(--k)))',
+  3: 'clamp(96px, 28vw, calc(140px * var(--k)))',
+  4: 'clamp(86px, 21vw, calc(124px * var(--k)))',
+};
+// 보기 중 정답 하나를 고르고, 틀리면 정답이 반짝여 다시 고르게 함
+function choiceRound(ctx, { say, choices, answer, render = String, top = null, rec = {} }) {
+  Object.assign(rec, { say, choices, answer, chosen: null });
+  const ans = choices.indexOf(answer);
+  const buttons = choices.map((c, k) => el('button', { class: 'tile choice', 'aria-label': `${k + 1}번 보기`, onclick: () => choose(k) }, render(c)));
+  ctx.stage.append(...[prompt(say), top, choiceLabel(choices.length),
+    el('div', { class: 'choices', style: `--choice-t:${BIG_CHOICE[choices.length] ?? BIG_CHOICE[4]}` }, buttons)].filter(Boolean));
+
+  function choose(k) {
+    if (k !== ans) {
+      retryChoice(ctx, buttons[k], buttons[ans]);
+      return;
+    }
+    rec.chosen = k;
+    buttons[k].classList.add('good');
+    ctx.finish(true);
+  }
+  return rec;
+}
+
+// 결과 화면: 보기를 늘어놓고 정답에 표시
+function choiceReview(rec, render = String) {
+  return el('div', {},
+    el('div', { class: 'review-items choice-review' }, rec.choices.map((c) =>
+      el('span', { class: c === rec.answer ? 'use-answer' : '' }, render(c)))),
+    el('div', { class: 'review-note' }, rec.say));
+}
+
+// 단계별 [앞 5문제, 뒤 5문제] 보기 개수 (여러 놀이가 같이 씀)
+const BASIC_CHOICES = [[2, 2], [2, 3], [3, 4]];
+const basicChoiceCount = (ctx, i) => BASIC_CHOICES[ctx.level][i < 5 ? 0 : 1];
+
+/* ---------- 놀이: 소리 듣고 찾기 ---------- */
+// 어려움에서는 동물 말고 탈것 · 물건 소리도 나옴
+const SOUND_ITEMS = [
+  ['🐶', '멍멍', 0], ['🐱', '야옹', 0], ['🐮', '음매', 0], ['🐷', '꿀꿀', 0], ['🐸', '개굴개굴', 0],
+  ['🐔', '꼬끼오', 0], ['🦆', '꽥꽥', 1], ['🐑', '메에', 1], ['🐝', '윙윙', 1],
+  ['🚗', '빵빵', 2], ['🚂', '칙칙폭폭', 2], ['🚒', '삐뽀삐뽀', 2], ['🔔', '딩동', 2], ['⏰', '따르릉', 2],
+];
+
+const soundGame = {
+  id: 'sound',
+  title: '소리 듣고 찾기',
+  desc: '멍멍! 누구 소리일까요?',
+  skill: '듣고 구분하기',
+  icon: '🐶',
+  color: '#fbe8d0',
+
+  round(i, ctx) {
+    const pool = SOUND_ITEMS.filter(([, , lv]) => lv <= ctx.level);
+    const picks = sample(pool, basicChoiceCount(ctx, i));
+    const [answer, sound] = picks[0];
+    const rec = choiceRound(ctx, {
+      say: `"${sound}" 소리는 누구일까요?`,
+      choices: shuffle(picks.map(([e]) => e)),
+      answer,
+      top: el('button', { class: 'sound-play', onclick: () => speak(`${sound}! ${sound}!`) }, '🔊 ', el('b', {}, sound)),
+    });
+    ctx.later(() => speak(`${sound}! ${sound}!`), 1600);
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec),
+};
+
+/* ---------- 놀이: 무엇을 하고 있나요? (동작 이해) ---------- */
+const VERB_ITEMS = [
+  ['🛌', '자는'], ['🏃', '달리는'], ['😭', '우는'], ['🛀', '목욕하는'], ['🏊', '수영하는'],
+  ['🚴', '자전거 타는'], ['💃', '춤추는'], ['🧗', '올라가는'], ['😂', '웃는'], ['🙋', '손 드는'],
+];
+
+const verbGame = {
+  id: 'verb',
+  title: '무엇을 하고 있나요?',
+  desc: '자는 친구, 달리는 친구를 찾아요',
+  skill: '동작 이해',
+  icon: '🏃',
+  color: '#e1efe0',
+
+  round(i, ctx) {
+    const picks = sample(VERB_ITEMS, basicChoiceCount(ctx, i));
+    return choiceRound(ctx, {
+      say: `${picks[0][1]} 친구를 골라요`,
+      choices: shuffle(picks.map(([e]) => e)),
+      answer: picks[0][0],
+    });
+  },
+
+  review: (rec) => choiceReview(rec),
+};
+
+/* ---------- 놀이: 색깔 · 모양 이름 ---------- */
+const COLOR_NAMES = [['빨간', '#ef4444'], ['노란', '#facc15'], ['파란', '#3b82f6'], ['초록', '#22c55e'], ['보라', '#a855f7'], ['주황', '#f97316']];
+const SHAPE_NAMES = { circle: '동그라미', triangle: '세모', square: '네모', star: '별', heart: '하트' };
+const SHAPE_PATHS = {
+  circle: '<circle cx="50" cy="50" r="40"/>',
+  triangle: '<path d="M50 10 L92 86 H8 Z" stroke-linejoin="round"/>',
+  square: '<rect x="12" y="12" width="76" height="76" rx="8"/>',
+  star: '<path d="M50 6 L62 38 L96 38 L68 58 L79 92 L50 72 L21 92 L32 58 L4 38 L38 38 Z"/>',
+  heart: '<path d="M50 88 C10 60 4 34 22 20 C36 9 48 18 50 28 C52 18 64 9 78 20 C96 34 90 60 50 88 Z"/>',
+};
+
+// 보기 하나 = [모양, 색 이름]
+function shapeNode([shape, color]) {
+  const node = el('span', { class: 'shape-pic' });
+  const fill = color ? COLOR_NAMES.find(([n]) => n === color)[1] : '#8a8fa0';
+  node.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true" fill="${fill}" stroke="${fill}" stroke-width="2">${SHAPE_PATHS[shape]}</svg>`;
+  return node;
+}
+
+const colorGame = {
+  id: 'color',
+  title: '색깔 · 모양 이름',
+  desc: '빨간색은? 동그라미는?',
+  skill: '기초 개념',
+  icon: '🎨',
+  color: '#fde2e2',
+
+  round(i, ctx) {
+    const n = basicChoiceCount(ctx, i);
+    const colors = shuffle(COLOR_NAMES.map(([c]) => c));
+    const shapes = shuffle(Object.keys(SHAPE_NAMES));
+    // 쉬움: 색깔만(모두 동그라미) / 보통: 앞은 색깔, 뒤는 모양(모두 회색) / 어려움: 뒤는 '빨간 세모'처럼 둘 다
+    const mode = ctx.level === 0 ? 'color' : ctx.level === 1 ? (i < 5 ? 'color' : 'shape') : (i < 5 ? 'shape' : 'both');
+    let choices;
+    let say;
+    if (mode === 'color') {
+      choices = colors.slice(0, n).map((c) => ['circle', c]);
+      say = `${choices[0][1]}색을 골라요`;
+    } else if (mode === 'shape') {
+      choices = shapes.slice(0, n).map((s) => [s, null]);
+      say = `${SHAPE_NAMES[choices[0][0]]}${objectParticle(SHAPE_NAMES[choices[0][0]])} 골라요`;
+    } else {
+      // 정답과 색만 같은 것, 모양만 같은 것을 섞어서 둘 다 들어야 맞힐 수 있게
+      const [s0, s1] = shapes;
+      const [c0, c1] = colors;
+      choices = [[s0, c0], [s0, c1], [s1, c0], [s1, c1]].slice(0, n);
+      say = `${c0} ${SHAPE_NAMES[s0]}${objectParticle(SHAPE_NAMES[s0])} 골라요`;
+    }
+    const answer = choices[0];
+    const rec = choiceRound(ctx, { say, choices: shuffle(choices), answer, render: shapeNode });
+    rec.key = `${mode}|${answer.join()}|${n}`;
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec, shapeNode),
+};
+
+/* ---------- 놀이: 숫자와 개수 짝짓기 ---------- */
+const NUMBER_WORDS = ['', '한', '두', '세', '네', '다섯'];
+const NUMBER_ITEMS = [['🍎', '사과'], ['⭐', '별'], ['🐥', '병아리'], ['🎈', '풍선'], ['🍓', '딸기']];
+const NUMBER_MAX = [3, 4, 5];
+
+function dotsNode([emoji, count]) {
+  return el('span', { class: `num-dots n${count}` }, range(1, count).map(() => el('i', {}, emoji)));
+}
+
+const numberGame = {
+  id: 'number',
+  title: '숫자와 개수 짝짓기',
+  desc: '숫자만큼 있는 것을 찾아요',
+  skill: '수 개념',
+  icon: '3️⃣',
+  color: '#dfe9f7',
+
+  round(i, ctx) {
+    const [emoji, name] = pick(NUMBER_ITEMS);
+    const counts = sample(range(1, NUMBER_MAX[ctx.level]), basicChoiceCount(ctx, i));
+    const n = counts[0];
+    const choices = shuffle(counts.map((c) => [emoji, c]));
+    return choiceRound(ctx, {
+      say: `${name}${topicParticle(name).endsWith('은') ? '이' : '가'} ${NUMBER_WORDS[n]} 개 있는 것을 골라요`,
+      choices,
+      answer: choices.find(([, c]) => c === n),
+      render: dotsNode,
+      top: el('div', { class: 'num-big' }, String(n)),
+    });
+  },
+
+  review: (rec) => choiceReview(rec, dotsNode),
+};
+
+/* ---------- 놀이: 반대말 ---------- */
+// 그림 두 장이 서로 반대인 짝. 그림은 [글자 그림] 또는 [그리는 함수]
+const svgPic = (body, vb = '0 0 100 100') => () => {
+  const n = el('span', { class: 'opp-pic' });
+  n.innerHTML = `<svg viewBox="${vb}" aria-hidden="true">${body}</svg>`;
+  return n;
+};
+const manyPic = (n) => () => el('span', { class: `num-dots n${n}` }, range(1, n).map(() => el('i', {}, '🍎')));
+const OPPOSITES = [
+  { level: 0, a: ['많은 것', manyPic(5)], b: ['적은 것', manyPic(1)] },
+  { level: 0, a: ['뜨거운 것', () => '🔥'], b: ['차가운 것', () => '🧊'] },
+  { level: 0, a: ['낮', () => '☀️'], b: ['밤', () => '🌙'] },
+  { level: 1, a: ['긴 것', svgPic('<rect x="4" y="42" width="92" height="16" rx="8" fill="#f97316"/>')], b: ['짧은 것', svgPic('<rect x="36" y="42" width="28" height="16" rx="8" fill="#f97316"/>')] },
+  { level: 1, a: ['열린 책', () => '📖'], b: ['닫힌 책', () => '📕'] },
+  { level: 1, a: ['웃는 얼굴', () => '😄'], b: ['우는 얼굴', () => '😭'] },
+  { level: 2, a: ['상자 안에 있는 공', svgPic('<rect x="14" y="30" width="72" height="60" rx="6" fill="#d9b07c"/><rect x="20" y="36" width="60" height="48" rx="4" fill="#f3dfbf"/><circle cx="50" cy="66" r="14" fill="#ef4444"/>')],
+    b: ['상자 밖에 있는 공', svgPic('<rect x="6" y="40" width="58" height="50" rx="6" fill="#d9b07c"/><rect x="11" y="45" width="48" height="40" rx="4" fill="#f3dfbf"/><circle cx="82" cy="76" r="14" fill="#ef4444"/>')] },
+  { level: 2, a: ['가득 찬 컵', svgPic('<path d="M25 15 H75 L68 90 H32 Z" fill="#e8f1fb" stroke="#9fc2e6" stroke-width="3"/><path d="M27 22 H73 L68 88 H32 Z" fill="#60a5fa"/>')],
+    b: ['텅 빈 컵', svgPic('<path d="M25 15 H75 L68 90 H32 Z" fill="#e8f1fb" stroke="#9fc2e6" stroke-width="3"/>')] },
+];
+
+const oppositeGame = {
+  id: 'opposite',
+  title: '반대말',
+  desc: '많다 · 적다, 길다 · 짧다',
+  skill: '개념 이해',
+  icon: '↔️',
+  color: '#e8e1f6',
+
+  round(i, ctx) {
+    const pair = pick(OPPOSITES.filter((o) => o.level <= ctx.level));
+    const flip = rand(2);
+    const [want, other] = flip ? [pair.b, pair.a] : [pair.a, pair.b];
+    const rec = choiceRound(ctx, {
+      say: `${want[0]}${objectParticle(want[0])} 골라요`,
+      choices: shuffle([want, other]),
+      answer: want,
+      render: ([, draw]) => draw(),
+    });
+    rec.key = want[0];
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec, ([, draw]) => draw()),
+};
+
+/* ---------- 놀이: 이럴 땐 어떻게 해요? (원인과 결과) ---------- */
+const NEEDS = [
+  { icon: '🌧️', say: '비가 와요', need: '☂️', level: 0 },
+  { icon: '🥶', say: '추워요', need: '🧥', level: 0 },
+  { icon: '😋', say: '배고파요', need: '🍚', level: 0 },
+  { icon: '😴', say: '졸려요', need: '🛏️', level: 0 },
+  { icon: '🖐️', say: '손이 더러워요', need: '🧼', level: 1 },
+  { icon: '🥵', say: '목말라요', need: '🥛', level: 1 },
+  { icon: '🤧', say: '콧물이 나요', need: '🧻', level: 1 },
+  { icon: '🌑', say: '깜깜해요', need: '🔦', level: 2 },
+  { icon: '🦷', say: '이를 닦아요', need: '🪥', level: 2 },
+  { icon: '🩹', say: '무릎이 까졌어요', need: '🩹', level: 2 },
+];
+
+const needGame = {
+  id: 'need',
+  title: '이럴 땐 어떻게 해요?',
+  desc: '비가 오면 무엇이 필요할까요?',
+  skill: '원인과 결과',
+  icon: '☂️',
+  color: '#dcecf8',
+
+  round(i, ctx) {
+    const pool = NEEDS.filter((x) => x.level <= ctx.level);
+    const q = pick(pool);
+    const wrongs = sample(NEEDS.filter((x) => x !== q && x.need !== q.need), basicChoiceCount(ctx, i) - 1).map((x) => x.need);
+    const rec = choiceRound(ctx, {
+      say: `${q.say}. 무엇이 필요할까요?`,
+      choices: shuffle([q.need, ...wrongs]),
+      answer: q.need,
+      // 무릎 그림은 정답 그림(밴드)과 같아서 다친 무릎 대신 우는 얼굴로
+      top: el('div', { class: 'need-scene' }, q.icon === q.need ? '😣' : q.icon),
+    });
+    rec.situation = q.say;
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec),
+};
+
+/* ---------- 놀이: 번갈아 쌓기 (차례 지키기) ---------- */
+// 아이와 쑥쑥이가 블록을 하나씩 번갈아 쌓음. 쑥쑥이 차례에 누르면 '기다려요'
+const TURN_BLOCKS = [4, 6, 8];
+const TURN_WAIT = [1200, 1600, 2200];
+const BLOCK_COLORS = ['#ef4444', '#facc15', '#3b82f6', '#22c55e', '#a855f7', '#f97316', '#ec4899', '#14b8a6'];
+
+const turnGame = {
+  id: 'turn',
+  title: '번갈아 쌓기',
+  desc: '쑥쑥이랑 차례차례 쌓아요',
+  skill: '차례 지키기',
+  icon: '🧱',
+  color: '#fbe3d6',
+  total: 5,
+
+  round(i, ctx) {
+    const total = TURN_BLOCKS[ctx.level];
+    const rec = { total, round: i, early: 0, done: false };
+    let placed = 0;
+    let myTurn = true;
+
+    const tower = el('div', { class: 'turn-tower' });
+    const who = el('div', { class: 'turn-who' });
+    const btn = el('button', { class: 'turn-btn', onclick: tap }, '🧱 내 블록 쌓기');
+    ctx.stage.append(prompt('쑥쑥이랑 번갈아 쌓아요'), tower, who, btn);
+
+    function addBlock(mine) {
+      tower.prepend(el('div', { class: `turn-block pop${mine ? ' mine' : ''}`, style: `--c:${BLOCK_COLORS[placed % BLOCK_COLORS.length]}` }, mine ? '🙂' : '🌱'));
+      placed++;
+      tone([440 + placed * 60], 0.07);
+    }
+
+    function draw() {
+      who.replaceChildren(myTurn
+        ? el('span', { class: 'turn-mine' }, '👉 내 차례!')
+        : el('span', { class: 'turn-wait' }, mascot('smile'), ' 쑥쑥이 차례 · 기다려요'));
+      btn.classList.toggle('waiting', !myTurn);
+    }
+
+    function tap() {
+      if (rec.done) return;
+      if (!myTurn) {
+        rec.early++;
+        btn.classList.remove('nope');
+        void btn.offsetWidth;
+        btn.classList.add('nope');
+        ctx.miss('기다려요. 지금은 쑥쑥이 차례예요');
+        return;
+      }
+      addBlock(true);
+      if (placed >= total) return end();
+      myTurn = false;
+      draw();
+      speak('이번엔 쑥쑥이 차례!');
+      ctx.later(() => {
+        addBlock(false);
+        if (placed >= total) return end();
+        myTurn = true;
+        draw();
+        speak('내 차례!');
+      }, TURN_WAIT[ctx.level]);
+    }
+
+    function end() {
+      rec.done = true;
+      who.replaceChildren(el('span', { class: 'turn-mine' }, '🎉 다 쌓았어요!'));
+      btn.disabled = true;
+      ctx.later(() => ctx.finish(true), 600);
+    }
+
+    draw();
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', { class: 'review-note' },
+      !rec.done ? '끝까지 하지 못했어요' : rec.early ? `블록 ${rec.total}개 · 차례 전에 ${rec.early}번 눌렀어요` : `블록 ${rec.total}개를 차례대로 잘 쌓았어요`);
+  },
+};
+
+/* ---------- 놀이: 기다리기 연습 ---------- */
+// 모래시계가 다 내려갈 때까지 기다리면 선물 상자가 열림. 중간에 누르면 '아직이에요'
+const WAIT_SECONDS = [[3, 5], [5, 8], [8, 12]];
+const WAIT_PRIZES = ['⭐', '🍓', '🐥', '🌈', '🎈', '🦋', '🍪', '🧸'];
+
+const waitGame = {
+  id: 'wait',
+  title: '기다리기 연습',
+  desc: '모래시계가 끝날 때까지 기다려요',
+  skill: '기다리기 · 참기',
+  icon: '⏳',
+  color: '#f5ecd3',
+  total: 5,
+
+  round(i, ctx) {
+    const sec = WAIT_SECONDS[ctx.level][i < 3 ? 0 : 1];
+    const prize = pick(WAIT_PRIZES);
+    const rec = { sec, prize, early: 0, done: false };
+    const start = Date.now();
+
+    const fill = el('div', { class: 'wait-fill' });
+    const box = el('button', { class: 'wait-box', 'aria-label': '선물 상자', onclick: tap }, '🎁');
+    const left = el('div', { class: 'wait-left' }, `${sec}`);
+    ctx.stage.append(
+      prompt(`손을 무릎에 두고 기다려요`),
+      el('div', { class: 'wait-glass' }, el('div', { class: 'wait-bar' }, fill), left),
+      box,
+      el('div', { class: 'imitate-tip' }, '모래시계가 다 내려가면 상자가 열려요'));
+    fill.style.transition = `width ${sec}s linear`;
+    requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = '0%'; }));
+
+    const tick = () => {
+      if (rec.done) return;
+      const remain = Math.max(0, Math.ceil(sec - (Date.now() - start) / 1000));
+      left.textContent = String(remain);
+      if (remain === 0) open();
+      else ctx.later(tick, 250);
+    };
+    ctx.later(tick, 250);
+
+    function tap() {
+      if (rec.done) return;
+      rec.early++;
+      box.classList.remove('nope');
+      void box.offsetWidth;
+      box.classList.add('nope');
+      ctx.miss('아직이에요. 조금만 더 기다려요');
+    }
+
+    function open() {
+      rec.done = true;
+      box.textContent = prize;
+      box.classList.add('opened', 'pop');
+      speak('잘 기다렸어요!');
+      tone([523, 659, 784], 0.12);
+      ctx.later(() => ctx.finish(true), 900);
+    }
+
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', { class: 'review-note' },
+      !rec.done ? '끝까지 하지 못했어요' : rec.early ? `${rec.sec}초 · 중간에 ${rec.early}번 눌렀어요 ${rec.prize}` : `${rec.sec}초를 잘 기다렸어요 ${rec.prize}`);
+  },
+};
+
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
   memory: (r) => r.original.join(),
@@ -2520,6 +2942,14 @@ const QUESTION_KEYS = {
   match: (r) => r.pair.q,
   order: (r) => `${r.items.map((it) => `${it.label}${it.scale ?? ''}`).join()}|${r.order.join()}`,
   routine: (r) => `${r.items.map((it) => it.label).join()}|${r.order.join()}`,
+  opposite: (r) => r.key,
+  need: (r) => `${r.situation}|${r.choices.length}`,
+  turn: (r) => `${r.total}|${r.round}`,
+  wait: (r) => `${r.sec}|${r.prize}`,
+  sound: (r) => `${r.answer}|${r.choices.length}`,
+  verb: (r) => `${r.answer}|${r.choices.length}`,
+  color: (r) => r.key,
+  number: (r) => `${r.answer.join()}|${r.choices.length}`,
   steps: (r) => r.seq.join(),
   use: (r) => `${r.ask}|${r.answer}|${r.choices.length}`,
   imitate: (r) => r.acts.join(),
@@ -2538,6 +2968,8 @@ const GAMES = [
   copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, spaceGame, memoryGame, patternGame,
   countGame, oddGame, flipGame, shadowGame, orderGame, traceGame, sortGame, balloonGame, moleGame,
   bodyGame, sizeGame, puzzleGame, useGame, imitateGame, stepsGame,
+  soundGame, verbGame, colorGame, numberGame,
+  oppositeGame, needGame, turnGame, waitGame,
 ];
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
@@ -2664,6 +3096,7 @@ function dailyCard() {
       el('div', { class: 'daily-icons' },
         games.map((g) => el('span', { class: 'daily-icon', style: `--c:${g.color}`, title: g.title, 'aria-label': g.title }, g.icon))),
       el('span', { class: 'daily-info' }, info, streak > 1 ? el('small', {}, `🔥 ${streak}일 연속`) : null)),
+    done ? null : rewardLine(),
     el('button', { class: 'daily-go', onclick: playDaily }, done ? '다시 하기' : '▶ 시작하기'),
   );
 }
@@ -2730,10 +3163,10 @@ const CATEGORIES = [
   { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame, puzzleGame] },
   { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame] },
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
-  { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame] },
-  { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame] },
-  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, matchGame, bodyGame, useGame, stepsGame] },
-  { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, routineGame] },
+  { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame, colorGame, oppositeGame, needGame] },
+  { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame, numberGame] },
+  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, soundGame, verbGame, matchGame, bodyGame, useGame, stepsGame] },
+  { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, routineGame, turnGame, waitGame] },
 ];
 
 const HOME_TABS = [
@@ -2982,6 +3415,7 @@ function recordsTab() {
 
   return [
     ...tabHeader('기록', '이 기기에서 한 학습이 저장돼요'),
+    el('button', { class: 'report-link', onclick: showReport }, '📋 선생님께 보여 드릴 기록 한 장 ›'),
     el('div', { class: 'level-seg range-seg', role: 'radiogroup', 'aria-label': '기간' },
       [7, 30].map((n) => el('button', {
         class: `seg${n === range7 ? ' on' : ''}`,
@@ -3278,7 +3712,9 @@ function helperCard() {
     el('div', { class: 'helper-grid' },
       el('button', { class: 'helper-btn', style: '--c:#fdeccf', onclick: () => showStories() }, el('span', {}, '📖'), el('b', {}, '그림 이야기')),
       el('button', { class: 'helper-btn', style: '--c:#dbeefd', onclick: showFirstThen }, el('span', {}, '➡️'), el('b', {}, '먼저 · 다음')),
-      el('button', { class: 'helper-btn', style: '--c:#e3f3e6', onclick: showBreathing }, el('span', {}, '🎈'), el('b', {}, '숨 쉬기'))));
+      el('button', { class: 'helper-btn', style: '--c:#e3f3e6', onclick: showBreathing }, el('span', {}, '🎈'), el('b', {}, '숨 쉬기')),
+      el('button', { class: 'helper-btn', style: '--c:#fde2e2', onclick: showRewardPicker }, el('span', {}, '🎁'), el('b', {}, '다 하면 뭐 할까?')),
+      el('button', { class: 'helper-btn', style: '--c:#e8e1f6', onclick: showReport }, el('span', {}, '📋'), el('b', {}, '기록 한 장'))));
 }
 
 function toolScreen(title, ...kids) {
@@ -3678,6 +4114,85 @@ function feedbackPost(p) {
     p.admin_reply ? el('div', { class: 'fb-reply' }, el('b', {}, '🌱 만든 사람'), el('p', {}, p.admin_reply)) : null);
 }
 
+/* ---------- 다 하면 뭐 할까? (보상 고르기) ---------- */
+// 오늘의 학습 전에 끝나고 할 좋아하는 일을 골라 두면 시작할 마음이 생김
+const REWARDS = [
+  ['🛝', '놀이터'], ['🍪', '간식'], ['📺', '영상 보기'], ['🫧', '비눗방울'],
+  ['📚', '책 읽기'], ['🧸', '장난감 놀이'], ['🤗', '꼭 안아 주기'], ['🎵', '노래 부르기'],
+];
+
+function rewardToday() {
+  const r = store.get('reward', null);
+  return r && r.date === dateKey(new Date()) ? REWARDS[r.k] : null;
+}
+
+function rewardLine() {
+  const r = rewardToday();
+  return el('button', { class: `reward-line${r ? ' set' : ''}`, onclick: showRewardPicker },
+    r ? [el('span', {}, '🎁 다 하면'), el('b', {}, `${r[0]} ${r[1]}`), el('small', {}, '바꾸기')] : [el('span', {}, '🎁 다 하면 뭐 할까?'), el('small', {}, '고르기 ›')]);
+}
+
+function showRewardPicker() {
+  const now = store.get('reward', null);
+  toolScreen('다 하면 뭐 할까?',
+    el('p', { class: 'sub' }, '오늘의 학습을 다 하면 할 일을 아이와 함께 골라요'),
+    el('div', { class: 'reward-grid' }, REWARDS.map(([icon, name], k) =>
+      el('button', {
+        class: `reward-item${now && now.date === dateKey(new Date()) && now.k === k ? ' on' : ''}`,
+        onclick: () => {
+          store.set('reward', { date: dateKey(new Date()), k });
+          speak(`좋아요! 다 하면 ${name}!`);
+          showHome('today');
+        },
+      }, el('span', {}, icon), el('b', {}, name)))));
+}
+
+/* ---------- 우리 아이 기록 한 장 (선생님께 보여 드리기) ---------- */
+function showReport() {
+  const DAYS = 30;
+  const { perGame, activeDays } = statsSince(DAYS);
+  const rows = GAMES.filter((g) => perGame[g.id] && totalOf(perGame[g.id]) > 0).map((g) => {
+    const c = perGame[g.id];
+    const n = totalOf(c);
+    return { g, n, first: pct(c.first, n), retry: pct(c.retry, n) };
+  }).sort((a, b) => b.n - a.n);
+  const sum = rows.reduce((t, r) => ({ n: t.n + r.n, first: t.first + perGame[r.g.id].first }), { n: 0, first: 0 });
+  // 3문제 이상 푼 놀이만 잘함 · 연습 필요로 나눔
+  const enough = rows.filter((r) => r.n >= 3);
+  const strong = [...enough].sort((a, b) => b.first - a.first).slice(0, 3).filter((r) => r.first >= 60);
+  const weak = [...enough].sort((a, b) => a.first - b.first).slice(0, 3).filter((r) => r.first < 60);
+  const test = store.get('levelTest', null);
+  const from = daysAgo(DAYS - 1);
+  const fmtDay = (d) => `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+  const names = (list) => (list.length ? list.map((r) => `${r.g.icon} ${r.g.title} (${r.first}%)`).join(', ') : '아직 판단하기 어려워요');
+
+  toolScreen('우리 아이 기록',
+    el('section', { class: 'report' },
+      el('div', { class: 'report-head' },
+        el('b', {}, '🌱 쑥쑥 생각놀이 학습 기록'),
+        el('span', {}, `${fmtDay(from)} ~ ${fmtDay(new Date())} (최근 ${DAYS}일)`)),
+      el('div', { class: 'stat-tiles' },
+        el('div', { class: 'stat-tile' }, el('b', {}, `${activeDays.size}일`), el('span', {}, '학습한 날')),
+        el('div', { class: 'stat-tile' }, el('b', {}, `${sum.n}개`), el('span', {}, '푼 문제')),
+        el('div', { class: 'stat-tile' }, el('b', {}, sum.n ? `${pct(sum.first, sum.n)}%` : '-'), el('span', {}, '처음에 맞힘'))),
+      el('dl', { class: 'report-facts' },
+        el('dt', {}, '지금 난이도'), el('dd', {}, LEVELS[settings.level].name),
+        el('dt', {}, '난이도 알아보기'), el('dd', {}, test ? `${LEVELS[test.level].name} 추천 (${test.date}, 보통 ${test.mid}/6 · 어려움 ${test.hard}/6)` : '아직 안 했어요'),
+        el('dt', {}, '칭찬 스티커'), el('dd', {}, `${stickerCount()}개 (오늘의 학습을 끝낸 날)`),
+        el('dt', {}, '👍 잘하는 놀이'), el('dd', {}, names(strong)),
+        el('dt', {}, '🌱 연습이 더 필요한 놀이'), el('dd', {}, names(weak))),
+      rows.length
+        ? el('table', { class: 'report-table' },
+          el('thead', {}, el('tr', {}, el('th', {}, '놀이'), el('th', {}, '문제'), el('th', {}, '처음에 맞힘'), el('th', {}, '다시 해서 맞힘'))),
+          el('tbody', {}, rows.map((r) => el('tr', {},
+            el('td', {}, `${r.g.icon} ${r.g.title}`), el('td', {}, `${r.n}`), el('td', {}, `${r.first}%`), el('td', {}, `${r.retry}%`)))))
+        : el('p', { class: 'muted' }, '최근 30일 동안 푼 문제가 없어요.'),
+      el('p', { class: 'report-note' }, '※ 이 기기에서 한 놀이만 모은 기록이에요. 진단이나 평가 결과가 아니라 집에서 한 연습의 참고 자료로 봐 주세요.')),
+    el('div', { class: 'btn-row report-actions' },
+      el('button', { class: 'btn-main', onclick: () => window.print() }, '🖨️ 인쇄 · PDF로 저장')),
+    el('p', { class: 'report-tip' }, '화면을 캡처해서 선생님께 보내 드려도 돼요.'));
+}
+
 /* ---------- 화면: 놀이 ---------- */
 function playGame(game) {
   const total = game.total ?? TOTAL;
@@ -3812,8 +4327,9 @@ function playSession(session) {
         const step = steps[current];
         const prev = steps[current - 1];
         stage.append(
-          scheduleBoard(steps, current),
-          el('button', { class: 'btn-main', onclick: next }, current === 0 ? '▶ 시작하기' : '▶ 다음 놀이 하기'),
+          ...[scheduleBoard(steps, current),
+            current === 0 && rewardToday() ? el('div', { class: 'reward-chip' }, `🎁 다 하면 ${rewardToday().join(' ')}!`) : null,
+            el('button', { class: 'btn-main', onclick: next }, current === 0 ? '▶ 시작하기' : '▶ 다음 놀이 하기')].filter(Boolean),
         );
         speak(current === 0
           ? `오늘은 ${ORDINALS[steps.length - 1] ?? steps.length} 가지 놀이를 해요. ${ORDINALS[0]} 번째는 ${step.game.title} 놀이예요.`
@@ -3970,7 +4486,8 @@ function showResult(session, state) {
       el('div', { class: 'stars' }, [0, 1, 2].map((k) => el('span', { class: `star${k < stars ? '' : ' off'}` }, '⭐'))),
       el('div', { class: 'result-title' }, `${total}개 중 ${correct}개 맞았어요! ${message}`),
       el('div', { class: 'result-score' }, `${state.score}점`),
-      state.newSticker ? el('div', { class: 'result-sticker pop' }, `🎁 칭찬 스티커를 받았어요! (모두 ${stickerCount()}개)`) : null,
+      state.newSticker ? el('div', { class: 'result-sticker pop' }, `⭐ 칭찬 스티커를 받았어요! (모두 ${stickerCount()}개)`) : null,
+      session.schedule && rewardToday() ? el('div', { class: 'result-reward pop' }, `🎁 약속한 ${rewardToday().join(' ')} 시간이에요!`) : null,
       el('div', { class: 'result-actions' },
         el('button', { class: 'btn-main', onclick: session.restart }, '다시 하기'),
         el('button', { class: 'btn-main alt', onclick: showHome }, '처음으로'))),
@@ -4020,7 +4537,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 63;
+const APP_VERSION = 66;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
