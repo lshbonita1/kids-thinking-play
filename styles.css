@@ -1599,3 +1599,8 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .story-item span { font-size: 40px; }
 .story-item b { font-size: 15px; word-break: keep-all; }
 @media (min-width: 700px) { .story-list { grid-template-columns: repeat(4, 1fr); } }
+/* 숨 쉬기 풍선: 큰 글자를 줄였다 키워서 커질 때 잘리지 않게 */
+.breath-stage { height: auto; min-height: min(56vw, 34vh, 260px); padding: 8px 0; overflow: visible; }
+.breath-ball { font-size: min(50vw, 30vh, 220px); line-height: 1.25; padding: .05em .1em; transform: scale(.5); transform-origin: center; }
+.breath-ball.grow { transform: scale(1); }
+.breath-ball.shrink { transform: scale(.45); }
