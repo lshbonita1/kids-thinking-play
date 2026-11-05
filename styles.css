@@ -1729,3 +1729,87 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
   .guide-top .icon-btn, .report-actions, .report-tip, .tab-bar { display: none !important; }
   .report { border: 0; padding: 0; }
 }
+
+/* ---------- 종이 학습지 ---------- */
+.ws-link { background: #fbf3df; border-color: #ecd8a4; color: #7a5a17; }
+.ws-types { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.ws-types .chip { font-size: 14px; padding: 7px 11px; }
+.ws-level { margin: 0 0 12px; }
+.ws-preview { padding: 10px; border-radius: 18px; background: #ece6da; }
+.ws-actions { margin-top: 14px; }
+.ws-page {
+  --ws-e: 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 16px;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .12);
+}
+.ws-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; padding-bottom: 8px; border-bottom: 2px solid #333; }
+.ws-title { font-family: var(--display); font-size: 22px; }
+.ws-name { color: #555; font-size: 13px; }
+.ws-say { margin: 0; font-size: 17px; }
+.ws-foot { margin-top: 6px; padding-top: 6px; border-top: 1px solid #ccc; color: #888; font-size: 11px; text-align: center; }
+.ws-svg, .ws-board { display: block; }
+.ws-board svg, .ws-svg svg { display: block; width: 100%; height: auto; }
+.ws-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ws-board.wide { border: 1px solid #ddd; border-radius: 10px; }
+.ws-pairs { display: flex; flex-direction: column; gap: 12px; }
+.ws-pair { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+.ws-pair .ws-board { max-width: 160px; justify-self: center; width: 100%; }
+.ws-arrow { color: #888; font-size: 22px; }
+.ws-e { font-size: var(--ws-e); line-height: 1.15; }
+.ws-e.small { font-size: calc(var(--ws-e) * .8); }
+.ws-e.tiny { font-size: calc(var(--ws-e) * .55); }
+.ws-e.shade { filter: brightness(0) opacity(.8); }
+.ws-connect { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22%; }
+.ws-col { display: flex; flex-direction: column; gap: 12px; }
+.ws-cell { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: calc(var(--ws-e) * 1.4); }
+.ws-dot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: #333; }
+.ws-num { font-family: var(--display); font-size: calc(var(--ws-e) * 1.1); font-weight: 400; }
+.ws-rows { display: flex; flex-direction: column; gap: 10px; }
+.ws-row { display: flex; align-items: center; justify-content: space-around; gap: 6px; min-height: calc(var(--ws-e) * 1.6); padding: 4px 6px; border-bottom: 1px dashed #ccc; }
+.ws-row.spread { justify-content: space-between; }
+.ws-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; max-width: 64%; }
+.ws-nums, .ws-choose { display: inline-flex; gap: 8px; }
+.ws-nums b { display: grid; place-items: center; width: 26px; height: 26px; font-family: var(--display); font-size: 20px; font-weight: 400; }
+.ws-choose { padding-left: 8px; border-left: 2px solid #ccc; }
+.ws-blank { display: inline-grid; place-items: center; width: calc(var(--ws-e) * .95); height: calc(var(--ws-e) * .95); border: 2px dashed #888; border-radius: 8px; color: #888; font-size: 18px; }
+
+/* 인쇄: 학습지 한 장만, A4 */
+@page { size: A4; margin: 12mm; }
+@media print {
+  .print-ws body { background: #fff; }
+  .print-ws body * { visibility: hidden; }
+  .print-ws .ws-page, .print-ws .ws-page * { visibility: visible; }
+  .print-ws .ws-page { --ws-e: 15mm; position: absolute; top: 0; left: 0; width: 100%; padding: 0; gap: 6mm; box-shadow: none; }
+  .print-ws .ws-title { font-size: 22pt; }
+  .print-ws .ws-name { font-size: 12pt; }
+  .print-ws .ws-say { font-size: 16pt; }
+  .print-ws .ws-pair .ws-board { max-width: 62mm; }
+  .print-ws .ws-grid2 { gap: 8mm; }
+  .print-ws .ws-col { gap: 8mm; }
+  .print-ws .ws-dot { width: 4mm; height: 4mm; }
+  .print-ws .ws-nums b { width: 12mm; height: 12mm; font-size: 22pt; }
+  .print-ws .ws-row { min-height: 26mm; }
+  .print-ws .ws-blank { font-size: 16pt; }
+  .print-ws .ws-foot { font-size: 9pt; }
+}
+.ws-group { flex-wrap: nowrap; }
+.ws-pair .ws-board { border: 1px solid #ddd; border-radius: 10px; }
+@media print {
+  .print-ws .ws-page { --ws-e: 21mm; gap: 7mm; }
+  .print-ws .ws-col { gap: 12mm; }
+  .print-ws .ws-dot { width: 5mm; height: 5mm; }
+  .print-ws .ws-row { min-height: 40mm; }
+  .print-ws .ws-pairs { gap: 8mm; }
+  .print-ws .ws-pair .ws-board { max-width: 72mm; }
+  .print-ws .ws-grid2 { gap: 7mm; }
+  .print-ws .ws-blank { border-width: 3px; }
+}
+@media print {
+  .print-ws .ws-pairs { gap: 6mm; }
+  .print-ws .ws-pair .ws-board { max-width: 64mm; }
+}

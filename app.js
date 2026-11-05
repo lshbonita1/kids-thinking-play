@@ -3177,7 +3177,8 @@ const HOME_TABS = [
   { id: 'settings', icon: '⚙️', name: '설정' },
 ];
 
-function levelPicker(size = '') {
+// onPick: 난이도를 바꾼 뒤 다시 그릴 화면 (기본은 홈)
+function levelPicker(size = '', onPick = () => showHome()) {
   return el('div', { class: `level-seg ${size}`, role: 'radiogroup', 'aria-label': '난이도' },
     LEVELS.map((lv, k) => el('button', {
       class: `seg${k === settings.level ? ' on' : ''}`,
@@ -3186,7 +3187,7 @@ function levelPicker(size = '') {
       onclick: () => {
         settings.level = k;
         store.set('level', k);
-        showHome();
+        onPick();
       },
     }, el('span', { class: 'seg-name' }, lv.name))));
 }
@@ -3320,6 +3321,7 @@ function gamesTab() {
   const shown = current === 'all' ? CATEGORIES : CATEGORIES.filter((c) => c.id === current);
   return [
     ...tabHeader('놀이', '하고 싶은 놀이를 골라요'),
+    el('button', { class: 'report-link ws-link', onclick: () => showWorksheets() }, '🖨️ 종이 학습지로 인쇄해서 하기 ›'),
     el('div', { class: 'level-label' }, '난이도'),
     levelPicker(),
     el('div', { class: 'cat-tabs', role: 'tablist' },
@@ -3549,6 +3551,8 @@ function settingsTab() {
       levelTestLink()),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '👪 보호자 안내'),
+      el('button', { class: 'more-games', onclick: () => showWorksheets() },
+        el('span', {}, '🖨️ 종이 학습지 인쇄'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: showFeedback },
         el('span', {}, '💬 의견 게시판'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: () => showGuide('about') },
@@ -3714,7 +3718,8 @@ function helperCard() {
       el('button', { class: 'helper-btn', style: '--c:#dbeefd', onclick: showFirstThen }, el('span', {}, '➡️'), el('b', {}, '먼저 · 다음')),
       el('button', { class: 'helper-btn', style: '--c:#e3f3e6', onclick: showBreathing }, el('span', {}, '🎈'), el('b', {}, '숨 쉬기')),
       el('button', { class: 'helper-btn', style: '--c:#fde2e2', onclick: showRewardPicker }, el('span', {}, '🎁'), el('b', {}, '다 하면 뭐 할까?')),
-      el('button', { class: 'helper-btn', style: '--c:#e8e1f6', onclick: showReport }, el('span', {}, '📋'), el('b', {}, '기록 한 장'))));
+      el('button', { class: 'helper-btn', style: '--c:#e8e1f6', onclick: showReport }, el('span', {}, '📋'), el('b', {}, '기록 한 장')),
+      el('button', { class: 'helper-btn', style: '--c:#f5ecd3', onclick: () => showWorksheets() }, el('span', {}, '🖨️'), el('b', {}, '종이 학습지'))));
 }
 
 function toolScreen(title, ...kids) {
@@ -4193,6 +4198,163 @@ function showReport() {
     el('p', { class: 'report-tip' }, '화면을 캡처해서 선생님께 보내 드려도 돼요.'));
 }
 
+/* ---------- 종이 학습지 (A4로 인쇄해서 연필로 하는 놀이) ---------- */
+const svgBox = (vb, body, cls = 'ws-svg') => {
+  const n = el('span', { class: cls });
+  n.innerHTML = `<svg viewBox="${vb}" aria-hidden="true">${body}</svg>`;
+  return n;
+};
+// 4×4 점판 (선 따라 긋기와 같은 점 위치)
+const wsDots = (lines = []) => svgBox('0 0 300 300',
+  lines.map(([a, b]) => { const [x1, y1] = dotXY(a); const [x2, y2] = dotXY(b); return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#333" stroke-width="9" stroke-linecap="round"/>`; }).join('')
+  + DOTS.map((_, k) => { const [x, y] = dotXY(k); return `<circle cx="${x}" cy="${y}" r="11" fill="#555"/>`; }).join(''), 'ws-board');
+// 3×3 칸 (색칠 따라 하기)
+const wsGrid = (filled = []) => svgBox('0 0 300 300',
+  range(0, 8).map((k) => `<rect x="${6 + (k % 3) * 96}" y="${6 + Math.floor(k / 3) * 96}" width="96" height="96" fill="${filled.includes(k) ? '#555' : '#fff'}" stroke="#333" stroke-width="4"/>`).join(''), 'ws-board');
+const wsDot = () => el('span', { class: 'ws-dot' });
+const wsItem = (e, cls = '') => el('span', { class: `ws-e ${cls}` }, e);
+// 잇기: 왼쪽 · 오른쪽 그림을 점까지 선으로
+const wsConnect = (left, right) => el('div', { class: 'ws-connect' },
+  el('div', { class: 'ws-col' }, left.map((n) => el('div', { class: 'ws-cell' }, n, wsDot()))),
+  el('div', { class: 'ws-col right' }, right.map((n) => el('div', { class: 'ws-cell' }, wsDot(), n))));
+
+const WORKSHEETS = [
+  {
+    id: 'trace', icon: '🐛', title: '길 따라 그리기', say: '친구가 도착할 수 있게 점선을 따라 그어요',
+    make(lv) {
+      const shapes = [['straight', 'hill', 'straight', 'hill', 'straight', 'hill'], ['hill', 'wave', 'hill', 'wave', 'zigzag', 'zigzag'], ['wave', 'zigzag', 'wave', 'zigzag', 'turn', 'turn']][lv];
+      return el('div', { class: 'ws-grid2' }, shapes.map((shape) => {
+        const pts = tracePoints(shape, rand(4));
+        const d = `M${pts.map((p) => p.join(',')).join(' L')}`;
+        const [a, b] = pick(TRACE_PAIRS);
+        const [s, e] = [pts[0], pts[pts.length - 1]];
+        return svgBox('0 0 300 200', `<path d="${d}" fill="none" stroke="#eee" stroke-width="${TRACE_ROAD[lv]}" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="${d}" fill="none" stroke="#777" stroke-width="3.5" stroke-dasharray="7 8" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="${s[0]}" y="${s[1] + 12}" font-size="36" text-anchor="middle">${a}</text><text x="${e[0]}" y="${e[1] + 12}" font-size="36" text-anchor="middle">${b}</text>`, 'ws-board wide');
+      }));
+    },
+  },
+  {
+    id: 'lines', icon: '✏️', title: '선 따라 긋기', say: '왼쪽과 똑같이 오른쪽 점에 선을 그어요',
+    make(lv) {
+      return el('div', { class: 'ws-pairs' }, range(1, 3).map(() =>
+        el('div', { class: 'ws-pair' }, wsDots(randomLines(LINE_COUNTS[lv][1], lv === 0)), el('span', { class: 'ws-arrow' }, '→'), wsDots())));
+    },
+  },
+  {
+    id: 'copy', icon: '🎨', title: '똑같이 칠하기', say: '왼쪽과 똑같이 오른쪽 칸을 색칠해요',
+    make(lv) {
+      return el('div', { class: 'ws-pairs' }, range(1, 3).map(() =>
+        el('div', { class: 'ws-pair' }, wsGrid(randomShape(COPY_COUNTS[lv][1])), el('span', { class: 'ws-arrow' }, '→'), wsGrid())));
+    },
+  },
+  {
+    id: 'match', icon: '🔗', title: '같은 그림 잇기', say: '같은 그림끼리 선으로 이어요',
+    make(lv) {
+      const items = sample(LISTEN_WORDS, [3, 4, 5][lv]).map(([, e]) => e);
+      return wsConnect(items.map((e) => wsItem(e)), shuffle(items).map((e) => wsItem(e)));
+    },
+  },
+  {
+    id: 'shadow', icon: '👤', title: '그림자 잇기', say: '그림과 꼭 맞는 그림자를 선으로 이어요',
+    make(lv) {
+      const items = sample(SHADOW_ITEMS, [3, 4, 5][lv]);
+      return wsConnect(items.map((e) => wsItem(e)), shuffle(items).map((e) => wsItem(e, 'shade')));
+    },
+  },
+  {
+    id: 'odd', icon: '🔍', title: '다른 하나 찾기', say: '모양이 다른 하나에 동그라미 해요',
+    make(lv) {
+      return el('div', { class: 'ws-rows' }, range(1, 4).map(() => {
+        const [same, diff] = shuffle(pick(lv === 2 ? ODD_HARD : ODD_EASY));
+        const n = [3, 4, 5][lv];
+        const odd = rand(n);
+        return el('div', { class: 'ws-row' }, range(0, n - 1).map((k) => wsItem(k === odd ? diff : same)));
+      }));
+    },
+  },
+  {
+    id: 'count', icon: '🔢', title: '세어 보기', say: '몇 개인지 세어서 숫자에 동그라미 해요',
+    make(lv) {
+      const max = COUNT_RANGES[lv][1][1];
+      return el('div', { class: 'ws-rows' }, range(1, 4).map(() => {
+        const n = 1 + rand(Math.min(max, 6));
+        const e = pick(COUNT_ITEMS);
+        return el('div', { class: 'ws-row spread' },
+          el('span', { class: 'ws-group' }, range(1, n).map(() => wsItem(e, 'small'))),
+          el('span', { class: 'ws-nums' }, range(1, Math.min(max, 6)).map((k) => el('b', {}, String(k)))));
+      }));
+    },
+  },
+  {
+    id: 'pattern', icon: '🍎', title: '규칙 찾기', say: '빈칸에 들어갈 그림에 동그라미 해요',
+    make(lv) {
+      return el('div', { class: 'ws-rows' }, range(1, 4).map((_, r) => {
+        const shape = PATTERN_UNITS[lv][r * 2 + 2];
+        const kinds = sample(PATTERN_SETS[0], Math.max(...shape) + 1);
+        const unit = shape.map((k) => kinds[k]);
+        const seq = [...unit, ...unit];
+        const answer = seq[seq.length - 1];
+        const other = pick(kinds.filter((k) => k !== answer).concat(PATTERN_SETS[0].filter((x) => !kinds.includes(x))));
+        return el('div', { class: 'ws-row spread' },
+          el('span', { class: 'ws-group' }, seq.slice(0, -1).map((e) => wsItem(e, 'small')), el('span', { class: 'ws-blank' }, '?')),
+          el('span', { class: 'ws-choose' }, shuffle([answer, other]).map((e) => wsItem(e, 'small'))));
+      }));
+    },
+  },
+  {
+    id: 'size', icon: '🐘', title: '큰 것 · 작은 것', say: '큰 것에는 ○, 작은 것에는 △ 해요',
+    make(lv) {
+      return el('div', { class: 'ws-rows' }, range(1, 4).map(() => {
+        const scales = shuffle(lv === 0 ? [1, 0.45] : [1, 0.7, 0.42]);
+        const e = pick(SIZE_ITEMS);
+        return el('div', { class: 'ws-row' }, scales.map((sc) => el('span', { class: 'ws-e', style: `font-size:calc(var(--ws-e) * ${sc * 1.25})` }, e)));
+      }));
+    },
+  },
+  {
+    id: 'number', icon: '3️⃣', title: '숫자와 개수 잇기', say: '숫자와 개수가 같은 것끼리 이어요',
+    make(lv) {
+      const nums = sample(range(1, NUMBER_MAX[lv]), [3, 4, 5][lv]);
+      const e = pick(NUMBER_ITEMS)[0];
+      return wsConnect(nums.map((n) => el('b', { class: 'ws-num' }, String(n))),
+        shuffle(nums).map((n) => el('span', { class: 'ws-group' }, range(1, n).map(() => wsItem(e, 'tiny')))));
+    },
+  },
+];
+
+function showWorksheets(id = store.get('wsType', 'trace')) {
+  const ws = WORKSHEETS.find((w) => w.id === id) ?? WORKSHEETS[0];
+  store.set('wsType', ws.id);
+  const lv = settings.level;
+  const page = el('section', { class: 'ws-page' },
+    el('header', { class: 'ws-head' },
+      el('div', { class: 'ws-title' }, `${ws.icon} ${ws.title}`),
+      el('div', { class: 'ws-name' }, '이름 ____________   날짜 ______')),
+    el('p', { class: 'ws-say' }, ws.say),
+    ws.make(lv),
+    el('footer', { class: 'ws-foot' }, `🌱 쑥쑥 생각놀이 · ${LEVELS[lv].name} · ssukssuknori.app`));
+
+  toolScreen('종이 학습지',
+    el('p', { class: 'sub' }, '인쇄해서 연필로 해요. 난이도는 지금 고른 단계를 따라요.'),
+    el('div', { class: 'ws-types' }, WORKSHEETS.map((w) =>
+      el('button', { class: `chip${w.id === ws.id ? ' on' : ''}`, onclick: () => showWorksheets(w.id) }, `${w.icon} ${w.title}`))),
+    levelPicker('compact ws-level', () => showWorksheets(ws.id)),
+    el('div', { class: 'ws-preview' }, page),
+    el('div', { class: 'btn-row ws-actions' },
+      el('button', { class: 'btn-main alt', onclick: () => showWorksheets(ws.id) }, '🔀 다른 문제'),
+      el('button', { class: 'btn-main', onclick: printWorksheet }, '🖨️ 인쇄하기')));
+}
+
+// 학습지 한 장만 인쇄되게 (다른 화면 요소는 숨김)
+function printWorksheet() {
+  document.documentElement.classList.add('print-ws');
+  const done = () => { document.documentElement.classList.remove('print-ws'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  window.print();
+  setTimeout(done, 1000);
+}
+
 /* ---------- 화면: 놀이 ---------- */
 function playGame(game) {
   const total = game.total ?? TOTAL;
@@ -4537,7 +4699,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 66;
+const APP_VERSION = 68;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
