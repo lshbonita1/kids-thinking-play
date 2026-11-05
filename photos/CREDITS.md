@@ -24,7 +24,6 @@
 | `grapes.jpg` | 포도 | [Free purple grapes branch image](https://www.rawpixel.com/image/5917173/image-background-public-domain-green) | - | CC0 1.0 |
 | `honey.jpg` | 꿀 | [Small Honey Jar with Honeycomb](https://www.flickr.com/photos/184594136@N08/51330638681) | Alabama Extension | CC0 1.0 |
 | `milk.jpg` | 우유 | [Glass Milk](https://stocksnap.io/photo/glass-milk-P2QSUXKCN5) | Krzysztof Puszczyński | CC0 1.0 |
-| `monkey.jpg` | 원숭이 | [Monkey babies help each other](https://www.rawpixel.com/image/3287647/free-photo-image-monkey-baboon-animal) | - | CC0 1.0 |
 | `notebook.jpg` | 공책 | [Paper Notebook](https://stocksnap.io/photo/paper-notebook-8OQDMSXGTN) | Copper and Wild | CC0 1.0 |
 | `pencil.jpg` | 연필 | [Colorful Pencils](https://stocksnap.io/photo/colorful-pencils-UFDTNK6BWQ) | Artsy Crafty | CC0 1.0 |
 | `toothbrush.jpg` | 칫솔 | [Toothbrush Toothpaste](https://stocksnap.io/photo/toothbrush-toothpaste-UD9953XS1H) | WDnet Studio | CC0 1.0 |

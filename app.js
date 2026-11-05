@@ -187,7 +187,7 @@ function tone(freqs, dur = 0.14) {
 const PHOTOS = {
   '🍎': 'apple', '🍌': 'banana', '🐸': 'frog', '🐳': 'whale', '🍇': 'grapes', '🌸': 'flower', '🥕': 'carrot',
   '🚗': 'car', '🎈': 'balloon', '🦋': 'butterfly', '✈️': 'airplane', '🐶': 'dog', '🍯': 'honey', '🥛': 'milk',
-  '✏️': 'pencil', '🪥': 'toothbrush', '📒': 'notebook', '🐝': 'bee', '🐒': 'monkey', '🐥': 'chick',
+  '✏️': 'pencil', '🪥': 'toothbrush', '📒': 'notebook', '🐝': 'bee', '🐥': 'chick',
   '🐄': 'cow', '🥚': 'egg', '🐘': 'elephant', '🥅': 'goal', '☂️': 'umbrella',
   // 기분 알기 얼굴 (무서운 얼굴은 알맞은 사진을 찾을 때까지 그림으로)
   '😄': 'face_happy', '😭': 'face_sad', '😡': 'face_angry',
@@ -1361,7 +1361,7 @@ const MATCH_PAIRS = [
   { q: '🐶', name: '강아지', a: '🦴', kind: 'food' },
   { q: '🐝', name: '벌', a: '🍯', kind: 'food' },
   { q: '🐰', name: '토끼', a: '🥕', kind: 'food' },
-  { q: '🐒', name: '원숭이', a: '🍌', kind: 'food' },
+  { q: '🦋', name: '나비', a: '🌸', kind: 'food' },
   { q: '🐄', name: '젖소', a: '🥛', kind: 'food' },
   { q: '🐔', name: '닭', a: '🥚', kind: 'food' },
   { q: '🌧️', name: '비', a: '☂️', kind: 'thing' },
@@ -4713,7 +4713,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 75;
+const APP_VERSION = 76;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
