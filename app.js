@@ -3551,6 +3551,8 @@ function settingsTab() {
       levelTestLink()),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '👪 보호자 안내'),
+      el('a', { class: 'more-games', href: 'faq.html' },
+        el('span', {}, '❓ 자주 묻는 질문'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: () => showWorksheets() },
         el('span', {}, '🖨️ 종이 학습지 인쇄'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: showFeedback },
@@ -3620,6 +3622,8 @@ function guideAbout() {
         el('li', {}, '로그인이 없어요. 아이의 학습 기록(점수 · 달력)은 이 기기의 브라우저에만 저장돼요.'),
         el('li', {}, '사이트 운영을 위해 접속 정보(접속 시간 · IP 주소 · 기기 종류)를 모아요. ',
           el('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, '개인정보처리방침 보기')),
+        el('li', {}, '무료인지, 기록은 어디에 저장되는지 등 궁금한 점은 ',
+          el('a', { href: 'faq.html' }, '자주 묻는 질문'), '에 모아 두었어요.'),
         el('li', {}, '실사 사진은 누구나 무료로 쓸 수 있는 사진(CC0 · 퍼블릭 도메인, 일부 얼굴 사진은 출처 표시 조건)이에요. ',
           el('a', { href: 'https://github.com/lshbonita1/kids-thinking-play/blob/main/photos/CREDITS.md', target: '_blank', rel: 'noopener' }, '사진 출처 보기')))),
   ];
@@ -4713,7 +4717,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 80;
+const APP_VERSION = 81;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;

@@ -1838,3 +1838,4 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 /* 앱이 뜨기 전 잠깐 보이는 소개 (검색엔진용) */
 .seo-intro { max-width: 560px; margin: 0 auto; padding: 24px 16px; color: var(--ink); line-height: 1.6; }
 .seo-intro h1 { font-size: 26px; }
+a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
