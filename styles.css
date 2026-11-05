@@ -1831,3 +1831,6 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .balloon svg { width: auto; height: 100%; }
 /* 힌트 공통 규칙(position: relative)이 풍선의 절대 위치를 덮어써서 반짝이는 풍선이 자리를 옮기던 것 막기 */
 .stage .balloon.hint { position: absolute; z-index: 1; }
+
+/* 소개 영상 (세로 영상이라 높이를 화면에 맞춤) */
+.intro-video video { display: block; width: auto; max-width: 100%; height: min(70vh, 640px); margin: 0 auto; border-radius: 22px; background: #fbf8f2; }
