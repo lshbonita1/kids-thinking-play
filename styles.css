@@ -1399,3 +1399,32 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 }
 .sticker.on { border: 2px solid #f5c94c; background: #fff3c4; }
 .result-sticker { margin-top: 10px; padding: 10px 16px; border-radius: 16px; background: #fff3c4; color: #7a5a17; font-size: 18px; }
+
+/* ---------- 우리 아이 난이도 알아보기 ---------- */
+.level-test-link {
+  display: block;
+  width: 100%;
+  margin: -8px 0 18px;
+  padding: 10px 14px;
+  border: 2px solid #d9cbf0;
+  border-radius: 16px;
+  background: #f4effc;
+  color: #5b4a86;
+  font-size: 16px;
+  text-align: center;
+}
+.panel .level-test-link { margin: 12px 0 0; }
+.test-notes { margin: 14px 0 4px; padding: 0 0 0 20px; color: #6b5d48; font-size: 16px; line-height: 1.7; text-align: left; }
+.test-pick { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 12px 0 6px; color: var(--muted); font-size: 16px; }
+.test-pick b { padding: 6px 26px; border-radius: 18px; background: #fff3c4; color: #7a5a17; font-weight: 400; font-size: 34px; }
+.test-bars { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 360px; margin: 10px auto 4px; }
+.test-bar { display: grid; grid-template-columns: 76px 1fr 44px; align-items: center; gap: 8px; font-size: 15px; }
+.test-bar-name { color: var(--muted); text-align: left; }
+.test-dots { display: flex; gap: 6px; }
+.test-dots i { width: 18px; height: 18px; border-radius: 50%; background: #ece6da; }
+.test-dots i.on { background: #8fd19e; }
+.test-bar-num { text-align: right; }
+.test-why { margin: 8px 0 0; font-size: 16px; line-height: 1.6; }
+.test-why.muted { color: var(--muted); font-size: 14px; }
+.result-actions.stack { flex-direction: column; align-items: stretch; width: 100%; max-width: 360px; margin-left: auto; margin-right: auto; }
+.result-actions.stack .btn-main { width: 100%; }

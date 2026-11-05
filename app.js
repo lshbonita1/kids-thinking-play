@@ -2637,6 +2637,7 @@ function todayTab() {
       logoTitle(),
       el('button', { class: 'pill-btn guide-btn', 'aria-label': '사용 방법', title: '사용 방법', onclick: () => showGuide('howto') }, '📖')),
     levelPicker('compact'),
+    levelTestLink(),
     dailyCard(),
     stickerCard(),
     gamePicks(),
@@ -2918,7 +2919,8 @@ function settingsTab() {
         '소리가 안 나면: 무음 모드를 끄고 볼륨을 올려 주세요. 효과음만 나고 말소리가 안 나면 기기 설정의 ‘텍스트 음성 변환’에서 한국어 음성을 받아 주세요.'),
       voiceSettings(),
       el('div', { class: 'setting-name' }, '난이도'),
-      levelPicker()),
+      levelPicker(),
+      levelTestLink()),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '👪 보호자 안내'),
       el('button', { class: 'more-games', onclick: () => showGuide('about') },
@@ -3151,11 +3153,13 @@ function playSession(session) {
   function next() {
     if (state.index >= total) {
       session.save(state);
-      sendLog({ t: 'play', game: session.schedule ? 'daily' : rounds[0].game.id, level, score: state.score });
-      showResult(session, state);
+      sendLog({ t: 'play', game: session.logId ?? (session.schedule ? 'daily' : rounds[0].game.id), level, score: state.score });
+      (session.showResult ?? showResult)(session, state);
       return;
     }
     const { game, index } = rounds[state.index];
+    // 난이도 알아보기처럼 문제마다 단계가 다를 수 있음
+    ctx.level = rounds[state.index].level ?? level;
     counter.textContent = `${state.index + 1} / ${total}`;
     barFill.style.width = `${((state.index + 1) / total) * 100}%`;
     score.textContent = `${state.score}점`;
@@ -3210,7 +3214,7 @@ function playSession(session) {
     const passed = kind === 'pass';
     const retried = correct && !!rec.missed;
     correct = correct && !rec.missed;
-    state.records.push({ ...rec, correct, retried, passed });
+    state.records.push({ ...rec, correct, retried, passed, testLevel: ctx.level });
     // 짝 맞추기의 '완성'(실수가 많았지만 끝까지 함)은 다시 해서 맞음으로 셈
     recordStat(rec.game.id, passed ? 'pass' : correct ? 'first' : 'retry');
     if (correct) {
@@ -3226,6 +3230,88 @@ function playSession(session) {
   }
 
   next();
+}
+
+/* ---------- 우리 아이 난이도 알아보기 ---------- */
+// 보통 문제 6개 → 어려움 문제 6개를 풀고, 처음 시도에 맞힌 수로 알맞은 난이도를 추천
+const LEVEL_TEST_GAMES = () => [listenGame, countGame, oddGame, patternGame, shadowGame, sizeGame];
+const LEVEL_TEST_REASONS = [
+  '쉬운 문제부터 차근차근 해요. 익숙해지면 다시 알아보기를 해 보세요.',
+  '보통 문제를 잘 풀었어요. 어려운 문제는 보통 단계에서 조금 더 연습해요.',
+  '어려운 문제도 잘 풀었어요! 어려움 단계로 해 보세요.',
+];
+
+function levelTestLink() {
+  const last = store.get('levelTest', null);
+  return el('button', { class: 'level-test-link', onclick: showLevelTestIntro },
+    last ? `🧪 추천 난이도 ${LEVELS[last.level].name} · 다시 알아보기 ›` : '🧪 우리 아이 난이도 알아보기 ›');
+}
+
+function showLevelTestIntro() {
+  const n = LEVEL_TEST_GAMES().length;
+  mount(el('div', { class: 'screen result' },
+    el('section', { class: 'result-hero' },
+      el('div', { class: 'result-level' }, '우리 아이 난이도 알아보기'),
+      el('div', { class: 'result-mascot' }, mascot('smile', 'bounce')),
+      el('div', { class: 'result-title' }, '놀이를 해 보고 난이도를 알려 드려요'),
+      el('ul', { class: 'test-notes' },
+        el('li', {}, `${n * 2}문제 · 약 4분 (보통 ${n}문제 → 어려움 ${n}문제)`),
+        el('li', {}, '틀려도 괜찮아요. 반짝이는 힌트를 보고 다시 해 봐요.'),
+        el('li', {}, '보호자가 옆에서 함께 봐 주세요. 답은 알려 주지 말아 주세요.')),
+      el('div', { class: 'result-actions stack' },
+        el('button', { class: 'btn-main', onclick: playLevelTest }, '▶ 시작하기'),
+        el('button', { class: 'btn-main alt', onclick: () => showHome() }, '처음으로')))));
+  speak('놀이를 해 보고 알맞은 난이도를 알려 줄게요.');
+}
+
+function playLevelTest() {
+  const games = LEVEL_TEST_GAMES();
+  playSession({
+    title: '난이도 알아보기',
+    level: 1,
+    rounds: [1, 2].flatMap((lv) => games.map((game) => ({ game, index: 7, level: lv }))),
+    showGameName: true,
+    logId: 'leveltest',
+    restart: playLevelTest,
+    save() {},
+    showResult: showLevelTestResult,
+  });
+}
+
+function showLevelTestResult(session, state) {
+  const n = LEVEL_TEST_GAMES().length;
+  const firstTry = (lv) => state.records.filter((r) => r.testLevel === lv && r.correct).length;
+  const mid = firstTry(1);
+  const hard = firstTry(2);
+  // 보통을 거의 다 맞히고 어려움도 많이 맞히면 어려움, 보통을 대부분 맞히면 보통, 아니면 쉬움
+  const pick = mid >= n - 1 && hard >= n - 2 ? 2 : mid >= n - 2 ? 1 : 0;
+  const name = LEVELS[pick].name;
+  store.set('levelTest', { date: dateKey(new Date()), mid, hard, level: pick });
+  tone([523, 659, 784, 1047], 0.12);
+  speak(`끝까지 잘했어요! 추천 난이도는 ${name}이에요.`);
+
+  const choose = () => {
+    settings.level = pick;
+    store.set('level', pick);
+    showHome();
+    toast(`난이도를 ${name}으로 정했어요`);
+  };
+  mount(el('div', { class: 'screen result' },
+    el('section', { class: 'result-hero' },
+      el('div', { class: 'result-level' }, '우리 아이 난이도 알아보기'),
+      el('div', { class: 'result-mascot' }, mascot('happy', 'bounce')),
+      el('div', { class: 'result-title' }, '끝까지 잘했어요!'),
+      el('div', { class: 'test-pick' }, el('span', {}, '추천 난이도'), el('b', {}, name)),
+      el('div', { class: 'test-bars' },
+        [[1, mid], [2, hard]].map(([lv, got]) => el('div', { class: 'test-bar' },
+          el('span', { class: 'test-bar-name' }, `${LEVELS[lv].name} 문제`),
+          el('span', { class: 'test-dots' }, range(1, n).map((k) => el('i', { class: k <= got ? 'on' : '' }))),
+          el('span', { class: 'test-bar-num' }, `${got} / ${n}`)))),
+      el('p', { class: 'test-why' }, LEVEL_TEST_REASONS[pick]),
+      el('p', { class: 'test-why muted' }, '그날 아이 컨디션에 따라 결과가 달라질 수 있어요. 언제든 다시 알아볼 수 있어요.'),
+      el('div', { class: 'result-actions stack' },
+        el('button', { class: 'btn-main', onclick: choose }, `${name}으로 정하기`),
+        el('button', { class: 'btn-main alt', onclick: () => showHome() }, '처음으로')))));
 }
 
 /* ---------- 화면: 결과 ---------- */
@@ -3299,7 +3385,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 56;
+const APP_VERSION = 58;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
