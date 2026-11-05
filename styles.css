@@ -1829,3 +1829,5 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 /* 풍선 크기를 판 높이에 맞춤 (줄 간격 31%보다 작게 → 위아래 풍선이 겹치지 않게) */
 .balloon { width: auto; height: 27%; }
 .balloon svg { width: auto; height: 100%; }
+/* 힌트 공통 규칙(position: relative)이 풍선의 절대 위치를 덮어써서 반짝이는 풍선이 자리를 옮기던 것 막기 */
+.stage .balloon.hint { position: absolute; z-index: 1; }
