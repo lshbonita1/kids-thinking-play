@@ -1826,3 +1826,6 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 @media print { .print-ws .ws-nums { gap: 4mm; } }
 .ws-page { width: 560px; box-sizing: border-box; }
 @media print { .print-ws .ws-page { width: 100%; zoom: 1 !important; } }
+/* 풍선 크기를 판 높이에 맞춤 (줄 간격 31%보다 작게 → 위아래 풍선이 겹치지 않게) */
+.balloon { width: auto; height: 27%; }
+.balloon svg { width: auto; height: 100%; }
