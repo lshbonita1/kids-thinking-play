@@ -1593,3 +1593,9 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 .breath-count { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
 .breath-count i { width: 16px; height: 16px; border-radius: 50%; background: #e6dcc8; }
 .breath-count i.on { background: #8fd19e; }
+.story-group h2 { margin: 14px 0 8px; color: var(--muted); font-weight: 400; font-size: 17px; }
+.story-list { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.story-item { padding: 14px 4px; border-radius: 20px; }
+.story-item span { font-size: 40px; }
+.story-item b { font-size: 15px; word-break: keep-all; }
+@media (min-width: 700px) { .story-list { grid-template-columns: repeat(4, 1fr); } }
