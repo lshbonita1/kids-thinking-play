@@ -3573,12 +3573,15 @@ const PRINCIPLES = [
 ];
 
 const HOWTO_STEPS = [
-  { icon: '🎚️', title: '난이도 고르기', text: '처음에는 ‘쉬움’으로 시작하세요. 기록 탭에서 ‘잘해요’ 알림이 나오면 한 단계 올려 보세요.' },
-  { icon: '📅', title: '오늘의 학습 시작', text: '오늘 탭의 ‘오늘의 학습’을 누르면 일정표가 나와요. 아이와 함께 순서를 보고 ‘시작하기’를 눌러요.' },
+  { icon: '🎚️', title: '난이도 고르기', text: '처음이면 오늘 탭의 ‘🧪 우리 아이 난이도 알아보기’로 알맞은 단계를 찾아 보세요. 기록 탭에서 ‘잘해요’ 알림이 나오면 한 단계 올려도 좋아요.' },
+  { icon: '📅', title: '오늘의 학습 시작', text: '‘오늘의 학습’을 누르면 일정표가 나와요. ‘🎁 다 하면 뭐 할까?’로 끝나고 할 일을 먼저 골라 두면 시작하기 쉬워요.' },
   { icon: '👆', title: '문제 풀기', text: '그림을 눌러 답해요. 🔊는 다시 듣기, ‘패스’는 넘어가기예요. 틀리면 반짝이는 정답을 눌러 끝내요.' },
-  { icon: '⭐', title: '결과 보기', text: '끝나면 별과 함께 문제마다 정답 · 다시 해서 맞음 · 패스가 나와요. 다시 하거나 처음으로 갈 수 있어요.' },
-  { icon: '🧩', title: '놀이 골라 하기', text: '놀이 탭에서 영역별로 원하는 놀이를 골라 10문제씩 할 수 있어요.' },
-  { icon: '📊', title: '기록 확인', text: '기록 탭에서 놀이별 결과와 달력을 보고, 어려워하는 놀이는 ‘해 보기’로 바로 연습해요.' },
+  { icon: '⭐', title: '결과와 칭찬 스티커', text: '끝나면 문제마다 결과가 나와요. 오늘의 학습을 처음 끝낸 날마다 칭찬 스티커를 받고, 10개 모으면 쑥쑥이가 자라요.' },
+  { icon: '🧩', title: '놀이 골라 하기', text: '놀이 탭에서 영역별로 원하는 놀이를 골라 할 수 있어요. ‘🖨️ 종이 학습지’로 인쇄해서 연필로 할 수도 있어요.' },
+  { icon: '🗣️', title: '말하기 카드', text: '아래 ‘말하기’ 메뉴에서 그림을 누르면 “물 주세요”, “도와주세요”를 대신 말해 줘요.' },
+  { icon: '🧰', title: '생활 도우미', text: '그림 이야기(병원 · 미용실 등 미리 보기), 먼저 · 다음 보드, 숨 쉬기를 생활 속에서 써 보세요.' },
+  { icon: '📊', title: '기록 확인', text: '기록 탭에서 놀이별 결과를 보고, ‘📋 기록 한 장’은 선생님께 보여 드릴 수 있게 인쇄 · 저장할 수 있어요.' },
+  { icon: '💬', title: '의견 남기기', text: '있었으면 하는 놀이나 불편한 점은 의견 게시판에 남겨 주세요. 하나하나 읽고 고쳐 나가요.' },
 ];
 
 const PARENT_TIPS = [
@@ -4335,16 +4338,23 @@ function showWorksheets(id = store.get('wsType', 'trace')) {
     ws.make(lv),
     el('footer', { class: 'ws-foot' }, `🌱 쑥쑥 생각놀이 · ${LEVELS[lv].name} · ssukssuknori.app`));
 
+  const preview = el('div', { class: 'ws-preview' }, page);
   toolScreen('종이 학습지',
     el('p', { class: 'sub' }, '인쇄해서 연필로 해요. 난이도는 지금 고른 단계를 따라요.'),
     el('div', { class: 'ws-types' }, WORKSHEETS.map((w) =>
       el('button', { class: `chip${w.id === ws.id ? ' on' : ''}`, onclick: () => showWorksheets(w.id) }, `${w.icon} ${w.title}`))),
     levelPicker('compact ws-level', () => showWorksheets(ws.id)),
-    el('div', { class: 'ws-preview' }, page),
+    preview,
     el('div', { class: 'btn-row ws-actions' },
       el('button', { class: 'btn-main alt', onclick: () => showWorksheets(ws.id) }, '🔀 다른 문제'),
-      el('button', { class: 'btn-main', onclick: printWorksheet }, '🖨️ 인쇄하기')));
+      el('button', { class: 'btn-main', onclick: printWorksheet }, '🖨️ 인쇄')));
+  // 미리보기는 학습지를 A4 비율 그대로 그린 뒤 화면 폭에 맞게 줄여서 보여 줌 (좁은 화면에서 그림이 겹치지 않게)
+  const fit = () => { page.style.zoom = String(Math.min(1, (preview.clientWidth - 20) / WS_PREVIEW_WIDTH)); };
+  fit();
+  window.addEventListener('resize', fit, { once: true });
 }
+
+const WS_PREVIEW_WIDTH = 560;
 
 // 학습지 한 장만 인쇄되게 (다른 화면 요소는 숨김)
 function printWorksheet() {
@@ -4699,7 +4709,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 68;
+const APP_VERSION = 70;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {

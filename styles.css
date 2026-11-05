@@ -1813,3 +1813,16 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
   .print-ws .ws-pairs { gap: 6mm; }
   .print-ws .ws-pair .ws-board { max-width: 64mm; }
 }
+
+/* ---------- 점검 후 다듬기 ---------- */
+/* 놀이 영역이 8개라 옆으로 숨지 않게 두 줄로 */
+@media (min-width: 700px) { .cat-tabs { flex-wrap: wrap; overflow: visible; } }
+/* 번갈아 쌓기: 블록 쌓을 자리가 눈에 보이게 */
+.turn-tower { border-radius: 20px 20px 6px 6px; background: linear-gradient(#fffaf0, #fdf3e3); }
+/* 학습지 '세어 보기': 좁은 화면에서 숫자가 넘치지 않게 */
+.ws-nums { gap: 2px; flex-wrap: nowrap; }
+.ws-nums b { width: 22px; font-size: 17px; }
+.ws-row.spread .ws-group { min-width: 0; flex-shrink: 1; }
+@media print { .print-ws .ws-nums { gap: 4mm; } }
+.ws-page { width: 560px; box-sizing: border-box; }
+@media print { .print-ws .ws-page { width: 100%; zoom: 1 !important; } }
