@@ -3601,7 +3601,7 @@ function guideAbout() {
     el('section', { class: 'panel intro-video' },
       el('h2', { class: 'panel-title' }, '🎬 30초 만에 둘러보기'),
       // 눌러야 받기 시작함 (데이터 아끼기). 배경음악은 직접 만든 곡이라 저작권 걱정 없음
-      el('video', { src: 'media/intro.mp4?v=2', poster: 'media/intro-poster.jpg', controls: true, playsinline: true, preload: 'none' })),
+      el('video', { src: 'media/intro.mp4?v=3', poster: 'media/intro-poster.jpg', controls: true, playsinline: true, preload: 'none' })),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '이렇게 만들었어요'),
       el('ul', { class: 'feature-list' }, PRINCIPLES.map((p) => el('li', {},
@@ -4713,7 +4713,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 74;
+const APP_VERSION = 75;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 async function checkForUpdate() {
