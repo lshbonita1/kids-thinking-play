@@ -3611,8 +3611,8 @@ function guideAbout() {
       el('p', {}, '또래보다 천천히 배우는 아이가 집에서 놀이하듯 기초 인지를 연습하는 무료 학습 놀이예요. 짧고 쉬운 문제를 매일 조금씩, 아이의 속도에 맞춰 해요.')),
     el('section', { class: 'panel intro-video' },
       el('h2', { class: 'panel-title' }, '🎬 30초 만에 둘러보기'),
-      // 눌러야 받기 시작함 (데이터 아끼기). 배경음악은 직접 만든 곡이라 저작권 걱정 없음
-      el('video', { src: 'media/intro.mp4?v=4', poster: 'media/intro-poster.jpg', controls: true, playsinline: true, preload: 'none' })),
+      // 눌러야 받기 시작함 (데이터 아끼기). 영상은 운영자가 만든 소개 영상(H.264로 바꿔 어느 기기에서나 재생)
+      el('video', { src: 'media/intro.mp4?v=5', poster: 'media/intro-poster.jpg?v=2', controls: true, playsinline: true, preload: 'none' })),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '이렇게 만들었어요'),
       el('ul', { class: 'feature-list' }, PRINCIPLES.map((p) => el('li', {},
@@ -4726,7 +4726,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 84;
+const APP_VERSION = 85;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;
