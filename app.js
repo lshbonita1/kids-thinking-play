@@ -98,6 +98,10 @@ const settings = {
   pitch: store.get('pitch', 1.1), // 목소리 높이: 높을수록 밝고 어린 느낌 (기본: 보통)
   rate: store.get('rate', 1), // 빠르기 (기본: 보통)
   tips: store.get('tips', true), // 놀이를 시작할 때 보호자 도움말 보이기
+  missSound: store.get('missSound', false), // 틀렸을 때 효과음 (소리에 예민한 아이가 많아 기본은 끔)
+  autoHint: store.get('autoHint', true), // 한동안 누르지 않으면 정답을 반짝여 도와주기
+  showScore: store.get('showScore', false), // 놀이 중 점수 보이기 (기본은 진행 막대만)
+  holdExit: store.get('holdExit', true), // ✕를 길게 눌러야 놀이에서 나가기 (아이가 실수로 나가지 않게)
 };
 
 // 목소리 높이 · 빠르기 선택지
@@ -254,7 +258,7 @@ const FEEDBACK = {
 function feedback(kind, done) {
   const [mood, text] = FEEDBACK[kind];
   if (kind === 'good' || kind === 'done') tone([660, 880, 1320]);
-  else if (kind === 'bad') tone([392, 294], 0.18);
+  else if (kind === 'bad' && settings.missSound) tone([392, 294], 0.18);
   speak(text);
   const overlay = el('div', { class: `feedback ${kind}` },
     el('div', { class: 'fb-icon' }, mascot(mood, 'bounce')),
@@ -273,6 +277,45 @@ const choicesStyle = (count) => `--choice-t:${CHOICE_SIZE[count] ?? CHOICE_SIZE[
 
 // 틀린 보기는 흐리게 막고 정답 보기를 반짝여 알려준 뒤 다시 고르게 함
 // ('오류 없는 학습': 실패로 끝나지 않고 정답을 직접 눌러 보게)
+// 한동안 누르지 않으면 정답을 반짝여 도와줌 (시간 지연 촉구). 힌트를 보고 맞히면 '다시 해서 맞음'으로 셈
+const AUTO_HINT_MS = 8000;
+function autoHint(ctx, right) {
+  if (!settings.autoHint || !right) return;
+  ctx.later(() => {
+    if (!right.isConnected || right.classList.contains('hint') || right.classList.contains('good')) return;
+    right.classList.add('hint');
+    ctx.nudge('반짝이는 것을 눌러 볼까요?');
+  }, AUTO_HINT_MS);
+}
+
+// 놀이에서 나가기: 아이가 실수로 누르지 않게 ✕를 길게 눌러야 나감 (설정에서 끌 수 있음)
+const HOLD_EXIT_MS = 900;
+function exitButton() {
+  const btn = el('button', { class: 'icon-btn exit-btn', 'aria-label': settings.holdExit ? '그만하기 (길게 누르기)' : '그만하기' }, '✕');
+  if (!settings.holdExit) {
+    btn.addEventListener('click', () => showHome());
+    return btn;
+  }
+  let timer = null;
+  const stop = () => { clearTimeout(timer); timer = null; btn.classList.remove('holding'); };
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    btn.classList.add('holding');
+    timer = setTimeout(() => { stop(); showHome(); }, HOLD_EXIT_MS);
+  });
+  for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
+    btn.addEventListener(type, () => {
+      if (!timer) return;
+      stop();
+      toast('보호자는 ✕를 꾹 누르고 있으면 나가요');
+    });
+  }
+  // 키보드(보호자)로는 바로 나감
+  btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') showHome(); });
+  btn.addEventListener('contextmenu', (e) => e.preventDefault());
+  return btn;
+}
+
 function retryChoice(ctx, wrong, right) {
   wrong.classList.add('bad', 'tried');
   wrong.disabled = true;
@@ -754,6 +797,7 @@ const patternGame = {
 
     ctx.stage.append(prompt('빈칸에 들어갈 것은?'), board, choiceLabel(choices.length), choiceRow);
 
+    autoHint(ctx, buttons[choices.indexOf(answer)]);
     function choose(c) {
       if (c !== answer) {
         retryChoice(ctx, buttons[choices.indexOf(c)], buttons[choices.indexOf(answer)]);
@@ -820,6 +864,7 @@ const countGame = {
       el('div', { class: 'num-choices' }, buttons));
     speak('몇 개일까요?');
 
+    autoHint(ctx, buttons[choices.indexOf(n)]);
     function choose(c, btn) {
       if (c !== n) {
         retryChoice(ctx, btn, buttons[choices.indexOf(n)]);
@@ -883,6 +928,7 @@ const oddGame = {
     const grid = oddGrid(items, cols, { onPick: choose, render: photoRenderer(items) });
     ctx.stage.append(prompt('다른 하나를 찾아요!'), grid);
 
+    autoHint(ctx, grid.children[odd]);
     function choose(k) {
       if (k !== odd) {
         retryChoice(ctx, grid.children[k], grid.children[odd]);
@@ -1030,6 +1076,7 @@ const shadowGame = {
       el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
     );
 
+    autoHint(ctx, buttons[choices.indexOf(answer)]);
     function choose(c, btn) {
       if (c !== answer) {
         retryChoice(ctx, btn, buttons[choices.indexOf(answer)]);
@@ -1213,6 +1260,7 @@ const listenGame = {
       el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
     );
 
+    autoHint(ctx, buttons[choices.indexOf(answer)]);
     function choose(c) {
       if (c !== answer) {
         retryChoice(ctx, buttons[choices.indexOf(c)], buttons[choices.indexOf(answer)]);
@@ -1296,6 +1344,7 @@ const feelGame = {
       ctx.stage.append(prompt(`${FEELINGS[feel].adj} 얼굴을 찾아요`), row);
     }
 
+    autoHint(ctx, buttons[choices.indexOf(feel)]);
     function choose(f) {
       if (f !== feel) {
         retryChoice(ctx, buttons[choices.indexOf(f)], buttons[choices.indexOf(feel)]);
@@ -1404,6 +1453,7 @@ const matchGame = {
       el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
     );
 
+    autoHint(ctx, buttons[choices.indexOf(pair.a)]);
     function choose(c) {
       if (c !== pair.a) {
         retryChoice(ctx, buttons[choices.indexOf(c)], buttons[choices.indexOf(pair.a)]);
@@ -1529,6 +1579,7 @@ const spaceGame = {
       el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons),
     );
 
+    autoHint(ctx, buttons[choices.indexOf(answer)]);
     function choose(c) {
       if (c !== answer) {
         retryChoice(ctx, buttons[choices.indexOf(c)], buttons[choices.indexOf(answer)]);
@@ -2173,6 +2224,7 @@ const sizeGame = {
     ctx.stage.append(prompt(`${word}을 골라요`), choiceLabel(scales.length),
       el('div', { class: 'choices', style: `--choice-t:${SIZE_TILE[scales.length]}` }, buttons));
 
+    autoHint(ctx, buttons[answer]);
     function choose(k) {
       if (k !== answer) {
         retryChoice(ctx, buttons[k], buttons[answer]);
@@ -2381,6 +2433,7 @@ const useGame = {
     ctx.stage.append(prompt(ask.say), choiceLabel(choices.length),
       el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons));
 
+    autoHint(ctx, buttons[choices.indexOf(answer)]);
     function choose(c) {
       const btn = buttons[choices.indexOf(c)];
       if (c !== answer) {
@@ -2535,6 +2588,7 @@ function choiceRound(ctx, { say, choices, answer, render = String, top = null, r
   ctx.stage.append(...[prompt(say), top, choiceLabel(choices.length),
     el('div', { class: `choices${wide ? ' wide-choices' : ''}`, style: `--choice-t:${BIG_CHOICE[choices.length] ?? BIG_CHOICE[4]}` }, buttons)].filter(Boolean));
 
+  autoHint(ctx, buttons[ans]);
   function choose(k) {
     if (k !== ans) {
       retryChoice(ctx, buttons[k], buttons[ans]);
@@ -4166,6 +4220,25 @@ function voiceSettings() {
   );
 }
 
+// 켬 · 끔 한 줄 (settings[key]를 바꾸고 저장)
+function switchRow(key, name, desc) {
+  const on = settings[key];
+  return el('div', { class: 'setting-row' },
+    el('div', {}, el('div', { class: 'setting-name' }, name), el('div', { class: 'setting-desc' }, desc)),
+    el('button', {
+      class: `switch${on ? ' on' : ''}`,
+      role: 'switch',
+      'aria-checked': String(on),
+      onclick: () => {
+        settings[key] = !settings[key];
+        store.set(key, settings[key]);
+        const y = window.scrollY;
+        showHome('settings');
+        window.scrollTo(0, y);
+      },
+    }, on ? '켬' : '끔'));
+}
+
 function settingsTab() {
   const soundBtn = el('button', {
     class: `switch${settings.sound ? ' on' : ''}`,
@@ -4196,6 +4269,11 @@ function settingsTab() {
       el('div', { class: 'setting-row' },
         el('div', {}, el('div', { class: 'setting-name' }, '👪 보호자 도움말'), el('div', { class: 'setting-desc' }, '놀이를 시작할 때 맨 위에 한 줄 도움말')),
         tipsBtn),
+      el('h3', { class: 'setting-group' }, '🧩 우리 아이에게 맞추기'),
+      switchRow('autoHint', '💡 기다리면 힌트', '8초 동안 누르지 않으면 정답이 반짝여요'),
+      switchRow('missSound', '🔔 틀렸을 때 소리', '소리에 예민하면 꺼 두세요 (말 안내는 그대로)'),
+      switchRow('showScore', '💯 놀이 중 점수 보이기', '끄면 진행 막대만 보여요 (점수는 기록에 남아요)'),
+      switchRow('holdExit', '✋ 길게 눌러 나가기', '아이가 실수로 나가지 않게 ✕를 꾹 눌러야 나가요'),
       el('button', {
         class: 'more-games sound-test',
         disabled: !settings.sound,
@@ -5136,9 +5214,11 @@ function playSession(session) {
     return bar;
   };
 
+  score.hidden = !settings.showScore;
+
   const myScreen = mount(el('div', { class: 'screen game' },
     el('header', { class: 'topbar' },
-      el('button', { class: 'icon-btn', 'aria-label': '그만하기', onclick: showHome }, '✕'),
+      exitButton(),
       counter,
       el('div', { class: 'bar' }, barFill),
       score,
@@ -5158,7 +5238,13 @@ function playSession(session) {
     miss(message) {
       if (locked || !rec) return;
       rec.missed = true;
-      tone([392, 330], 0.15);
+      if (settings.missSound) tone([392, 330], 0.15);
+      speak(message);
+    },
+    // 기다려도 누르지 않아 힌트를 보여 줌 (틀린 건 아니라 효과음 없이)
+    nudge(message) {
+      if (locked || !rec) return;
+      rec.missed = true;
       speak(message);
     },
     later(fn, ms) {
@@ -5422,7 +5508,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 98;
+const APP_VERSION = 99;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
