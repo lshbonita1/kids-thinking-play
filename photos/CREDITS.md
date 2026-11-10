@@ -40,3 +40,4 @@
 | `face_happy.jpg` | 웃는 얼굴 | [Toddler, little girl, blue eyes, curls, big smile](https://commons.wikimedia.org/wiki/File:Toddler,_little_girl,_blue_eyes,_curls,_big_smile_(23591131192).jpg) | Tammy Anthony Baker from Louisiana | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) |
 | `face_sad.jpg` | 우는 얼굴 | [Crying-girl.jpg](https://commons.wikimedia.org/wiki/File:Crying-girl.jpg) | Crimfants | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) |
 | `face_angry.jpg` | 화난 얼굴 | [Child's Angry Face.jpg](https://commons.wikimedia.org/wiki/File:Child%27s_Angry_Face.jpg) | Babyaimeesmom | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| `face_scared.jpg` | 무서워하는 얼굴 | [Scared Girl.jpg](https://commons.wikimedia.org/wiki/File:Scared_Girl.jpg) | Victor Bezrukov | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) |

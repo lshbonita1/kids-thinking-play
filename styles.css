@@ -2003,3 +2003,15 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .exit-btn::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: rgba(240, 138, 93, .45); transform: scale(0); }
 .exit-btn.holding::after { transform: scale(1); transition: transform .9s linear; }
 .setting-group { margin: 18px 0 2px; padding-top: 14px; border-top: 2px dashed var(--line, #ebe4d6); font-family: 'Jua', sans-serif; font-weight: 400; font-size: 17px; }
+
+/* 말하기: 자주 쓰는 말 (늘 같은 자리) */
+.talk-core { padding: 12px 12px 4px; border-radius: 20px; background: #fffaf0; border: 2px solid #f5e3b5; margin-bottom: 18px; }
+.talk-core h2 { margin-top: 0; }
+.talk-core .talk-card .talk-text { font-size: 18px; }
+.talk-tip { margin: 2px 2px 10px; font-size: 14px; line-height: 1.55; color: var(--muted, #8a7a62); }
+@media (min-width: 700px) { .talk-core .talk-grid { grid-template-columns: repeat(6, 1fr); } }
+
+/* 결과 화면: 오늘 집에서 해 보기 */
+.home-try { margin: 14px auto 4px; max-width: 460px; padding: 12px 16px; border-radius: 16px; background: #eef7ee; border: 2px solid #cfe7d3; text-align: left; }
+.home-try b { display: block; font-family: 'Jua', sans-serif; font-weight: 400; font-size: 16px; color: #2f6e44; margin-bottom: 4px; }
+.home-try p { margin: 0; font-size: 15px; line-height: 1.6; word-break: keep-all; }
