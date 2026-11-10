@@ -3787,7 +3787,7 @@ function todayTab() {
   return [
     el('header', { class: 'home-top' },
       logoTitle(),
-      el('button', { class: 'pill-btn guide-btn', 'aria-label': '공유하기', title: '친구에게 공유하기', onclick: shareSite }, '📤')),
+      shareTopButton()),
     levelPicker('compact'),
     levelTestLink(),
     dailyCard(),
@@ -3816,6 +3816,13 @@ function todayTab() {
 }
 
 /* ---------- 공유하기 ---------- */
+// 많은 앱이 쓰는 공유 모양(점 세 개를 선으로 이은 그림) + '공유' 글자
+const SHARE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.6 15.4 6.4M8.6 13.4l6.8 4.2" fill="none" stroke-width="2" stroke-linecap="round"/></svg>';
+function shareTopButton() {
+  const btn = el('button', { class: 'share-top', 'aria-label': '공유하기', title: '친구에게 공유하기', onclick: shareSite });
+  btn.innerHTML = `${SHARE_ICON}<span>공유</span>`;
+  return btn;
+}
 const SITE_URL = 'https://ssukssuknori.app/';
 const SHARE_TEXT = '아이와 함께하는 그림 생각놀이, 쑥쑥 생각놀이예요. 하루 10문제, 설치 없이 바로 해요!';
 
@@ -5309,7 +5316,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 92;
+const APP_VERSION = 93;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;
