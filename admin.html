@@ -108,8 +108,8 @@
       </section>
 
       <section class="card" id="sec-qr">
-        <h2>📱 QR로 들어온 방문</h2>
-        <p class="muted">소개 자료 · 인쇄물의 QR 코드(주소에 ?qr=이름)로 들어온 방문만 따로 세요. 내 접속 · 해외 · 봇은 빼고 세요.</p>
+        <h2>📱 QR · 채널별 방문</h2>
+        <p class="muted">소개 자료 · 인쇄물의 QR 코드와 인스타 · 스레드 · 블로그 · 카페 · 당근 링크(주소에 ?qr=이름)로 들어온 방문만 따로 세요. 내 접속 · 해외 · 봇은 빼고 세요.</p>
         <table><tbody id="qr-kpi"></tbody></table>
         <h3 class="sub-h">QR 종류별</h3>
         <table><tbody id="qr-src"></tbody></table>
@@ -269,7 +269,7 @@
         : '<tr><td class="muted" colspan="5">아직 기록이 없어요.</td></tr>';
     }
 
-    const QR_NAMES = { flyer: '소개 자료(A4)', print: '인쇄용 QR', poster: '포스터', card: '명함' };
+    const QR_NAMES = { flyer: '소개 자료(A4)', print: '인쇄용 QR', poster: '포스터', card: '명함', insta: '인스타그램', threads: '스레드', blog: '네이버 블로그', cafe: '맘카페 · 카페 글', kin: '네이버 지식iN', daangn: '당근', youtube: '유튜브' };
     function renderQr(q) {
       if (!q) return;
       $('qr-kpi').innerHTML = [['오늘', q.today, '건'], ['최근 2주', q.week2, '건'], ['전체 (6개월)', q.total, '건'], ['서로 다른 기기', q.visitors, '대']]
