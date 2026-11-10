@@ -412,7 +412,8 @@
         const rows = Object.fromEntries((d.rows || []).map((r) => [r.id, r]));
         const head = d.tableMissing
           ? '<p class="error">Supabase에 ssuk_insta_posts 표가 없어요. 003_ssuk_insta.sql을 실행해 주세요.</p>'
-          : d.user ? `<p>연결된 계정: <b>@${esc(d.user)}</b></p>` : `<p class="error">인스타 연결 안 됨: ${esc(d.tokenError || '')}</p>`;
+          : (d.user ? `<p>연결된 계정: <b>@${esc(d.user)}</b></p>` : `<p class="error">인스타 연결 안 됨: ${esc(d.tokenError || '')}</p>`)
+            + (d.thUser ? `<p>스레드: <b>@${esc(d.thUser)}</b> (인스타에 올라간 게시물을 함께 올려요)</p>` : `<p class="muted">스레드 연결 안 됨: ${esc(d.thError || '')}</p>`);
         $('ig-admin').innerHTML = head + `<table><tbody>${d.queue.map((q) => {
           const r = rows[q.id];
           const st = r ? (IG_STATUS[r.status] || r.status) : (q.date <= d.today ? '🕗 오늘 저녁 차례' : '📅 예약');
@@ -420,7 +421,15 @@
           const err = r?.error ? `<div class="muted">${esc(r.error)}</div>` : '';
           const btn = !r ? `<button class="btn" data-ig="now" data-id="${esc(q.id)}">지금 올리기</button>`
             : r.status !== 'published' ? `<button class="btn" data-ig="reset" data-id="${esc(q.id)}">다시 예약</button>` : '';
-          return `<tr><td>${esc(q.date.slice(5).replace('-', '/'))}</td><td>${esc(q.caption.split('\n')[0])}${err}</td><td>${st}${link}</td><td>${btn}</td></tr>`;
+          const TH = { published: '✅ 스레드', processing: '⏳ 스레드 처리 중', creating: '⏳ 스레드', error: '⚠️ 스레드 실패' };
+          let th = '';
+          if (d.thUser && r?.status === 'published') {
+            th = r.th_status ? `<div>${TH[r.th_status] || r.th_status}${r.th_permalink ? ` <a href="${esc(r.th_permalink)}" target="_blank" rel="noopener">보기</a>` : ''}</div>` : '<div class="muted">스레드 대기</div>';
+            if (r.th_error) th += `<div class="muted">${esc(r.th_error)}</div>`;
+          }
+          const thBtn = d.thUser && r?.status === 'published' && r.th_status !== 'published'
+            ? `<button class="btn" data-ig="${r.th_status === 'error' ? 'th-reset' : 'threads'}" data-id="${esc(q.id)}">${r.th_status === 'error' ? '스레드 다시' : '스레드 올리기'}</button>` : '';
+          return `<tr><td>${esc(q.date.slice(5).replace('-', '/'))}</td><td>${esc(q.caption.split('\n')[0])}${err}</td><td>${st}${link}${th}</td><td>${btn}${thBtn}</td></tr>`;
         }).join('')}</tbody></table>`;
       } catch (e) {
         $('ig-admin').innerHTML = `<p class="muted">불러오지 못했어요. (${esc(e.message)})</p>`;
@@ -431,7 +440,8 @@
       if (!btn) return;
       const action = btn.dataset.ig;
       if (action === 'now' && !confirm('이 게시물을 지금 인스타에 올릴까요?')) return;
-      btn.disabled = true; btn.textContent = action === 'now' ? '올리는 중… (최대 3분)' : '…';
+      if (action === 'threads' && !confirm('이 게시물을 지금 스레드에 올릴까요?')) return;
+      btn.disabled = true; btn.textContent = action === 'now' || action === 'threads' ? '올리는 중… (최대 3분)' : '…';
       try {
         const res = await fetch(`${API}/admin-insta`, {
           method: 'POST',
@@ -441,7 +451,7 @@
         const d = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(d.detail || d.error || res.status);
         if (d.message) alert(d.message);
-        else if (d.status === 'processing') alert('인스타가 아직 영상을 처리하고 있어요. 1~2분 뒤 [지금 올리기]를 한 번 더 눌러 주세요.');
+        else if (d.status === 'processing' || d.threads === 'processing') alert('인스타가 아직 영상을 처리하고 있어요. 1~2분 뒤 [지금 올리기]를 한 번 더 눌러 주세요.');
       } catch (err) {
         alert(`처리하지 못했어요. (${err.message})`);
       }

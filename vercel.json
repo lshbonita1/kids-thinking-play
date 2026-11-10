@@ -55,7 +55,7 @@
   ],
   "functions": {
     "api/insta-cron.js": {
-      "maxDuration": 150
+      "maxDuration": 300
     },
     "api/admin-insta.js": {
       "maxDuration": 260

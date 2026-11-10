@@ -1,6 +1,7 @@
 // Vercel Cron이 매일 저녁(한국 8시쯤) 부름: 예약표에서 날짜가 된 릴스를 하나 올림
 // Vercel이 Authorization: Bearer <CRON_SECRET> 를 붙여 보냄
 import { runOnce } from '../lib/insta.js';
+import { runThreadsOnce, threadsOn } from '../lib/threads.js';
 import { isAdmin } from '../lib/request.js';
 
 export default async function handler(req, res) {
@@ -15,10 +16,21 @@ export default async function handler(req, res) {
     res.status(200).json({ status: 'off', message: 'INSTAGRAM_TOKEN이 없어 자동 올리기가 꺼져 있어요.' });
     return;
   }
+  const out = {};
   try {
-    res.status(200).json(await runOnce());
+    out.instagram = await runOnce();
   } catch (e) {
     console.error('insta-cron', e);
-    res.status(500).json({ error: '올리지 못했어요.' });
+    out.instagram = { error: '올리지 못했어요.' };
   }
+  // 인스타에 올라간 게시물을 스레드에도 (인스타가 실패해도 밀린 스레드는 따로 진행)
+  if (threadsOn()) {
+    try {
+      out.threads = await runThreadsOnce();
+    } catch (e) {
+      console.error('threads-cron', e);
+      out.threads = { error: '스레드에 올리지 못했어요.' };
+    }
+  }
+  res.status(out.instagram.error ? 500 : 200).json(out);
 }
