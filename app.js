@@ -3290,12 +3290,29 @@ const weatherGame = {
 };
 
 /* ---------- 놀이: 리듬 따라 치기 (듣고 따라 하기) ---------- */
-// 쑥쑥이가 북을 친 횟수만큼 똑같이 치기. 단계별 횟수와 박자 간격(ms)
-const RHYTHMS = [
-  [[0, 700], [0, 700]],
-  [[0, 600, 1200], [0, 500, 1000]],
-  [[0, 500, 1000, 1500], [0, 350, 1100, 1450]],
+// 쑥쑥이가 북을 친 횟수만큼 똑같이 치기. 리듬은 '묶음' 배열: [3]은 쿵쿵쿵, [1, 2]는 쿵 — 쿵쿵
+const RHYTHM_PLANS = [
+  [[2], [3], [1, 1], [2, 1], [1, 2], [1, 1, 1]],
+  [[3], [4], [1, 2], [2, 1], [2, 2], [1, 1, 1], [3, 1]],
+  [[4], [5], [2, 3], [3, 2], [1, 3], [3, 1], [2, 1, 2], [1, 2, 1], [2, 2, 1]],
 ];
+// 묶음 안 박자 간격 · 묶음 사이 쉬는 간격(ms), 묶음이 하나면 고르게 치는 간격
+const RHYTHM_STEP = [520, 450, 380];
+const RHYTHM_EVEN = [700, 600, 500];
+const RHYTHM_GAP = 950;
+
+function rhythmBeats(plan, level) {
+  const beats = [];
+  let t = 0;
+  plan.forEach((count, g) => {
+    if (g) t += RHYTHM_GAP - RHYTHM_STEP[level];
+    for (let k = 0; k < count; k++) {
+      beats.push({ t, group: g });
+      t += plan.length === 1 ? RHYTHM_EVEN[level] : RHYTHM_STEP[level];
+    }
+  });
+  return beats;
+}
 
 const rhythmGame = {
   id: 'rhythm',
@@ -3307,14 +3324,16 @@ const rhythmGame = {
   total: 6,
 
   round(i, ctx) {
-    const beats = RHYTHMS[ctx.level][i < 3 ? 0 : 1];
+    const plan = pick(RHYTHM_PLANS[ctx.level]);
+    const beats = rhythmBeats(plan, ctx.level);
     const n = beats.length;
-    const rec = { n, round: i, done: false };
+    const rec = { n, plan, sig: plan.join('-'), done: false };
     let taps = 0;
     let listening = true;
     let waitGen = 0; // 지난 기다림 타이머가 새로 친 것을 건드리지 않게
 
-    const dots = range(1, n).map(() => el('i'));
+    // 쉬는 자리는 동그라미 사이를 띄워서 리듬이 눈으로도 보이게
+    const dots = beats.map((b, k) => el('i', { class: k && b.group !== beats[k - 1].group ? 'gap' : '' }));
     const drum = el('button', { class: 'drum', 'aria-label': '북', onclick: tap }, '🥁');
     const guide = el('div', { class: 'rhythm-guide' });
     ctx.stage.append(prompt('쑥쑥이 북소리를 잘 들어요'), el('div', { class: 'rhythm-dots' }, dots), drum, guide);
@@ -3322,24 +3341,25 @@ const rhythmGame = {
     function play() {
       listening = true;
       taps = 0;
-      dots.forEach((d) => d.className = '');
+      const reset = () => dots.forEach((d, k) => d.classList.remove('show', 'mine'));
+      reset();
       guide.replaceChildren(el('span', {}, mascot('smile'), ' 쑥쑥이가 쳐요'));
-      beats.forEach((t, k) => ctx.later(() => {
-        dots[k].className = 'show';
+      beats.forEach(({ t }, k) => ctx.later(() => {
+        dots[k].classList.add('show');
         drum.classList.remove('hit'); void drum.offsetWidth; drum.classList.add('hit');
         tone([196], 0.18);
       }, 400 + t));
       ctx.later(() => {
         listening = false;
-        dots.forEach((d) => d.className = '');
+        reset();
         guide.replaceChildren(el('b', {}, '👉 이제 똑같이 쳐 봐요!'));
         speak('똑같이 쳐 봐요');
-      }, 400 + beats[n - 1] + 700);
+      }, 400 + beats[n - 1].t + 700);
     }
 
     function tap() {
       if (listening || rec.done) return;
-      dots[taps].className = 'mine';
+      dots[taps].classList.add('mine');
       drum.classList.remove('hit'); void drum.offsetWidth; drum.classList.add('hit');
       tone([262], 0.15);
       taps++;
@@ -3361,7 +3381,7 @@ const rhythmGame = {
     return rec;
   },
 
-  review: (rec) => el('div', { class: 'review-note' }, rec.done ? `북 ${rec.n}번 따라 쳤어요` : '끝까지 하지 못했어요'),
+  review: (rec) => el('div', { class: 'review-note' }, `${rec.plan.map((c) => '쿵'.repeat(c)).join(' — ')} · ${rec.done ? `${rec.n}번 따라 쳤어요` : '끝까지 하지 못했어요'}`),
 };
 
 /* ---------- 놀이: 왜 그런 기분일까? (감정의 이유) ---------- */
@@ -3447,7 +3467,7 @@ const QUESTION_KEYS = {
   safety: (r) => `${r.mode}|${r.answer}|${r.choices.length}`,
   group: (r) => `${r.cats.join()}|${r.items.join()}`,
   weather: (r) => `${r.tag}|${r.answer}|${r.choices.length}`,
-  rhythm: (r) => `${r.n}|${r.round}`,
+  rhythm: (r) => r.sig,
   why: (r) => `${r.feel}|${r.answer.text}|${r.choices.length}`,
   family: (r) => `${r.answer}|${r.choices.length}`,
   sound: (r) => `${r.answer}|${r.choices.length}`,
@@ -5282,7 +5302,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 90;
+const APP_VERSION = 91;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;
