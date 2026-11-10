@@ -1,7 +1,7 @@
 # 놀이별 소개 페이지(games/*.html)와 모아 보기(games/index.html), sitemap.xml 만들기
 # 놀이 정보는 tools/gamedata.json (사이트의 GAMES · CATEGORIES에서 뽑은 것), 설명 글은 아래 GUIDE
 # 실행: python3 tools/build-game-pages.py
-import json, html, pathlib, datetime
+import json, html, pathlib, datetime, re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = json.loads((ROOT / 'tools' / 'gamedata.json').read_text())
@@ -57,10 +57,15 @@ WORKSHEET_FOR = {'copy': 'copy', 'lines': 'lines', 'trace': 'trace', 'shadow': '
                  'pattern': 'pattern', 'size': 'size', 'number': 'number', 'flip': 'match', 'match': 'match'}
 
 esc = html.escape
+# 결과 화면의 '오늘 집에서 해 보기' 글을 app.js에서 그대로 가져옴 (한 곳만 고치면 되게)
+_app = (ROOT / 'app.js').read_text(encoding='utf-8')
+_block = _app[_app.index('const HOME_TRY = {'):]
+_block = _block[:_block.index('\n};')]
+HOME_TRY = dict(re.findall(r"^  (\w+): '(.+)',?$", _block, re.M))
 games = {g['id']: g for g in DATA['games']}
 cat_of = {gid: c for c in DATA['cats'] for gid in c['games']}
 ws_title = {w['id']: w['title'] for w in DATA['worksheets']}
-missing = [g for g in games if g not in GUIDE]
+missing = [g for g in games if g not in GUIDE or g not in HOME_TRY]
 assert not missing, f'GUIDE에 설명이 없는 놀이: {missing}'
 
 STYLE = """
@@ -85,6 +90,8 @@ section p { margin: 0; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .tags span { padding: 2px 10px; border-radius: 999px; background: #e3f3e6; color: var(--green); font-size: 14px; }
 .tip { background: #f4effc; border-color: #d9cbf0; }
+.home { background: #eef7ee; border-color: #cfe7d3; }
+.home .note { margin-top: 6px; color: var(--muted); font-size: 14px; }
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .g { display: flex; align-items: center; gap: 10px; padding: 12px; border: 2px solid var(--line); border-radius: 16px; background: #fff; color: var(--ink); text-decoration: none; }
 .g .i { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 12px; font-size: 24px; }
@@ -155,6 +162,7 @@ for gid, g in games.items():
       <div class="tags">{''.join(f'<span>{esc(s.strip())}</span>' for s in g['skill'].split('·'))}</div></section>
     <section><h2>🎚️ 단계별로 달라져요</h2><p>쉬움 · 보통 · 어려움 세 단계가 있어요. {esc(levels)} 틀리면 정답이 반짝여서 다시 해 볼 수 있어요.</p></section>
     {f'<section class="tip"><h2>👪 보호자 도움말</h2><p>{esc(g["tip"])}</p></section>' if g.get('tip') else ''}
+    {f'<section class="home"><h2>🏠 집에서 이렇게 이어 가요</h2><p>{esc(HOME_TRY[gid])}</p><p class="note">화면에서 한 것을 생활 속 실제 물건 · 상황으로 한 번 더 해 보면 더 잘 익혀요. 놀이가 끝나면 결과 화면에도 같은 안내가 나와요.</p></section>' if gid in HOME_TRY else ''}
     {f'<section><h2>🖨️ 종이 학습지로도 해요</h2><p>‘{esc(ws_title[ws])}’ 학습지를 A4로 인쇄해서 연필로 할 수 있어요. 사이트의 놀이 탭 맨 위 ‘종이 학습지’에서 인쇄해요.</p></section>' if ws else ''}
     {f'<div class="cat"><h2>함께 하면 좋은 놀이</h2></div><div class="grid">{"".join(card(f) for f in friends)}</div>' if friends else ''}"""
     desc = f"{g['title']}: {g['desc']}. {how} 천천히 배우는 아이를 위한 무료 그림 놀이, 쑥쑥 생각놀이."
