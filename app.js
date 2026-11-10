@@ -3787,7 +3787,7 @@ function todayTab() {
   return [
     el('header', { class: 'home-top' },
       logoTitle(),
-      shareTopButton()),
+      el('div', { class: 'head-actions' }, installTopButton(), shareTopButton())),
     levelPicker('compact'),
     levelTestLink(),
     dailyCard(),
@@ -3813,6 +3813,52 @@ function todayTab() {
         el('button', { class: 'link-btn', onclick: () => showGuide('howto') }, '사용 방법'), ' · ',
         el('a', { href: 'privacy.html' }, '개인정보처리방침'), ' · ', el('span', {}, 'ssukssuknori.app'))),
   ];
+}
+
+/* ---------- 홈 화면에 추가 ---------- */
+// 안드로이드(크롬 · 삼성 인터넷)는 설치 창을 바로 띄울 수 있고, 아이폰 · 앱 안 브라우저는 방법을 보여 줌
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+});
+const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+const INSTALL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke-width="2"/><path d="M12 8v7M8.5 11.5h7" fill="none" stroke-width="2.2" stroke-linecap="round"/></svg>';
+
+function installTopButton() {
+  if (isStandalone()) return null;
+  const btn = el('button', { class: 'share-top install-top', 'aria-label': '홈 화면에 추가', title: '홈 화면에 추가', onclick: installApp });
+  btn.innerHTML = `${INSTALL_ICON}<span>홈 추가</span>`;
+  return btn;
+}
+
+async function installApp() {
+  if (installPrompt) {
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice.catch(() => ({}));
+    installPrompt = null;
+    if (outcome === 'accepted') toast('홈 화면에 추가했어요 🌱');
+    return;
+  }
+  showInstallGuide();
+}
+
+function showInstallGuide() {
+  const ua = navigator.userAgent;
+  const inApp = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(ua);
+  const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const steps = inApp
+    ? [['⋮', '오른쪽 위(또는 아래)의 ⋮ 또는 ··· 버튼을 눌러요'], ['🌐', '‘다른 브라우저로 열기’를 눌러요 (아이폰은 사파리, 안드로이드는 크롬)'], ['📲', '열린 화면에서 다시 ‘홈 추가’ 버튼을 눌러요']]
+    : ios
+      ? [['⬆️', '화면 아래(아이패드는 위)의 공유 버튼(네모에 위 화살표)을 눌러요'], ['➕', '목록을 올려 ‘홈 화면에 추가’를 눌러요'], ['✅', '오른쪽 위 ‘추가’를 누르면 홈 화면에 쑥쑥이 아이콘이 생겨요']]
+      : [['⋮', '오른쪽 위 ⋮ 메뉴를 눌러요'], ['📲', '‘홈 화면에 추가’ 또는 ‘앱 설치’를 눌러요'], ['✅', '‘추가’ 또는 ‘설치’를 누르면 홈 화면에 쑥쑥이 아이콘이 생겨요']];
+  toolScreen('홈 화면에 추가',
+    el('p', { class: 'sub' }, inApp ? '지금은 앱 안의 브라우저라 바로 추가할 수 없어요. 아래처럼 다른 브라우저로 열어 주세요.' : '홈 화면에 추가하면 앱처럼 아이콘을 눌러 바로 열 수 있어요.'),
+    el('ol', { class: 'step-list install-steps' }, steps.map(([icon, text], k) => el('li', {},
+      el('span', { class: 'step-num' }, String(k + 1)),
+      el('span', { class: 'feature-icon' }, icon),
+      el('div', {}, el('span', {}, text))))),
+    el('button', { class: 'btn-main', onclick: () => showHome('today') }, '확인했어요'));
 }
 
 /* ---------- 공유하기 ---------- */
@@ -5321,7 +5367,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 94;
+const APP_VERSION = 95;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;
