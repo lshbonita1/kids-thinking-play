@@ -1995,3 +1995,5 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .fav-result { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 12px 0 2px; color: var(--muted); font-size: 16px; flex-wrap: wrap; }
 .fav-result .fav-btn { position: static; width: 44px; height: 44px; font-size: 22px; }
 .fav-result small { width: 100%; text-align: center; font-size: 13px; }
+/* 좋아하는 놀이 칸과 '이런 놀이도 있어요' 사이 여백 */
+.pick-section + .pick-section { margin-top: 30px; }
