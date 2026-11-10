@@ -93,6 +93,7 @@
       <nav class="jump">
         <a href="#sec-feedback">💬 의견 게시판 <b id="fb-badge"></b></a>
         <a href="#sec-qr">📱 QR</a>
+        <a href="#sec-insta">📸 인스타</a>
         <a href="#sec-visits">📊 방문</a>
         <a href="#sec-regions">🗺️ 지역</a>
         <a href="#sec-games">🧩 놀이</a>
@@ -114,6 +115,12 @@
         <table><tbody id="qr-src"></tbody></table>
         <h3 class="sub-h">날짜별 (최근 2주)</h3>
         <table><tbody id="qr-daily"></tbody></table>
+      </section>
+
+      <section class="card" id="sec-insta">
+        <h2>📸 인스타 자동 올리기</h2>
+        <p class="muted">insta/queue.json 예약표의 날짜가 되면 저녁 8~9시쯤 릴스가 하나씩 자동으로 올라가요.</p>
+        <div id="ig-admin"><p class="muted">불러오는 중…</p></div>
       </section>
 
       <section class="card" id="sec-feedback">
@@ -339,6 +346,7 @@
         $('login').hidden = true; $('dash').hidden = false; $('refresh').hidden = false;
         render(data);
         loadFeedback();
+        loadInsta();
       } catch (e) {
         showLogin(`통계를 불러오지 못했어요. 잠시 뒤 다시 해 주세요. (${e.message})`);
       } finally {
@@ -393,6 +401,50 @@
         alert(`처리하지 못했어요. (${err.message})`);
         btn.disabled = false;
       }
+    });
+
+    const IG_STATUS = { published: '✅ 올림', processing: '⏳ 영상 처리 중', creating: '⏳ 올리는 중', error: '⚠️ 실패' };
+    async function loadInsta() {
+      try {
+        const res = await fetch(`${API}/admin-insta`, { headers: { Authorization: `Bearer ${getToken()}` }, cache: 'no-store' });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail || d.error || res.status);
+        const rows = Object.fromEntries((d.rows || []).map((r) => [r.id, r]));
+        const head = d.tableMissing
+          ? '<p class="error">Supabase에 ssuk_insta_posts 표가 없어요. 003_ssuk_insta.sql을 실행해 주세요.</p>'
+          : d.user ? `<p>연결된 계정: <b>@${esc(d.user)}</b></p>` : `<p class="error">인스타 연결 안 됨: ${esc(d.tokenError || '')}</p>`;
+        $('ig-admin').innerHTML = head + `<table><tbody>${d.queue.map((q) => {
+          const r = rows[q.id];
+          const st = r ? (IG_STATUS[r.status] || r.status) : (q.date <= d.today ? '🕗 오늘 저녁 차례' : '📅 예약');
+          const link = r?.permalink ? ` <a href="${esc(r.permalink)}" target="_blank" rel="noopener">보기</a>` : '';
+          const err = r?.error ? `<div class="muted">${esc(r.error)}</div>` : '';
+          const btn = !r ? `<button class="btn" data-ig="now" data-id="${esc(q.id)}">지금 올리기</button>`
+            : r.status !== 'published' ? `<button class="btn" data-ig="reset" data-id="${esc(q.id)}">다시 예약</button>` : '';
+          return `<tr><td>${esc(q.date.slice(5).replace('-', '/'))}</td><td>${esc(q.caption.split('\n')[0])}${err}</td><td>${st}${link}</td><td>${btn}</td></tr>`;
+        }).join('')}</tbody></table>`;
+      } catch (e) {
+        $('ig-admin').innerHTML = `<p class="muted">불러오지 못했어요. (${esc(e.message)})</p>`;
+      }
+    }
+    $('ig-admin').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-ig]');
+      if (!btn) return;
+      const action = btn.dataset.ig;
+      if (action === 'now' && !confirm('이 게시물을 지금 인스타에 올릴까요?')) return;
+      btn.disabled = true; btn.textContent = action === 'now' ? '올리는 중… (최대 1분)' : '…';
+      try {
+        const res = await fetch(`${API}/admin-insta`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, id: btn.dataset.id }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.detail || d.error || res.status);
+        if (d.message) alert(d.message);
+      } catch (err) {
+        alert(`처리하지 못했어요. (${err.message})`);
+      }
+      loadInsta();
     });
 
     function showLogin(message) {

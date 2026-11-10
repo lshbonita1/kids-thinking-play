@@ -52,5 +52,23 @@
         }
       ]
     }
+  ],
+  "functions": {
+    "api/insta-cron.js": {
+      "maxDuration": 150
+    },
+    "api/admin-insta.js": {
+      "maxDuration": 90
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/insta-cron",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/insta-cron",
+      "schedule": "0 12 * * *"
+    }
   ]
 }
