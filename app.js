@@ -3832,7 +3832,12 @@ function shareCard() {
     el('div', { class: 'share-text' },
       el('b', {}, '친구에게 알려 주세요'),
       el('span', {}, '함께 하면 더 즐거워요')),
-    el('button', { class: 'share-btn', onclick: shareSite }, '📤 공유하기'));
+    (() => {
+      // 위쪽 공유 버튼과 같은 공유 모양(점 세 개 연결)
+      const btn = el('button', { class: 'share-btn', onclick: shareSite });
+      btn.innerHTML = `${SHARE_ICON}<span>공유하기</span>`;
+      return btn;
+    })());
 }
 
 // 휴대폰은 공유 창(카카오톡 · 문자 등)을 열고, 안 되는 곳에서는 주소를 복사함
@@ -5316,7 +5321,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 93;
+const APP_VERSION = 94;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;
