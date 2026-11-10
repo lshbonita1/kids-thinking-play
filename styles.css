@@ -1877,3 +1877,46 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .talk-photo { width: 72px; height: 72px; border-radius: 14px; object-fit: cover; }
 .talk-card.add { border: 2px dashed #e6cfa6; }
 .talk-said-img { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; display: block; }
+
+/* ---------- 새 놀이: 말 카드 · 없어진 것 · 반쪽 · 무리 · 리듬 ---------- */
+.phrase-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; height: 100%; padding: 4px; }
+.phrase-icon { font-size: calc(var(--t, 90px) * .38); line-height: 1; }
+.phrase-card b { font-weight: 400; font-size: clamp(13px, calc(var(--t, 90px) * .15), 19px); line-height: 1.25; text-align: center; word-break: keep-all; }
+.choice-review .phrase-card { width: auto; flex-direction: row; font-size: 13px; }
+.choice-review .phrase-icon { font-size: 18px; }
+.missing-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 4px 0 12px; --t: clamp(56px, 17vw, calc(84px * var(--k))); }
+.missing-tile { font-size: calc(var(--t) * .6); }
+.half-tile { --t: clamp(110px, 32vw, calc(150px * var(--k))); margin: 0 auto 8px; }
+.half-pic { position: relative; display: block; width: 50%; height: 100%; overflow: hidden; border-right: 3px dashed #d9b07c; }
+.half-pic.right { margin-left: 50%; border-right: 0; border-left: 3px dashed #d9b07c; }
+.half-pic span { position: absolute; top: 50%; left: 0; width: 200%; font-size: calc(var(--t) * .7); line-height: 1; text-align: center; transform: translateY(-50%); }
+.half-pic.right span { left: -100%; }
+.group-label { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.group-label span { font-size: 30px; line-height: 1; }
+.group-label b { font-weight: 400; font-size: 15px; }
+.basket-label:has(.group-label) { width: auto; aspect-ratio: auto; padding: 6px 12px; }
+.emoji-piece { font-size: calc(var(--t, 80px) * .62); line-height: 1; }
+.basket-got .emoji-piece { font-size: 26px; }
+.rhythm-dots { display: flex; justify-content: center; gap: 12px; margin: 10px 0 18px; }
+.rhythm-dots i { width: 22px; height: 22px; border-radius: 50%; background: #ece6da; transition: background .15s, transform .15s; }
+.rhythm-dots i.show { background: #f6c453; transform: scale(1.2); }
+.rhythm-dots i.mine { background: #8fd19e; transform: scale(1.2); }
+.drum { display: grid; place-items: center; width: min(52vw, 30vh, 220px); aspect-ratio: 1; margin: 0 auto 14px; border-radius: 50%; background: #fff3e3; box-shadow: 0 6px 0 #e6cfa6; font-size: min(30vw, 17vh, 120px); line-height: 1; }
+.drum.hit { animation: drum-hit .18s; }
+@keyframes drum-hit { 50% { transform: scale(.9); } }
+.rhythm-guide { display: flex; justify-content: center; align-items: center; min-height: 44px; font-size: 20px; }
+.rhythm-guide span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.rhythm-guide svg, .rhythm-guide .mascot { width: 36px; height: 36px; }
+/* 왜 그런 기분일까?: 얼굴 사진은 알맞게, 보기는 가로로 긴 줄 */
+.face-scene img.photo { width: min(42vw, 24vh, calc(170px * var(--k))); height: min(42vw, 24vh, calc(170px * var(--k))); margin: 0 auto; border-radius: 24px; object-fit: cover; }
+.choices.wide-choices { flex-direction: column; align-items: stretch; width: 100%; max-width: calc(480px * var(--k)); margin: 0 auto; }
+.choices .choice.wide-choice { width: 100%; height: auto; min-height: 64px; padding: 8px 14px; }
+.wide-choice .phrase-card { flex-direction: row; justify-content: flex-start; gap: 12px; }
+.wide-choice .phrase-icon { font-size: 36px; }
+.wide-choice .phrase-card b { font-size: 18px; text-align: left; }
+
+/* ---------- 보호자 도움말 한 줄 ---------- */
+.parent-tip { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 8px; padding: 8px 10px 8px 12px; border-radius: 14px; background: #f4effc; color: #5b4a86; font-size: 14px; line-height: 1.45; }
+.parent-tip p { flex: 1; margin: 0; word-break: keep-all; }
+.parent-tip-x { flex: none; padding: 0 4px; color: #8f80b8; font-size: 15px; }
+.panel .setting-row + .setting-row { margin-top: 14px; }

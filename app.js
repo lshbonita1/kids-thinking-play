@@ -97,6 +97,7 @@ const settings = {
   voice: store.get('voice', ''), // 고른 목소리 이름 (없으면 자동)
   pitch: store.get('pitch', 1.1), // 목소리 높이: 높을수록 밝고 어린 느낌 (기본: 보통)
   rate: store.get('rate', 1), // 빠르기 (기본: 보통)
+  tips: store.get('tips', true), // 놀이를 시작할 때 보호자 도움말 보이기
 };
 
 // 목소리 높이 · 빠르기 선택지
@@ -1712,6 +1713,95 @@ const SORT_BASKETS = [2, 2, 3];
 const SORT_COUNTS = [[3, 4], [4, 5], [5, 6]];
 const SORT_TILE = 'clamp(calc(70px * var(--k)), 22vw, calc(92px * var(--k)))';
 
+/* ---------- 바구니에 끌어 넣기 (바구니에 쏙 · 같은 무리끼리 모으기가 같이 씀) ---------- */
+// baskets: [{ key, label }], keyOf(그림) === 바구니 key 이면 맞는 바구니
+function dragSortRound(ctx, { say, items, baskets, keyOf, render, rec }) {
+  Object.assign(rec, { items, misses: 0, done: false });
+  let selected = null;
+  let drag = null;
+  let placed = 0;
+
+  const pieces = items.map((it) => el('button', { class: 'tile sort-piece', 'aria-label': '그림' }, render(it)));
+  const boxes = baskets.map((b) => el('button', { class: 'basket', 'aria-label': '바구니' },
+    el('div', { class: 'basket-label' }, b.label),
+    el('div', { class: 'basket-in' })));
+
+  ctx.stage.append(
+    prompt(say),
+    el('div', { class: 'sort-pieces', style: `--t:${SORT_TILE}` }, pieces),
+    el('div', { class: 'draw-tip sort-tip' }, '👇 그림을 끌어서 바구니에 쏙!'),
+    el('div', { class: 'baskets', style: `grid-template-columns:repeat(${baskets.length},1fr)` }, boxes),
+  );
+
+  const hit = (node, e) => {
+    const r = node.getBoundingClientRect();
+    return e.clientX >= r.left - 10 && e.clientX <= r.right + 10 && e.clientY >= r.top - 10 && e.clientY <= r.bottom + 10;
+  };
+
+  function select(k) {
+    selected = selected === k ? null : k;
+    pieces.forEach((p, j) => p.classList.toggle('sel', j === selected));
+  }
+
+  function drop(k, b) {
+    selected = null;
+    pieces.forEach((p) => p.classList.remove('sel'));
+    if (keyOf(items[k]) !== baskets[b].key) {
+      // 맞는 바구니를 반짝여 알려주고 다시 옮기게 함
+      rec.misses++;
+      boxes.forEach((bn, j) => bn.classList.toggle('hint', baskets[j].key === keyOf(items[k])));
+      ctx.miss('반짝이는 바구니에 넣어 볼까요?');
+      return;
+    }
+    pieces[k].classList.add('used');
+    boxes.forEach((bn) => bn.classList.remove('hint'));
+    boxes[b].querySelector('.basket-in').append(el('span', { class: 'basket-got pop' }, render(items[k])));
+    tone([520 + placed * 70], 0.07);
+    if (++placed === items.length) {
+      rec.done = true;
+      ctx.finish(true);
+    }
+  }
+
+  pieces.forEach((p, k) => {
+    const reset = () => {
+      drag = null;
+      p.classList.remove('dragging');
+      p.style.transform = '';
+      boxes.forEach((b) => b.classList.remove('over'));
+    };
+    p.addEventListener('pointerdown', (e) => {
+      if (p.classList.contains('used') || rec.done) return;
+      e.preventDefault();
+      p.setPointerCapture(e.pointerId);
+      drag = { k, x0: e.clientX, y0: e.clientY, moved: false };
+      p.classList.add('dragging');
+      tone([600], 0.04);
+    });
+    p.addEventListener('pointermove', (e) => {
+      if (drag?.k !== k) return;
+      const dx = e.clientX - drag.x0;
+      const dy = e.clientY - drag.y0;
+      if (Math.hypot(dx, dy) > 8) drag.moved = true;
+      p.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+      boxes.forEach((b) => b.classList.toggle('over', hit(b, e)));
+    });
+    p.addEventListener('pointerup', (e) => {
+      if (drag?.k !== k) return;
+      const { moved } = drag;
+      reset();
+      // 끌지 않고 톡 누르면 고르기만 하고, 바구니를 눌러서 넣을 수도 있음
+      if (!moved) { select(k); return; }
+      const b = boxes.findIndex((bn) => hit(bn, e));
+      if (b >= 0) drop(k, b);
+    });
+    p.addEventListener('pointercancel', reset);
+  });
+  boxes.forEach((b, j) => b.addEventListener('click', () => selected != null && drop(selected, j)));
+
+  return rec;
+}
+
 const sortGame = {
   id: 'sort',
   title: '바구니에 쏙',
@@ -1724,90 +1814,14 @@ const sortGame = {
     const kinds = sample(SORT_ITEMS, SORT_BASKETS[ctx.level]);
     const n = SORT_COUNTS[ctx.level][i < 5 ? 0 : 1];
     const items = shuffle([...kinds, ...range(1, n - kinds.length).map(() => pick(kinds))]);
-    const rec = { kinds, items, misses: 0, done: false };
-    let selected = null;
-    let drag = null;
-    let placed = 0;
-
-    const pieces = items.map((it) => el('button', { class: 'tile sort-piece', 'aria-label': '그림' }, pic(it)));
-    const baskets = kinds.map((kd) => el('button', { class: 'basket', 'aria-label': '바구니' },
-      el('div', { class: 'basket-label' }, pic(kd)),
-      el('div', { class: 'basket-in' })));
-
-    ctx.stage.append(
-      prompt('같은 그림 바구니에 넣어요'),
-      el('div', { class: 'sort-pieces', style: `--t:${SORT_TILE}` }, pieces),
-      el('div', { class: 'draw-tip sort-tip' }, '👇 그림을 끌어서 바구니에 쏙!'),
-      el('div', { class: 'baskets', style: `grid-template-columns:repeat(${kinds.length},1fr)` }, baskets),
-    );
-
-    const hit = (node, e) => {
-      const r = node.getBoundingClientRect();
-      return e.clientX >= r.left - 10 && e.clientX <= r.right + 10 && e.clientY >= r.top - 10 && e.clientY <= r.bottom + 10;
-    };
-
-    function select(k) {
-      selected = selected === k ? null : k;
-      pieces.forEach((p, j) => p.classList.toggle('sel', j === selected));
-    }
-
-    function drop(k, b) {
-      selected = null;
-      pieces.forEach((p) => p.classList.remove('sel'));
-      if (items[k] !== kinds[b]) {
-        // 맞는 바구니를 반짝여 알려주고 다시 옮기게 함
-        rec.misses++;
-        baskets.forEach((bn, j) => bn.classList.toggle('hint', kinds[j] === items[k]));
-        ctx.miss('같은 그림 바구니에 넣어 볼까요?');
-        return;
-      }
-      pieces[k].classList.add('used');
-      baskets.forEach((bn) => bn.classList.remove('hint'));
-      baskets[b].querySelector('.basket-in').append(el('span', { class: 'basket-got pop' }, pic(items[k])));
-      tone([520 + placed * 70], 0.07);
-      if (++placed === items.length) {
-        rec.done = true;
-        ctx.finish(true);
-      }
-    }
-
-    pieces.forEach((p, k) => {
-      const reset = () => {
-        drag = null;
-        p.classList.remove('dragging');
-        p.style.transform = '';
-        baskets.forEach((b) => b.classList.remove('over'));
-      };
-      p.addEventListener('pointerdown', (e) => {
-        if (p.classList.contains('used') || rec.done) return;
-        e.preventDefault();
-        p.setPointerCapture(e.pointerId);
-        drag = { k, x0: e.clientX, y0: e.clientY, moved: false };
-        p.classList.add('dragging');
-        tone([600], 0.04);
-      });
-      p.addEventListener('pointermove', (e) => {
-        if (drag?.k !== k) return;
-        const dx = e.clientX - drag.x0;
-        const dy = e.clientY - drag.y0;
-        if (Math.hypot(dx, dy) > 8) drag.moved = true;
-        p.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
-        baskets.forEach((b) => b.classList.toggle('over', hit(b, e)));
-      });
-      p.addEventListener('pointerup', (e) => {
-        if (drag?.k !== k) return;
-        const { moved } = drag;
-        reset();
-        // 끌지 않고 톡 누르면 고르기만 하고, 바구니를 눌러서 넣을 수도 있음
-        if (!moved) { select(k); return; }
-        const b = baskets.findIndex((bn) => hit(bn, e));
-        if (b >= 0) drop(k, b);
-      });
-      p.addEventListener('pointercancel', reset);
+    return dragSortRound(ctx, {
+      say: '같은 그림 바구니에 넣어요',
+      items,
+      baskets: kinds.map((kd) => ({ key: kd, label: pic(kd) })),
+      keyOf: (it) => it,
+      render: pic,
+      rec: { kinds },
     });
-    baskets.forEach((b, j) => b.addEventListener('click', () => selected != null && drop(selected, j)));
-
-    return rec;
   },
 
   review(rec) {
@@ -2513,12 +2527,13 @@ const BIG_CHOICE = {
   4: 'clamp(86px, 21vw, calc(124px * var(--k)))',
 };
 // 보기 중 정답 하나를 고르고, 틀리면 정답이 반짝여 다시 고르게 함
-function choiceRound(ctx, { say, choices, answer, render = String, top = null, rec = {} }) {
+// wide: 문장이 긴 보기는 가로로 긴 줄 모양으로
+function choiceRound(ctx, { say, choices, answer, render = String, top = null, rec = {}, wide = false }) {
   Object.assign(rec, { say, choices, answer, chosen: null });
   const ans = choices.indexOf(answer);
-  const buttons = choices.map((c, k) => el('button', { class: 'tile choice', 'aria-label': `${k + 1}번 보기`, onclick: () => choose(k) }, render(c)));
+  const buttons = choices.map((c, k) => el('button', { class: `tile choice${wide ? ' wide-choice' : ''}`, 'aria-label': `${k + 1}번 보기`, onclick: () => choose(k) }, render(c)));
   ctx.stage.append(...[prompt(say), top, choiceLabel(choices.length),
-    el('div', { class: 'choices', style: `--choice-t:${BIG_CHOICE[choices.length] ?? BIG_CHOICE[4]}` }, buttons)].filter(Boolean));
+    el('div', { class: `choices${wide ? ' wide-choices' : ''}`, style: `--choice-t:${BIG_CHOICE[choices.length] ?? BIG_CHOICE[4]}` }, buttons)].filter(Boolean));
 
   function choose(k) {
     if (k !== ans) {
@@ -3058,6 +3073,355 @@ function showTalkCardEditor() {
     el('button', { class: 'btn-main alt', onclick: () => showHome('talk') }, '🗣️ 말하기로 돌아가기'));
 }
 
+/* ---------- 놀이: 이럴 땐 뭐라고 해요? (사회적 말) ---------- */
+const SOCIAL_SITUATIONS = [
+  { icon: '🎁', say: '선물을 받았어요', answer: ['🙏', '고마워요'] },
+  { icon: '💥', say: '친구와 부딪혔어요', answer: ['🙇', '미안해요'] },
+  { icon: '🌅', say: '아침에 선생님을 만났어요', answer: ['👋', '안녕하세요'] },
+  { icon: '🍚', say: '밥을 먹기 전이에요', answer: ['🥄', '잘 먹겠습니다'] },
+  { icon: '🩹', say: '친구가 넘어졌어요', answer: ['🤗', '괜찮아?'] },
+  { icon: '🧸', say: '친구랑 같이 놀고 싶어요', answer: ['🤝', '같이 놀자'] },
+  { icon: '🌙', say: '잠자러 가요', answer: ['😴', '안녕히 주무세요'] },
+  { icon: '🎂', say: '친구의 생일이에요', answer: ['🎉', '생일 축하해'] },
+];
+const SOCIAL_LEVEL_COUNT = [4, 6, 8];
+const phraseCard = ([icon, text]) => el('span', { class: 'phrase-card' }, el('span', { class: 'phrase-icon' }, icon), el('b', {}, text));
+
+const socialGame = {
+  id: 'social',
+  title: '이럴 땐 뭐라고 해요?',
+  desc: '고마워요, 미안해요를 골라요',
+  skill: '사회성 · 말하기',
+  icon: '🙏',
+  color: '#fde2e2',
+
+  round(i, ctx) {
+    const pool = SOCIAL_SITUATIONS.slice(0, SOCIAL_LEVEL_COUNT[ctx.level]);
+    const q = pick(pool);
+    const wrongs = sample(pool.filter((x) => x !== q), basicChoiceCount(ctx, i) - 1).map((x) => x.answer);
+    const rec = choiceRound(ctx, {
+      say: `${q.say}. 뭐라고 말할까요?`,
+      choices: shuffle([q.answer, ...wrongs]),
+      answer: q.answer,
+      render: phraseCard,
+      top: el('div', { class: 'need-scene' }, q.icon),
+    });
+    rec.situation = q.say;
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec, phraseCard),
+};
+
+/* ---------- 놀이: 무엇이 없어졌을까? (기억) ---------- */
+const MISSING_ITEMS = ['🍎', '🍌', '🚗', '⭐', '🎈', '🐳', '🐸', '🦋', '⚽', '🌸'];
+const MISSING_COUNT = [3, 4, 5];
+const MISSING_VIEW = [3500, 3500, 3000];
+
+const missingGame = {
+  id: 'missing',
+  title: '무엇이 없어졌을까?',
+  desc: '잘 보고, 사라진 것을 찾아요',
+  skill: '기억 · 주의집중',
+  icon: '🔎',
+  color: '#e1ecf8',
+
+  round(i, ctx) {
+    const items = sample(MISSING_ITEMS, MISSING_COUNT[ctx.level]);
+    const gone = rand(items.length);
+    const missing = items[gone];
+    const rec = { items, missing };
+    const row = (hide) => el('div', { class: 'missing-row' }, items.map((e, k) =>
+      el('div', { class: `tile missing-tile${hide && k === gone ? ' blank' : ''}` }, hide && k === gone ? '?' : e)));
+
+    ctx.stage.append(prompt('잘 보고 기억해요'), row(false));
+    ctx.later(() => {
+      ctx.stage.replaceChildren();
+      // 남아 있는 그림 중에서 보기를 골라, 무엇이 사라졌는지 비교하며 찾게 함
+      const others = sample(items.filter((e) => e !== missing), basicChoiceCount(ctx, i) - 1);
+      choiceRound(ctx, { say: '무엇이 없어졌나요?', choices: shuffle([missing, ...others]), answer: missing, top: row(true), rec });
+    }, MISSING_VIEW[ctx.level]);
+    return rec;
+  },
+
+  review: (rec) => el('div', {},
+    el('div', { class: 'review-items' }, rec.items.join(' ')),
+    el('div', { class: 'review-note' }, `없어진 것: ${rec.missing}`)),
+};
+
+/* ---------- 놀이: 반쪽 그림 찾기 (부분과 전체) ---------- */
+const HALF_ITEMS = ['🍎', '🐘', '🚗', '🦋', '🐳', '⭐', '🍌', '🐸', '✈️', '🎈', '🌸', '🐧'];
+const halfPic = (e, side) => el('span', { class: `half-pic ${side}` }, el('span', {}, e));
+
+const halfGame = {
+  id: 'half',
+  title: '반쪽 그림 찾기',
+  desc: '반쪽만 보고 무엇인지 맞혀요',
+  skill: '부분과 전체',
+  icon: '🌗',
+  color: '#efe6d6',
+
+  round(i, ctx) {
+    const picks = sample(HALF_ITEMS, basicChoiceCount(ctx, i));
+    const answer = picks[0];
+    const side = ctx.level === 2 && rand(2) ? 'right' : 'left';
+    const rec = choiceRound(ctx, {
+      say: '반쪽 그림은 무엇일까요?',
+      choices: shuffle(picks),
+      answer,
+      top: el('div', { class: 'tile half-tile' }, halfPic(answer, side)),
+    });
+    rec.side = side;
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec),
+};
+
+/* ---------- 놀이: 안전한 것 · 위험한 것 ---------- */
+const DANGER_ITEMS = ['🔥', '🔪', '🔌', '💊', '✂️'];
+const SAFE_ITEMS = ['🧸', '⚽', '📚', '🖍️', '🧩', '🎈', '🪀'];
+
+const safetyGame = {
+  id: 'safety',
+  title: '안전한 것 · 위험한 것',
+  desc: '만지면 위험한 것을 알아요',
+  skill: '생활 안전',
+  icon: '⚠️',
+  color: '#fde8cc',
+
+  round(i, ctx) {
+    const n = basicChoiceCount(ctx, i);
+    // 어려움 뒤쪽은 거꾸로 '안전하게 놀 수 있는 것' 고르기
+    const askSafe = ctx.level === 2 && i >= 5 && rand(2);
+    const answer = pick(askSafe ? SAFE_ITEMS : DANGER_ITEMS);
+    const wrongs = sample(askSafe ? DANGER_ITEMS : SAFE_ITEMS, n - 1);
+    const rec = choiceRound(ctx, {
+      say: askSafe ? '안전하게 갖고 놀 수 있는 것을 골라요' : '만지면 위험한 것을 골라요',
+      choices: shuffle([answer, ...wrongs]),
+      answer,
+    });
+    rec.mode = askSafe ? 'safe' : 'danger';
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec),
+};
+
+/* ---------- 놀이: 같은 무리끼리 모으기 (종류 나누기) ---------- */
+const GROUPS = [
+  { key: 'fruit', name: '과일', icon: '🍎', items: ['🍌', '🍇', '🍓', '🍉', '🍊', '🍐'] },
+  { key: 'animal', name: '동물', icon: '🐶', items: ['🐱', '🐸', '🐘', '🐰', '🐻', '🐷'] },
+  { key: 'ride', name: '탈것', icon: '🚗', items: ['🚌', '✈️', '🚲', '🚂', '⛵', '🚒'] },
+  { key: 'cloth', name: '옷', icon: '👕', items: ['👖', '🧦', '🧢', '👗', '🧥', '👟'] },
+];
+const GROUP_BASKETS = [2, 2, 3];
+const GROUP_COUNTS = [[3, 4], [4, 5], [5, 6]];
+
+const groupGame = {
+  id: 'group',
+  title: '같은 무리끼리 모으기',
+  desc: '과일은 과일끼리, 동물은 동물끼리',
+  skill: '종류 나누기',
+  icon: '🗂️',
+  color: '#e4f1dc',
+
+  round(i, ctx) {
+    const cats = sample(GROUPS, GROUP_BASKETS[ctx.level]);
+    const n = GROUP_COUNTS[ctx.level][i < 5 ? 0 : 1];
+    // 바구니마다 하나씩은 꼭 들어가게
+    const items = shuffle([...cats.map((c) => pick(c.items)), ...range(1, n - cats.length).map(() => pick(pick(cats).items))]);
+    const keyOf = (it) => GROUPS.find((g) => g.items.includes(it))?.key;
+    return dragSortRound(ctx, {
+      say: '같은 무리끼리 바구니에 넣어요',
+      items,
+      baskets: cats.map((c) => ({ key: c.key, label: el('span', { class: 'group-label' }, el('span', {}, c.icon), el('b', {}, c.name)) })),
+      keyOf,
+      render: (it) => el('span', { class: 'emoji-piece' }, it),
+      rec: { cats: cats.map((c) => c.key) },
+    });
+  },
+
+  review(rec) {
+    return el('div', {},
+      el('div', { class: 'review-items' }, rec.items.join(' ')),
+      el('div', { class: 'review-note' }, !rec.done ? '끝까지 하지 못했어요' : rec.misses ? `${rec.misses}번 틀리고 다 나눴어요` : '한 번도 안 틀리고 다 나눴어요'));
+  },
+
+  badge(rec) {
+    if (rec.passed) return null;
+    return rec.correct ? ['good', '잘 나눴어요'] : ['pass', '완성'];
+  },
+};
+
+/* ---------- 놀이: 날씨와 하루 ---------- */
+const WEATHER_QS = [
+  { tag: 'hot', icon: '☀️', say: '더운 날 입는 옷을 골라요', items: ['🩳', '👒', '🩴'], level: 0 },
+  { tag: 'cold', icon: '❄️', say: '추운 날 입는 것을 골라요', items: ['🧣', '🧤', '🧥'], level: 0 },
+  { tag: 'rain', icon: '🌧️', say: '비 오는 날 필요한 것을 골라요', items: ['☔', '👢'], level: 0 },
+  { tag: 'night', icon: '🌙', say: '밤에 하는 일을 골라요', items: ['😴', '🛏️'], level: 1 },
+  { tag: 'morning', icon: '🌅', say: '아침에 일어날 때 울리는 것을 골라요', items: ['⏰'], level: 2 },
+];
+
+const weatherGame = {
+  id: 'weather',
+  title: '날씨와 하루',
+  desc: '추운 날, 더운 날 무엇을 입을까?',
+  skill: '시간 · 날씨 개념',
+  icon: '🌤️',
+  color: '#dcefff',
+
+  round(i, ctx) {
+    const pool = WEATHER_QS.filter((q) => q.level <= ctx.level);
+    const q = pick(pool);
+    const answer = pick(q.items);
+    const wrongs = sample(pool.filter((x) => x !== q).flatMap((x) => x.items), basicChoiceCount(ctx, i) - 1);
+    const rec = choiceRound(ctx, {
+      say: q.say,
+      choices: shuffle([answer, ...wrongs]),
+      answer,
+      top: el('div', { class: 'need-scene' }, q.icon),
+    });
+    rec.tag = q.tag;
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec),
+};
+
+/* ---------- 놀이: 리듬 따라 치기 (듣고 따라 하기) ---------- */
+// 쑥쑥이가 북을 친 횟수만큼 똑같이 치기. 단계별 횟수와 박자 간격(ms)
+const RHYTHMS = [
+  [[0, 700], [0, 700]],
+  [[0, 600, 1200], [0, 500, 1000]],
+  [[0, 500, 1000, 1500], [0, 350, 1100, 1450]],
+];
+
+const rhythmGame = {
+  id: 'rhythm',
+  title: '리듬 따라 치기',
+  desc: '쑥쑥이처럼 북을 쿵쿵 쳐요',
+  skill: '듣기 · 모방',
+  icon: '🥁',
+  color: '#f8e1cf',
+  total: 6,
+
+  round(i, ctx) {
+    const beats = RHYTHMS[ctx.level][i < 3 ? 0 : 1];
+    const n = beats.length;
+    const rec = { n, round: i, done: false };
+    let taps = 0;
+    let listening = true;
+    let waitGen = 0; // 지난 기다림 타이머가 새로 친 것을 건드리지 않게
+
+    const dots = range(1, n).map(() => el('i'));
+    const drum = el('button', { class: 'drum', 'aria-label': '북', onclick: tap }, '🥁');
+    const guide = el('div', { class: 'rhythm-guide' });
+    ctx.stage.append(prompt('쑥쑥이 북소리를 잘 들어요'), el('div', { class: 'rhythm-dots' }, dots), drum, guide);
+
+    function play() {
+      listening = true;
+      taps = 0;
+      dots.forEach((d) => d.className = '');
+      guide.replaceChildren(el('span', {}, mascot('smile'), ' 쑥쑥이가 쳐요'));
+      beats.forEach((t, k) => ctx.later(() => {
+        dots[k].className = 'show';
+        drum.classList.remove('hit'); void drum.offsetWidth; drum.classList.add('hit');
+        tone([196], 0.18);
+      }, 400 + t));
+      ctx.later(() => {
+        listening = false;
+        dots.forEach((d) => d.className = '');
+        guide.replaceChildren(el('b', {}, '👉 이제 똑같이 쳐 봐요!'));
+        speak('똑같이 쳐 봐요');
+      }, 400 + beats[n - 1] + 700);
+    }
+
+    function tap() {
+      if (listening || rec.done) return;
+      dots[taps].className = 'mine';
+      drum.classList.remove('hit'); void drum.offsetWidth; drum.classList.add('hit');
+      tone([262], 0.15);
+      taps++;
+      const gen = ++waitGen;
+      if (taps >= n) {
+        rec.done = true;
+        ctx.later(() => ctx.finish(true), 500);
+        return;
+      }
+      // 중간에 멈추면 몇 번 쳐야 하는지 다시 들려줌
+      ctx.later(() => {
+        if (gen !== waitGen || rec.done || listening) return;
+        ctx.miss('다시 잘 들어 봐요');
+        ctx.later(play, 900);
+      }, 2500);
+    }
+
+    ctx.later(play, 300);
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, rec.done ? `북 ${rec.n}번 따라 쳤어요` : '끝까지 하지 못했어요'),
+};
+
+/* ---------- 놀이: 왜 그런 기분일까? (감정의 이유) ---------- */
+// '기분 알기'의 거꾸로: 얼굴을 보고 그 기분이 된 까닭(상황)을 고름
+const situationCard = (s) => el('span', { class: 'phrase-card' }, el('span', { class: 'phrase-icon' }, s.icon), el('b', {}, s.text));
+const WHY_CHOICES = [[2, 2], [2, 3], [3, 3]];
+
+const whyGame = {
+  id: 'why',
+  title: '왜 그런 기분일까?',
+  desc: '슬픈 얼굴, 왜 슬플까요?',
+  skill: '감정 이해',
+  icon: '🤔',
+  color: '#f3e3f6',
+
+  round(i, ctx) {
+    const feels = FEEL_SETS[ctx.level];
+    const pool = FEEL_SITUATIONS.filter((s) => feels.includes(s.feel));
+    const q = pick(pool);
+    const f = FEELINGS[q.feel];
+    // 그 기분일 수도 있는 상황(avoid)은 보기에서 뺌
+    const wrongs = sample(pool.filter((s) => s.feel !== q.feel && !(s.avoid || []).includes(q.feel)), WHY_CHOICES[ctx.level][i < 5 ? 0 : 1] - 1);
+    const rec = choiceRound(ctx, {
+      say: `왜 ${f.adj} 얼굴일까요?`,
+      choices: shuffle([q, ...wrongs]),
+      answer: q,
+      render: situationCard,
+      wide: true,
+      top: el('div', { class: 'need-scene face-scene' }, PHOTOS[f.face] ? pic(f.face) : f.face),
+    });
+    rec.feel = q.feel;
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec, situationCard),
+};
+
+/* ---------- 보호자 도움말 (놀이를 시작할 때 한 줄) ---------- */
+const CATEGORY_TIPS = {
+  see: '고르기 전에 그림을 손가락으로 함께 가리키며 이름을 말해 주세요.',
+  hand: '손이 서툴면 아이 손 위에 손을 얹어 함께 움직여 주세요. 끝까지 해낸 것을 칭찬해 주세요.',
+  fun: '정답보다 즐거움이 먼저예요. 잘 기다리고 따라 한 순간을 크게 칭찬해 주세요.',
+  focus: '보여 주는 동안 "잘 보자" 하며 그림을 함께 짚어 주세요.',
+  think: '틀리면 답을 바로 알려 주기보다, 반짝이는 힌트를 함께 보며 다시 해 보게 해 주세요.',
+  number: '그림을 하나씩 손가락으로 짚으며 소리 내어 함께 세어 주세요.',
+  talk: '아이가 고른 그림의 이름을 또박또박 한 번 더 말해 주세요. 따라 말하면 크게 칭찬해 주세요.',
+  life: '놀이 속 상황을 실제 생활에서도 같은 말로 다시 이야기해 주세요.',
+};
+const GAME_TIPS = {
+  family: '사진 속 사람을 가리키며 "엄마 여기 있네!"처럼 함께 말해 주세요.',
+  imitate: '보호자가 먼저 동작을 크게 해 보이면 아이가 더 쉽게 따라 해요.',
+  wait: '기다리는 동안 "하나, 둘…" 함께 세어 주면 기다리기가 쉬워져요.',
+  turn: '"이번엔 누구 차례?" 하고 함께 말하며 차례를 기다려 보세요.',
+  rhythm: '먼저 아이와 무릎이나 책상을 "쿵쿵" 치며 함께 연습해 보세요.',
+  safety: '위험한 물건은 생활 속에서도 "위험해" 같은 짧고 같은 말로 알려 주세요.',
+};
+function gameTip(game) {
+  return GAME_TIPS[game.id] ?? CATEGORY_TIPS[CATEGORIES.find((c) => c.games.includes(game))?.id] ?? null;
+}
+
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
   memory: (r) => r.original.join(),
@@ -3077,6 +3441,14 @@ const QUESTION_KEYS = {
   need: (r) => `${r.situation}|${r.choices.length}`,
   turn: (r) => `${r.total}|${r.round}`,
   wait: (r) => `${r.sec}|${r.prize}`,
+  social: (r) => `${r.situation}|${r.choices.length}`,
+  missing: (r) => `${[...r.items].sort().join()}|${r.missing}`,
+  half: (r) => `${r.answer}|${r.side}|${r.choices.length}`,
+  safety: (r) => `${r.mode}|${r.answer}|${r.choices.length}`,
+  group: (r) => `${r.cats.join()}|${r.items.join()}`,
+  weather: (r) => `${r.tag}|${r.answer}|${r.choices.length}`,
+  rhythm: (r) => `${r.n}|${r.round}`,
+  why: (r) => `${r.feel}|${r.answer.text}|${r.choices.length}`,
   family: (r) => `${r.answer}|${r.choices.length}`,
   sound: (r) => `${r.answer}|${r.choices.length}`,
   verb: (r) => `${r.answer}|${r.choices.length}`,
@@ -3102,6 +3474,7 @@ const GAMES = [
   bodyGame, sizeGame, puzzleGame, useGame, imitateGame, stepsGame,
   soundGame, verbGame, colorGame, numberGame,
   oppositeGame, needGame, turnGame, waitGame,
+  socialGame, missingGame, halfGame, safetyGame, groupGame, weatherGame, rhythmGame, whyGame,
   familyGame,
 ];
 // 오늘의 학습에 돌아가며 나오는 놀이 (보호자가 준비해야 하는 놀이는 뺌)
@@ -3296,12 +3669,12 @@ function playDaily() {
 const CATEGORIES = [
   { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame, imitateGame] },
   { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame, puzzleGame] },
-  { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame] },
-  { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
-  { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame, colorGame, oppositeGame, needGame] },
+  { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame, rhythmGame] },
+  { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame, missingGame] },
+  { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame, colorGame, oppositeGame, needGame, halfGame, groupGame, weatherGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame, numberGame] },
   { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [familyGame, listenGame, soundGame, verbGame, matchGame, bodyGame, useGame, stepsGame] },
-  { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, routineGame, turnGame, waitGame] },
+  { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, whyGame, socialGame, safetyGame, routineGame, turnGame, waitGame] },
 ];
 
 const HOME_TABS = [
@@ -3672,12 +4045,25 @@ function settingsTab() {
       showHome('settings');
     },
   }, settings.sound ? '켬' : '끔');
+  const tipsBtn = el('button', {
+    class: `switch${settings.tips ? ' on' : ''}`,
+    role: 'switch',
+    'aria-checked': String(settings.tips),
+    onclick: () => {
+      settings.tips = !settings.tips;
+      store.set('tips', settings.tips);
+      showHome('settings');
+    },
+  }, settings.tips ? '켬' : '끔');
   return [
     ...tabHeader('설정'),
     el('section', { class: 'panel' },
       el('div', { class: 'setting-row' },
         el('div', {}, el('div', { class: 'setting-name' }, '🔊 소리'), el('div', { class: 'setting-desc' }, '문제 읽어주기와 효과음')),
         soundBtn),
+      el('div', { class: 'setting-row' },
+        el('div', {}, el('div', { class: 'setting-name' }, '👪 보호자 도움말'), el('div', { class: 'setting-desc' }, '놀이를 시작할 때 맨 위에 한 줄 도움말')),
+        tipsBtn),
       el('button', {
         class: 'more-games sound-test',
         disabled: !settings.sound,
@@ -4609,6 +4995,14 @@ function playSession(session) {
   const usedKeys = new Set(); // 이번에 이미 나온 문제
   let lastKey = null;
   const stage = el('main', { class: 'stage' });
+  // 한 가지 놀이를 골라 할 때만 보호자 도움말 (오늘의 학습은 일정표가 있어 화면이 복잡해지지 않게 뺌)
+  const tipBar = () => {
+    const tip = !session.schedule && settings.tips && new Set(rounds.map((r) => r.game)).size === 1 ? gameTip(rounds[0].game) : null;
+    if (!tip) return null;
+    const bar = el('div', { class: 'parent-tip' }, el('span', {}, '👪'), el('p', {}, tip),
+      el('button', { class: 'parent-tip-x', 'aria-label': '도움말 닫기', onclick: () => bar.remove() }, '✕'));
+    return bar;
+  };
 
   const myScreen = mount(el('div', { class: 'screen game' },
     el('header', { class: 'topbar' },
@@ -4619,6 +5013,7 @@ function playSession(session) {
       el('button', { class: 'pill-btn', onclick: () => finish(false, 'pass') }, '패스')),
     gameName,
     strip,
+    tipBar(),
     stage,
   ));
   const alive = () => screenId === myScreen;
@@ -4887,7 +5282,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 87;
+const APP_VERSION = 90;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;
