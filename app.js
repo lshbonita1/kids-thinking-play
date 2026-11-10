@@ -201,7 +201,7 @@ const PHOTOS = {
 
 // 한 낱말에 사진 여러 장 (다중 예시: 그 사진 한 장이 아니라 '사과'라는 개념을 익히도록)
 // 파일: 이름.jpg, 이름_2.jpg, 이름_3.jpg … 한 문제 안에서는 같은 사진, 문제가 바뀌면 다시 고름
-const PHOTO_VARIANTS = { apple: 3, banana: 3 };
+const PHOTO_VARIANTS = { apple: 3, banana: 3, dog: 3, car: 3, butterfly: 3, flower: 3, balloon: 2, elephant: 2, airplane: 2, chick: 2 };
 let photoPicks = {};
 const resetPhotoPicks = () => { photoPicks = {}; };
 function photoSrc(name) {
@@ -5692,7 +5692,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 103;
+const APP_VERSION = 104;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
