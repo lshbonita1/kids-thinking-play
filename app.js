@@ -3857,6 +3857,7 @@ function todayTab() {
         el('span', { class: 'faq-go' }, '›')),
       el('div', { class: 'home-foot-links' },
         el('button', { class: 'link-btn', onclick: () => showGuide('howto') }, '사용 방법'), ' · ',
+        el('a', { href: 'games/' }, '놀이 소개'), ' · ',
         el('a', { href: 'privacy.html' }, '개인정보처리방침'), ' · ', el('span', {}, 'ssukssuknori.app'))),
   ];
 }
@@ -5409,6 +5410,8 @@ function logVisit() {
     const url = new URL(location.href);
     const qr = url.searchParams.get('qr');
     if (qr && /^[a-z0-9-]{1,20}$/i.test(qr)) page = `qr-${qr.toLowerCase()}`;
+    // 놀이 소개 페이지의 '지금 해 보기'로 들어옴
+    else if (/^[a-z]{2,12}$/.test(url.searchParams.get('play') || '')) page = `game-${url.searchParams.get('play')}`;
     if (url.searchParams.has('qr')) {
       url.searchParams.delete('qr');
       history.replaceState(null, '', url.pathname + url.search + url.hash);
@@ -5419,9 +5422,22 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 97;
+const APP_VERSION = 98;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
+// 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
+function openFromLink() {
+  try {
+    const url = new URL(location.href);
+    const id = url.searchParams.get('play');
+    if (!id) return;
+    url.searchParams.delete('play');
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+    const game = GAMES.find((g) => g.id === id);
+    if (game) playGame(game);
+  } catch {}
+}
+
 let lastUpdateCheck = 0;
 async function checkForUpdate() {
   // 페이지를 열 때와 화면이 다시 보일 때가 겹치므로 1분 안에는 한 번만 확인
@@ -5442,6 +5458,7 @@ async function checkForUpdate() {
 
 showHome();
 logVisit();
+openFromLink();
 checkForUpdate();
 // 휴대폰에서 다른 앱을 쓰다가 돌아왔을 때도 확인
 document.addEventListener('visibilitychange', () => {
