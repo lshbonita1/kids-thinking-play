@@ -1864,3 +1864,16 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .faq-text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
 .faq-text b { font-weight: 400; font-size: 18px; }
 .faq-text small { color: #6f5f99; font-size: 14px; line-height: 1.4; word-break: keep-all; }
+
+/* ---------- 내 사진: 우리 가족 찾기 · 우리 집 말하기 카드 ---------- */
+.my-photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.my-photo { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; border: 2px solid var(--line); border-radius: 16px; background: #fff; }
+.my-photo img { width: 100%; aspect-ratio: 1; border-radius: 12px; object-fit: cover; }
+.my-photo b { font-weight: 400; font-size: 15px; text-align: center; word-break: keep-all; }
+.my-photo .chip { padding: 4px 10px; font-size: 13px; }
+.tile .family-face { width: 88%; height: 88%; border-radius: 18%; object-fit: cover; }
+.family-face.mini { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
+.talk-card.photo { padding: 6px; gap: 4px; }
+.talk-photo { width: 72px; height: 72px; border-radius: 14px; object-fit: cover; }
+.talk-card.add { border: 2px dashed #e6cfa6; }
+.talk-said-img { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; display: block; }

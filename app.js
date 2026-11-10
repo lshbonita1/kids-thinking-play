@@ -2927,6 +2927,137 @@ const waitGame = {
   },
 };
 
+/* ---------- 내 사진 (우리 가족 찾기 · 우리 집 말하기 카드) ---------- */
+// 사진은 서버로 보내지 않고 이 기기(브라우저)에만 저장. 320px 정사각형으로 줄여 저장 공간을 아낌
+const FAMILY_KEY = 'familyPhotos';
+const TALK_CUSTOM_KEY = 'talkCustom';
+
+function pickPhoto() {
+  return new Promise((resolve) => {
+    const input = el('input', { type: 'file', accept: 'image/*' });
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) return resolve(null);
+      const img = new Image();
+      img.onload = () => {
+        const side = Math.min(img.width, img.height);
+        const c = document.createElement('canvas');
+        c.width = c.height = 320;
+        c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 320, 320);
+        URL.revokeObjectURL(img.src);
+        resolve(c.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => resolve(null);
+      img.src = URL.createObjectURL(file);
+    });
+    input.click();
+  });
+}
+
+// 저장 공간이 모자라면 false
+function savePhotoList(key, list) {
+  try {
+    localStorage.setItem(key, JSON.stringify(list));
+    return true;
+  } catch {
+    toast('저장 공간이 모자라요. 사진을 몇 장 지워 주세요.');
+    return false;
+  }
+}
+
+const photoId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+// 이름 · 문장과 사진을 받아 목록에 더하는 칸 (가족 사진 · 말하기 카드가 같이 씀)
+function photoAdder({ placeholder, button, onAdd }) {
+  const name = el('input', { class: 'fb-nick', maxlength: '16', placeholder });
+  const status = el('p', { class: 'fb-status', role: 'status' });
+  const add = el('button', { class: 'btn-main', onclick: async () => {
+    if (!name.value.trim()) { status.textContent = '이름(말)을 먼저 적어 주세요.'; name.focus(); return; }
+    const img = await pickPhoto();
+    if (!img) return;
+    onAdd(name.value.trim(), img);
+  } }, button);
+  return el('section', { class: 'fb-form' }, name, status, add,
+    el('p', { class: 'fb-note' }, '🔒 사진은 이 기기 안에만 저장되고 어디로도 보내지 않아요. 브라우저 기록을 지우면 함께 지워져요.'));
+}
+
+function photoList(list, onDelete) {
+  return el('div', { class: 'my-photos' }, list.length
+    ? list.map((p) => el('div', { class: 'my-photo' },
+      el('img', { src: p.img, alt: '' }),
+      el('b', {}, p.name),
+      el('button', { class: 'chip', onclick: () => onDelete(p.id) }, '지우기')))
+    : el('p', { class: 'muted' }, '아직 사진이 없어요.'));
+}
+
+const familyList = () => store.get(FAMILY_KEY, []);
+
+function showFamilySetup(after = null) {
+  const list = familyList();
+  const redraw = () => showFamilySetup(after);
+  toolScreen('우리 가족 사진',
+    el('p', { class: 'sub' }, '엄마, 아빠, 형제, 선생님 사진을 넣으면 "엄마는 어디 있어요?" 놀이를 할 수 있어요. 2명 이상 넣어 주세요.'),
+    photoAdder({
+      placeholder: '이름 (예: 엄마, 아빠, 할머니, 김 선생님)',
+      button: '📷 사진 골라서 넣기',
+      onAdd: (name, img) => { if (savePhotoList(FAMILY_KEY, [...familyList(), { id: photoId(), name, img }])) redraw(); },
+    }),
+    el('h2', { class: 'fb-title' }, `넣은 사진 (${list.length}명)`),
+    photoList(list, (id) => { savePhotoList(FAMILY_KEY, familyList().filter((p) => p.id !== id)); redraw(); }),
+    list.length >= 2 ? el('button', { class: 'btn-main', onclick: () => playGame(familyGame) }, '▶ 우리 가족 찾기 놀이 시작') : null);
+}
+
+const familyGame = {
+  id: 'family',
+  title: '우리 가족 찾기',
+  desc: '엄마는 어디 있을까? 사진으로 찾아요',
+  skill: '이름 알기 · 사회성',
+  icon: '👨‍👩‍👧',
+  color: '#fde7ef',
+  // 보호자가 사진을 넣어야 하는 놀이라 오늘의 학습에는 넣지 않음
+  optional: true,
+  ready: () => familyList().length >= 2,
+
+  round(i, ctx) {
+    const people = familyList();
+    const picks = sample(people, Math.min(people.length, [2, 3, 4][ctx.level]));
+    const answer = picks[0];
+    const face = (id) => {
+      const p = people.find((x) => x.id === id);
+      return p ? el('img', { class: 'family-face', src: p.img, alt: '' }) : '?';
+    };
+    const rec = choiceRound(ctx, {
+      say: `${topicParticle(answer.name)} 어디 있어요?`,
+      choices: shuffle(picks.map((p) => p.id)),
+      answer: answer.id,
+      render: face,
+    });
+    rec.face = face;
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec, (id) => {
+    const p = familyList().find((x) => x.id === id);
+    return p ? el('img', { class: 'family-face mini', src: p.img, alt: '' }) : '?';
+  }),
+};
+
+const talkCustomList = () => store.get(TALK_CUSTOM_KEY, []);
+
+function showTalkCardEditor() {
+  const list = talkCustomList();
+  toolScreen('우리 집 말하기 카드',
+    el('p', { class: 'sub' }, '아이가 좋아하는 간식, 장난감, 장소 사진으로 말하기 카드를 만들어요. 누르면 적은 말을 소리로 말해 줘요.'),
+    photoAdder({
+      placeholder: '말 (예: 딸기 주세요, 곰 인형 줘요)',
+      button: '📷 사진 골라서 카드 만들기',
+      onAdd: (name, img) => { if (savePhotoList(TALK_CUSTOM_KEY, [...talkCustomList(), { id: photoId(), name, img }])) showTalkCardEditor(); },
+    }),
+    el('h2', { class: 'fb-title' }, `만든 카드 (${list.length}장)`),
+    photoList(list, (id) => { savePhotoList(TALK_CUSTOM_KEY, talkCustomList().filter((p) => p.id !== id)); showTalkCardEditor(); }),
+    el('button', { class: 'btn-main alt', onclick: () => showHome('talk') }, '🗣️ 말하기로 돌아가기'));
+}
+
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
   memory: (r) => r.original.join(),
@@ -2946,6 +3077,7 @@ const QUESTION_KEYS = {
   need: (r) => `${r.situation}|${r.choices.length}`,
   turn: (r) => `${r.total}|${r.round}`,
   wait: (r) => `${r.sec}|${r.prize}`,
+  family: (r) => `${r.answer}|${r.choices.length}`,
   sound: (r) => `${r.answer}|${r.choices.length}`,
   verb: (r) => `${r.answer}|${r.choices.length}`,
   color: (r) => r.key,
@@ -2970,7 +3102,10 @@ const GAMES = [
   bodyGame, sizeGame, puzzleGame, useGame, imitateGame, stepsGame,
   soundGame, verbGame, colorGame, numberGame,
   oppositeGame, needGame, turnGame, waitGame,
+  familyGame,
 ];
+// 오늘의 학습에 돌아가며 나오는 놀이 (보호자가 준비해야 하는 놀이는 뺌)
+const DAILY_GAMES = GAMES.filter((g) => !g.optional);
 
 const bestKey = (game, level) => `best:${game.id}:${level}`;
 
@@ -3047,7 +3182,7 @@ function rotationCycle(k) {
     let order;
     // 바퀴가 바뀌는 날에 같은 놀이가 하루에 두 번 나오지 않도록, 앞 바퀴 끝과 겹치면 다시 섞음
     for (let attempt = 0; attempt < 50; attempt++) {
-      order = withRng(`cycle:${n}:${attempt}`, () => shuffle(GAMES));
+      order = withRng(`cycle:${n}:${attempt}`, () => shuffle(DAILY_GAMES));
       if (!order.slice(0, overlap).some((g) => prevTail.includes(g))) break;
     }
     rotationCycles.push(order);
@@ -3060,7 +3195,7 @@ function dailyPlan(date) {
   const start = dayNumber(date) * DAILY_COUNTS.length;
   const games = DAILY_COUNTS.map((_, g) => {
     const pos = start + g;
-    return rotationCycle(Math.floor(pos / GAMES.length))[pos % GAMES.length];
+    return rotationCycle(Math.floor(pos / DAILY_GAMES.length))[pos % DAILY_GAMES.length];
   });
   return games.flatMap((game, g) => {
     const per = DAILY_COUNTS[g];
@@ -3165,7 +3300,7 @@ const CATEGORIES = [
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame] },
   { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame, colorGame, oppositeGame, needGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame, numberGame] },
-  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [listenGame, soundGame, verbGame, matchGame, bodyGame, useGame, stepsGame] },
+  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [familyGame, listenGame, soundGame, verbGame, matchGame, bodyGame, useGame, stepsGame] },
   { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, routineGame, turnGame, waitGame] },
 ];
 
@@ -3211,7 +3346,7 @@ function tabHeader(title, sub) {
 function gamePicks() {
   const today = dateKey(new Date());
   const inDaily = new Set(dailyPlan(today).map((r) => r.game));
-  const picks = withRng(`picks:${today}`, () => sample(GAMES.filter((g) => !inDaily.has(g)), 8));
+  const picks = withRng(`picks:${today}`, () => sample(GAMES.filter((g) => !inDaily.has(g) && (!g.optional || g.ready())), 8));
   return el('section', { class: 'pick-section' },
     el('div', { class: 'pick-head' },
       el('h2', {}, '🧩 이런 놀이도 있어요'),
@@ -3562,6 +3697,8 @@ function settingsTab() {
       el('h2', { class: 'panel-title' }, '👪 보호자 안내'),
       el('a', { class: 'more-games', href: 'faq.html' },
         el('span', {}, '❓ 자주 묻는 질문'), el('span', {}, '›')),
+      el('button', { class: 'more-games', onclick: () => showFamilySetup() },
+        el('span', {}, '👨‍👩‍👧 우리 가족 사진 넣기'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: () => showWorksheets() },
         el('span', {}, '🖨️ 종이 학습지 인쇄'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: showFeedback },
@@ -3722,6 +3859,15 @@ function talkTab() {
     ...tabHeader('말하기', '하고 싶은 말을 그림으로 눌러요'),
     said,
     el('div', { class: 'talk-yesno' }, card(['👍', '네'], '#d5f0dc', 'big'), card(['👎', '아니요'], '#fbdcdc', 'big')),
+    el('section', { class: 'talk-group' },
+      el('h2', {}, '⭐ 우리 집 카드'),
+      el('div', { class: 'talk-grid' },
+        talkCustomList().map((c) => {
+          const node = el('button', { class: 'talk-card photo', style: '--c:#fff3c4', onclick: () => say(el('img', { class: 'talk-said-img', src: c.img, alt: '' }), c.name, node) },
+            el('img', { class: 'talk-photo', src: c.img, alt: '' }), el('span', { class: 'talk-text' }, c.name));
+          return node;
+        }),
+        el('button', { class: 'talk-card add', style: '--c:#fffaf0', onclick: showTalkCardEditor }, el('span', { class: 'talk-icon' }, '➕'), el('span', { class: 'talk-text' }, '사진으로 카드 만들기')))),
     ...TALK_GROUPS.map((g) => el('section', { class: 'talk-group' },
       el('h2', {}, g.name),
       el('div', { class: 'talk-grid' }, g.cards.map((c) => card(c, g.color))))),
@@ -4384,6 +4530,10 @@ function printWorksheet() {
 
 /* ---------- 화면: 놀이 ---------- */
 function playGame(game) {
+  if (game.ready && !game.ready()) {
+    showFamilySetup();
+    return;
+  }
   const total = game.total ?? TOTAL;
   playSession({
     title: game.title,
@@ -4737,7 +4887,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 86;
+const APP_VERSION = 87;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;
