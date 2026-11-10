@@ -195,12 +195,25 @@ const PHOTOS = {
   '🐄': 'cow', '🥚': 'egg', '🐘': 'elephant', '🥅': 'goal', '☂️': 'umbrella',
   // 기분 알기 얼굴 (실제 얼굴 사진이 사람 얼굴로 더 잘 이어짐)
   '😄': 'face_happy', '😭': 'face_sad', '😡': 'face_angry', '😱': 'face_scared',
+  '🐱': 'cat', '🐷': 'pig', '🐰': 'rabbit', '⚽': 'ball', '🚌': 'bus', '🍓': 'strawberry', '🐧': 'penguin', '🦒': 'giraffe',
+  '🧸': 'teddy', '🍉': 'watermelon', '🍊': 'orange', '🚲': 'bicycle', '🐟': 'fish', '🍚': 'rice', '🍪': 'cookie',
 };
+
+// 한 낱말에 사진 여러 장 (다중 예시: 그 사진 한 장이 아니라 '사과'라는 개념을 익히도록)
+// 파일: 이름.jpg, 이름_2.jpg, 이름_3.jpg … 한 문제 안에서는 같은 사진, 문제가 바뀌면 다시 고름
+const PHOTO_VARIANTS = { apple: 3, banana: 3 };
+let photoPicks = {};
+const resetPhotoPicks = () => { photoPicks = {}; };
+function photoSrc(name) {
+  const n = PHOTO_VARIANTS[name] ?? 1;
+  const k = n > 1 ? (photoPicks[name] ??= rand(n)) : 0;
+  return `photos/${k ? `${name}_${k + 1}` : name}.jpg`;
+}
 
 function pic(e) {
   const name = PHOTOS[e];
   if (!name) return e;
-  return el('img', { class: 'photo', src: `photos/${name}.jpg`, alt: '', draggable: 'false' });
+  return el('img', { class: 'photo', src: photoSrc(name), alt: '', draggable: 'false' });
 }
 
 // 그림 여러 개를 함께 보여 줄 때: 모두 사진이 있으면 사진으로, 하나라도 없으면 모두 그림 글자로
@@ -2247,7 +2260,7 @@ const puzzleGame = {
   round(i, ctx) {
     const [cols, rows] = PUZZLE_GRIDS[ctx.level][i < 5 ? 0 : 1];
     const photo = pick(PUZZLE_PHOTOS);
-    const src = `photos/${PHOTOS[photo]}.jpg`;
+    const src = photoSrc(PHOTOS[photo]);
     const count = cols * rows;
     const rec = { photo, cols, rows, misses: 0, done: false };
     let order;
@@ -2484,6 +2497,61 @@ const imitateGame = {
     return el('div', {},
       el('div', { class: 'review-items' }, rec.acts.join(' ')),
       el('div', { class: 'review-note' }, rec.say.replace('! 따라 해 봐요', '')));
+  },
+};
+
+/* ---------- 놀이: 이게 뭐예요? (말해 보기 · 표현 언어) ---------- */
+// 쉬움: 듣고 따라 말하기(모방) → 보통: 첫소리 힌트로 말하기 → 어려움: 혼자 이름 말하기
+// 아이가 말했는지는 보호자가 [말했어요]로 알려 줌. 힌트 · 같이 말하기를 쓰면 '다시 해서 맞음'
+const SAY_PROMPTS = ['따라 말해 볼까요?', '이게 뭐예요?', '이게 뭐예요?'];
+// 실제 사진이 있는 쉬운 낱말 (두 글자 안팎, 아이가 자주 보는 것)
+const SAY_WORDS = [
+  ['사과', '🍎'], ['바나나', '🍌'], ['딸기', '🍓'], ['수박', '🍉'], ['당근', '🥕'], ['우유', '🥛'], ['밥', '🍚'], ['과자', '🍪'],
+  ['강아지', '🐶'], ['고양이', '🐱'], ['토끼', '🐰'], ['돼지', '🐷'], ['코끼리', '🐘'], ['기린', '🦒'], ['나비', '🦋'], ['물고기', '🐟'],
+  ['공', '⚽'], ['풍선', '🎈'], ['곰인형', '🧸'], ['자동차', '🚗'], ['버스', '🚌'], ['자전거', '🚲'], ['비행기', '✈️'], ['우산', '☂️'],
+];
+
+const sayGame = {
+  id: 'say',
+  title: '이게 뭐예요? (말해 보기)',
+  desc: '그림을 보고 이름을 말해요',
+  skill: '표현 언어 · 이름 말하기',
+  icon: '💬',
+  color: '#fde2ec',
+  optional: true, // 보호자가 옆에서 들어 줘야 해서 오늘의 학습에서는 뺌
+
+  round(i, ctx) {
+    const [word, e] = pick(SAY_WORDS);
+    const rec = { word, e };
+    const label = el('div', { class: 'say-word' }, word);
+    label.hidden = ctx.level > 0;
+    const model = () => {
+      label.hidden = false;
+      if (ctx.level > 0) ctx.nudge(`${word}! 따라 말해 볼까요?`);
+      else speak(`${word}! 따라 말해 볼까요?`);
+    };
+    const firstSound = () => {
+      ctx.nudge(`${word[0]}…`);
+      label.hidden = false;
+      label.textContent = `${word[0]}${'○'.repeat(word.length - 1)}`;
+    };
+    ctx.stage.append(
+      prompt(ctx.level === 0 ? `${word}! ${SAY_PROMPTS[0]}` : SAY_PROMPTS[1]),
+      el('div', { class: 'say-pic' }, pic(e)),
+      label,
+      el('button', { class: 'btn-main say-done', onclick: () => ctx.finish(true) }, '✅ 말했어요!'),
+      el('div', { class: 'btn-row say-actions' },
+        ctx.level === 1 ? el('button', { class: 'btn-main alt', onclick: firstSound }, '💡 첫소리') : null,
+        el('button', { class: 'btn-main alt', onclick: model }, ctx.level === 0 ? '🔁 다시 듣기' : '🔊 같이 말해요')),
+      el('div', { class: 'imitate-tip' }, '👪 아이가 말하면 [말했어요]를 눌러 주세요. 비슷하게 말해도 괜찮아요.'),
+    );
+    return rec;
+  },
+
+  review(rec) {
+    return el('div', {},
+      el('div', { class: 'review-items' }, el('span', {}, pic(rec.e))),
+      el('div', { class: 'review-note' }, rec.word));
   },
 };
 
@@ -2734,7 +2802,7 @@ const numberGame = {
   review: (rec) => choiceReview(rec, dotsNode),
 };
 
-/* ---------- 놀이: 반대말 ---------- */
+/* ---------- 놀이: 반대 개념 (많다 · 적다처럼 서로 맞서는 개념 짝) ---------- */
 // 그림 두 장이 서로 반대인 짝. 그림은 [글자 그림] 또는 [그리는 함수]
 const svgPic = (body, vb = '0 0 100 100') => () => {
   const n = el('span', { class: 'opp-pic' });
@@ -2757,7 +2825,7 @@ const OPPOSITES = [
 
 const oppositeGame = {
   id: 'opposite',
-  title: '반대말',
+  title: '반대 개념',
   desc: '많다 · 적다, 길다 · 짧다',
   skill: '개념 이해',
   icon: '↔️',
@@ -2787,7 +2855,7 @@ const NEEDS = [
   { icon: '😋', say: '배고파요', need: '🍚', level: 0 },
   { icon: '😴', say: '졸려요', need: '🛏️', level: 0 },
   { icon: '🖐️', say: '손이 더러워요', need: '🧼', level: 1 },
-  { icon: '🥵', say: '목말라요', need: '🥛', level: 1 },
+  { icon: '🏃', say: '많이 뛰어서 목말라요', need: '🥛', level: 1 },
   { icon: '🤧', say: '콧물이 나요', need: '🧻', level: 1 },
   { icon: '🌑', say: '깜깜해요', need: '🔦', level: 2 },
   { icon: '🦷', say: '이에 음식이 끼었어요', need: '🪥', level: 2 },
@@ -3457,6 +3525,7 @@ const CATEGORY_TIPS = {
   life: '놀이 속 상황을 실제 생활에서도 같은 말로 다시 이야기해 주세요.',
 };
 const GAME_TIPS = {
+  say: '바로 답을 알려 주기보다 3~5초 기다려 주세요. 말이 어려운 아이는 말하기 카드를 눌러 대답해도 괜찮아요.',
   family: '사진 속 사람을 가리키며 "엄마 여기 있네!"처럼 함께 말해 주세요.',
   imitate: '보호자가 먼저 동작을 크게 해 보이면 아이가 더 쉽게 따라 해요.',
   wait: '기다리는 동안 "하나, 둘…" 함께 세어 주면 기다리기가 쉬워져요.',
@@ -3506,6 +3575,7 @@ const HOME_TRY = {
   weather: '아침에 창밖을 함께 보며 "오늘은 해가 났어요. 뭐 입을까?" 하고 이야기해 보세요.',
   rhythm: '냄비나 책상을 "쿵쿵" 두드리고 아이가 똑같이 따라 치게 해 보세요.',
   why: '아이가 기쁘거나 속상할 때 "선물 받아서 기뻐요"처럼 기분과 이유를 함께 말해 주세요.',
+  say: '밥 먹을 때 숟가락을 들고 "이게 뭐야?" 하고 기다려 주세요. 대답하면 "맞아, 숟가락!" 하고 한 번 더 말해 주세요.',
   family: '가족 사진을 보며 "엄마 어디 있어?" 하고 실제 가족을 가리켜 보게 해 주세요.',
 };
 
@@ -3515,6 +3585,7 @@ function gameTip(game) {
 
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
+  say: (r) => r.word,
   memory: (r) => r.original.join(),
   copy: (r) => r.original.join(),
   lines: (r) => r.original.map(lineKey).sort().join(),
@@ -3566,7 +3637,7 @@ const GAMES = [
   soundGame, verbGame, colorGame, numberGame,
   oppositeGame, needGame, turnGame, waitGame,
   socialGame, missingGame, halfGame, safetyGame, groupGame, weatherGame, rhythmGame, whyGame,
-  familyGame,
+  familyGame, sayGame,
 ];
 // 오늘의 학습에 돌아가며 나오는 놀이 (보호자가 준비해야 하는 놀이는 뺌)
 const DAILY_GAMES = GAMES.filter((g) => !g.optional);
@@ -3764,9 +3835,16 @@ const CATEGORIES = [
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame, missingGame] },
   { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame, colorGame, oppositeGame, needGame, halfGame, groupGame, weatherGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame, numberGame] },
-  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [familyGame, listenGame, soundGame, verbGame, matchGame, bodyGame, useGame, stepsGame] },
+  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [familyGame, listenGame, sayGame, soundGame, verbGame, matchGame, bodyGame, useGame, stepsGame] },
   { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, whyGame, socialGame, safetyGame, routineGame, turnGame, waitGame] },
 ];
+
+// 기록 한 장에 쓰는 발달 영역 이름 (선생님이 개별화 목표와 맞춰 보기 쉽게)
+const DOMAINS = {
+  see: '시지각 · 모방', hand: '소근육 · 눈-손 협응', fun: '주의 · 반응 조절', focus: '기억 · 주의집중',
+  think: '인지 · 개념', number: '수 개념', talk: '수용 언어 · 의사소통', life: '사회 · 정서 · 생활 습관',
+};
+const domainOf = (game) => DOMAINS[CATEGORIES.find((c) => c.games.includes(game))?.id] ?? '';
 
 const HOME_TABS = [
   { id: 'today', icon: '🏠', name: '오늘' },
@@ -3859,7 +3937,7 @@ function tabHeader(title, sub) {
 function gamePicks() {
   const today = dateKey(new Date());
   const inDaily = new Set(dailyPlan(today).map((r) => r.game));
-  const picks = withRng(`picks:${today}`, () => sample(GAMES.filter((g) => !inDaily.has(g) && (!g.optional || g.ready())), 8));
+  const picks = withRng(`picks:${today}`, () => sample(GAMES.filter((g) => !inDaily.has(g) && (!g.optional || !g.ready || g.ready())), 8));
   return el('section', { class: 'pick-section' },
     el('div', { class: 'pick-head' },
       el('h2', {}, '🧩 이런 놀이도 있어요'),
@@ -4093,13 +4171,54 @@ function recordCalendar(activeDays) {
     cells);
 }
 
+/* ---------- 다음 단계 기준 (숙달 기준) ---------- */
+// 센터에서 흔히 쓰는 기준: 같은 단계에서 '서로 다른 날' 2번 연속, 처음 시도에 80% 이상 맞히면 다음 단계
+const MASTERY = { pct: 80, times: 2, minN: 3 };
+const SESSIONS_KEY = 'sessions';
+
+// 놀이를 마칠 때 놀이별로 한 줄씩 남김 { d: 날짜, g: 놀이, lv: 단계, n: 문제 수, f: 처음에 맞힌 수 }
+function logSessions(state) {
+  const by = new Map();
+  for (const r of state.records) {
+    const row = by.get(r.game.id) ?? { d: dateKey(new Date()), g: r.game.id, lv: state.level, n: 0, f: 0 };
+    row.n++;
+    if (r.correct) row.f++;
+    by.set(r.game.id, row);
+  }
+  store.set(SESSIONS_KEY, [...store.get(SESSIONS_KEY, []), ...by.values()].slice(-400));
+}
+
+// 이 놀이를 이 단계에서 숙달했는지: 문제를 3개 넘게 푼 마지막 두 날이 모두 80% 이상
+function masteredAt(gameId, level) {
+  const days = new Map(); // 날짜별 합계 (같은 날 여러 번 하면 합쳐서 봄)
+  for (const r of store.get(SESSIONS_KEY, [])) {
+    if (r.g !== gameId || r.lv !== level) continue;
+    const t = days.get(r.d) ?? { n: 0, f: 0 };
+    t.n += r.n; t.f += r.f;
+    days.set(r.d, t);
+  }
+  const recent = [...days].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([, t]) => t).filter((t) => t.n >= MASTERY.minN).slice(0, MASTERY.times);
+  return recent.length === MASTERY.times && recent.every((t) => pct(t.f, t.n) >= MASTERY.pct);
+}
+
+function levelUpButton(label = '다음 단계로 올리기') {
+  if (settings.level >= 2) return null;
+  return el('button', { class: 'alert-btn', onclick: () => {
+    settings.level += 1;
+    store.set('level', settings.level);
+    toast(`난이도를 '${LEVELS[settings.level].name}'으로 바꿨어요. 어려워하면 언제든 다시 내려도 돼요.`);
+    showHome('records');
+  } }, label);
+}
+
 // 어려워하는 놀이 / 잘하는 놀이 알림 (놀이마다 5문제 이상 풀었을 때만)
 const ALERT_MIN = 5;
 function recordAlerts(perGame) {
   const rows = GAMES.map((g) => ({ g, c: perGame[g.id] })).filter((x) => x.c && totalOf(x.c) >= ALERT_MIN);
   const hard = rows.filter((x) => pct(x.c.first, totalOf(x.c)) < 50)
     .sort((a, b) => a.c.first / totalOf(a.c) - b.c.first / totalOf(b.c));
-  const good = rows.filter((x) => totalOf(x.c) >= 8 && pct(x.c.first, totalOf(x.c)) >= 90);
+  // 잘하는 놀이 = 지금 단계에서 숙달 기준을 넘은 놀이
+  const good = GAMES.filter((g) => masteredAt(g.id, settings.level)).map((g) => ({ g, c: perGame[g.id] }));
   if (!hard.length && !good.length) {
     return el('p', { class: 'empty' }, `아직 알림이 없어요. 한 놀이를 ${ALERT_MIN}문제 넘게 풀면 알려 드려요.`);
   }
@@ -4110,13 +4229,12 @@ function recordAlerts(perGame) {
         el('b', {}, `${g.title} 놀이를 어려워해요`),
         el('span', {}, `처음에 맞힌 문제가 ${pct(c.first, totalOf(c))}%예요. 조금 더 연습해 보세요.`)),
       el('button', { class: 'alert-btn', onclick: () => playGame(g) }, '해 보기'))),
-    good.map(({ g, c }) => el('div', { class: 'alert good' },
+    good.map(({ g }) => el('div', { class: 'alert good' },
       el('div', { class: 'alert-icon' }, '🌟'),
       el('div', { class: 'alert-body' },
-        el('b', {}, `${g.title} 놀이를 잘해요`),
-        el('span', {}, settings.level < 2
-          ? `처음에 맞힌 문제가 ${pct(c.first, totalOf(c))}%예요. 난이도를 올려 봐도 좋아요.`
-          : `처음에 맞힌 문제가 ${pct(c.first, totalOf(c))}%예요. 정말 잘하고 있어요!`)))),
+        el('b', {}, settings.level < 2 ? `${g.title}: 다음 단계를 해 볼 때예요` : `${g.title} 놀이를 잘해요`),
+        el('span', {}, `'${LEVELS[settings.level].name}'에서 서로 다른 날 ${MASTERY.times}번 연속, 처음 시도에 ${MASTERY.pct}% 넘게 맞혔어요.`)),
+      levelUpButton('올리기'))),
   );
 }
 
@@ -4333,7 +4451,7 @@ const PRINCIPLES = [
 ];
 
 const HOWTO_STEPS = [
-  { icon: '🎚️', title: '난이도 고르기', text: '처음이면 오늘 탭의 ‘🧪 우리 아이 난이도 알아보기’로 알맞은 단계를 찾아 보세요. 기록 탭에서 ‘잘해요’ 알림이 나오면 한 단계 올려도 좋아요.' },
+  { icon: '🎚️', title: '난이도 고르기', text: '처음이면 오늘 탭의 ‘🧪 우리 아이 난이도 알아보기’로 알맞은 단계를 찾아 보세요. 기록 탭에 ‘다음 단계를 해 볼 때예요’가 나오면(서로 다른 날 2번 연속 80% 이상) 한 단계 올려 보세요.' },
   { icon: '📅', title: '오늘의 학습 시작', text: '‘오늘의 학습’을 누르면 일정표가 나와요. ‘🎁 다 하면 뭐 할까?’로 끝나고 할 일을 먼저 골라 두면 시작하기 쉬워요.' },
   { icon: '👆', title: '문제 풀기', text: '그림을 눌러 답해요. 🔊는 다시 듣기, ‘패스’는 넘어가기예요. 틀리면 반짝이는 정답을 눌러 끝내요.' },
   { icon: '⭐', title: '결과와 칭찬 스티커', text: '끝나면 문제마다 결과가 나와요. 오늘의 학습을 처음 끝낸 날마다 칭찬 스티커를 받고, 10개 모으면 쑥쑥이가 자라요.' },
@@ -4981,13 +5099,29 @@ function showReport() {
         el('dt', {}, '칭찬 스티커'), el('dd', {}, `${stickerCount()}개 (오늘의 학습을 끝낸 날)`),
         el('dt', {}, '👍 잘하는 놀이'), el('dd', {}, names(strong)),
         el('dt', {}, '🌱 연습이 더 필요한 놀이'), el('dd', {}, names(weak))),
+      rows.length ? (() => {
+        // 발달 영역별 합계
+        const byDomain = new Map();
+        for (const r of rows) {
+          const d = domainOf(r.g);
+          const t = byDomain.get(d) ?? { n: 0, first: 0 };
+          t.n += r.n; t.first += perGame[r.g.id].first;
+          byDomain.set(d, t);
+        }
+        return el('table', { class: 'report-table domain-table' },
+          el('thead', {}, el('tr', {}, el('th', {}, '발달 영역'), el('th', {}, '문제'), el('th', {}, '처음에 맞힘'))),
+          el('tbody', {}, [...byDomain].sort((a, b) => b[1].n - a[1].n).map(([d, t]) => el('tr', {},
+            el('td', {}, d), el('td', {}, `${t.n}`), el('td', {}, `${pct(t.first, t.n)}%`)))));
+      })() : null,
       rows.length
         ? el('table', { class: 'report-table' },
-          el('thead', {}, el('tr', {}, el('th', {}, '놀이'), el('th', {}, '문제'), el('th', {}, '처음에 맞힘'), el('th', {}, '다시 해서 맞힘'))),
+          el('thead', {}, el('tr', {}, el('th', {}, '놀이 (영역)'), el('th', {}, '문제'), el('th', {}, '처음에 맞힘'), el('th', {}, '다시 해서 맞힘'))),
           el('tbody', {}, rows.map((r) => el('tr', {},
-            el('td', {}, `${r.g.icon} ${r.g.title}`), el('td', {}, `${r.n}`), el('td', {}, `${r.first}%`), el('td', {}, `${r.retry}%`)))))
+            el('td', {}, `${r.g.icon} ${r.g.title}`, masteredAt(r.g.id, settings.level) ? ' ✅' : '', el('small', { class: 'report-domain' }, domainOf(r.g))),
+            el('td', {}, `${r.n}`), el('td', {}, `${r.first}%`), el('td', {}, `${r.retry}%`)))))
         : el('p', { class: 'muted' }, '최근 30일 동안 푼 문제가 없어요.'),
-      el('p', { class: 'report-note' }, '※ 이 기기에서 한 놀이만 모은 기록이에요. 진단이나 평가 결과가 아니라 집에서 한 연습의 참고 자료로 봐 주세요.')),
+      el('p', { class: 'report-note' }, `✅ 지금 단계(${LEVELS[settings.level].name})에서 서로 다른 날 ${MASTERY.times}번 연속, 처음 시도에 ${MASTERY.pct}% 넘게 맞힌 놀이 (다음 단계 기준)`),
+      el('p', { class: 'report-note' }, '※ 이 기기에서 한 놀이만 모은 기록이에요. 진단이나 평가 결과가 아니라 집에서 한 연습의 참고 자료로 봐 주세요. 힌트를 보고 맞힌 문제는 ‘다시 해서 맞힘’으로 세요.')),
     el('div', { class: 'btn-row report-actions' },
       el('button', { class: 'btn-main', onclick: () => window.print() }, '🖨️ 인쇄 · PDF로 저장')),
     el('p', { class: 'report-tip' }, '화면을 캡처해서 선생님께 보내 드려도 돼요.'));
@@ -5288,11 +5422,16 @@ function playSession(session) {
   function next() {
     if (state.index >= total) {
       session.save(state);
+      // 난이도 알아보기는 문제마다 단계가 달라서 숙달 기록에서 뺌
+      const before = session.logId ? null : GAMES.filter((g) => masteredAt(g.id, state.level));
+      if (!session.logId) logSessions(state);
+      state.newlyMastered = before ? GAMES.filter((g) => !before.includes(g) && masteredAt(g.id, state.level)) : [];
       sendLog({ t: 'play', game: session.logId ?? (session.schedule ? 'daily' : rounds[0].game.id), level, score: state.score });
       (session.showResult ?? showResult)(session, state);
       return;
     }
     const { game, index } = rounds[state.index];
+    resetPhotoPicks();
     // 난이도 알아보기처럼 문제마다 단계가 다를 수 있음
     ctx.level = rounds[state.index].level ?? level;
     counter.textContent = `${state.index + 1} / ${total}`;
@@ -5471,6 +5610,10 @@ function showResult(session, state) {
       el('div', { class: 'stars' }, [0, 1, 2].map((k) => el('span', { class: `star${k < stars ? '' : ' off'}` }, '⭐'))),
       el('div', { class: 'result-title' }, `${total}개 중 ${correct}개 맞았어요! ${message}`),
       el('div', { class: 'result-score' }, `${state.score}점`),
+      state.newlyMastered?.length ? el('div', { class: 'result-mastery pop' },
+        el('b', {}, `🎉 ${state.newlyMastered.map((g) => g.title).join(' · ')}`),
+        el('span', {}, `서로 다른 날 ${MASTERY.times}번 연속 ${MASTERY.pct}% 넘게 맞혔어요! ${state.level < 2 ? '다음 단계를 해 볼 때예요.' : '정말 잘하고 있어요.'}`),
+        levelUpButton(state.level < 2 ? `'${LEVELS[state.level + 1].name}'으로 올리기` : undefined)) : null,
       state.newSticker ? el('div', { class: 'result-sticker pop' }, `⭐ 칭찬 스티커를 받았어요! (모두 ${stickerCount()}개)`) : null,
       session.schedule && rewardToday() ? el('div', { class: 'result-reward pop' }, `🎁 약속한 ${rewardToday().join(' ')} 시간이에요!`) : null,
       (() => {
@@ -5549,7 +5692,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 102;
+const APP_VERSION = 103;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

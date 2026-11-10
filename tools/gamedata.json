@@ -82,6 +82,7 @@
    "games": [
     "family",
     "listen",
+    "say",
     "sound",
     "verb",
     "match",
@@ -389,7 +390,7 @@
   },
   {
    "id": "opposite",
-   "title": "반대말",
+   "title": "반대 개념",
    "desc": "많다 · 적다, 길다 · 짧다",
    "skill": "개념 이해",
    "icon": "↔️",
@@ -516,6 +517,16 @@
    "color": "#fde7ef",
    "optional": true,
    "tip": "사진 속 사람을 가리키며 \"엄마 여기 있네!\"처럼 함께 말해 주세요."
+  },
+  {
+   "id": "say",
+   "title": "이게 뭐예요? (말해 보기)",
+   "desc": "그림을 보고 이름을 말해요",
+   "skill": "표현 언어 · 이름 말하기",
+   "icon": "💬",
+   "color": "#fde2ec",
+   "optional": true,
+   "tip": "바로 답을 알려 주기보다 3~5초 기다려 주세요. 말이 어려운 아이는 말하기 카드를 눌러 대답해도 괜찮아요."
   }
  ],
  "worksheets": [
