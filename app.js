@@ -101,7 +101,6 @@ const settings = {
   missSound: store.get('missSound', false), // 틀렸을 때 효과음 (소리에 예민한 아이가 많아 기본은 끔)
   autoHint: store.get('autoHint', true), // 한동안 누르지 않으면 정답을 반짝여 도와주기
   showScore: store.get('showScore', false), // 놀이 중 점수 보이기 (기본은 진행 막대만)
-  holdExit: store.get('holdExit', true), // ✕를 길게 눌러야 놀이에서 나가기 (아이가 실수로 나가지 않게)
 };
 
 // 목소리 높이 · 빠르기 선택지
@@ -286,34 +285,6 @@ function autoHint(ctx, right) {
     right.classList.add('hint');
     ctx.nudge('반짝이는 것을 눌러 볼까요?');
   }, AUTO_HINT_MS);
-}
-
-// 놀이에서 나가기: 아이가 실수로 누르지 않게 ✕를 길게 눌러야 나감 (설정에서 끌 수 있음)
-const HOLD_EXIT_MS = 900;
-function exitButton() {
-  const btn = el('button', { class: 'icon-btn exit-btn', 'aria-label': settings.holdExit ? '그만하기 (길게 누르기)' : '그만하기' }, '✕');
-  if (!settings.holdExit) {
-    btn.addEventListener('click', () => showHome());
-    return btn;
-  }
-  let timer = null;
-  const stop = () => { clearTimeout(timer); timer = null; btn.classList.remove('holding'); };
-  btn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    btn.classList.add('holding');
-    timer = setTimeout(() => { stop(); showHome(); }, HOLD_EXIT_MS);
-  });
-  for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
-    btn.addEventListener(type, () => {
-      if (!timer) return;
-      stop();
-      toast('보호자는 ✕를 꾹 누르고 있으면 나가요');
-    });
-  }
-  // 키보드(보호자)로는 바로 나감
-  btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') showHome(); });
-  btn.addEventListener('contextmenu', (e) => e.preventDefault());
-  return btn;
 }
 
 function retryChoice(ctx, wrong, right) {
@@ -4318,7 +4289,6 @@ function settingsTab() {
       switchRow('autoHint', '💡 기다리면 힌트', '8초 동안 누르지 않으면 정답이 반짝여요'),
       switchRow('missSound', '🔔 틀렸을 때 소리', '소리에 예민하면 꺼 두세요 (말 안내는 그대로)'),
       switchRow('showScore', '💯 놀이 중 점수 보이기', '끄면 진행 막대만 보여요 (점수는 기록에 남아요)'),
-      switchRow('holdExit', '✋ 길게 눌러 나가기', '아이가 실수로 나가지 않게 ✕를 꾹 눌러야 나가요'),
       el('button', {
         class: 'more-games sound-test',
         disabled: !settings.sound,
@@ -5280,7 +5250,7 @@ function playSession(session) {
 
   const myScreen = mount(el('div', { class: 'screen game' },
     el('header', { class: 'topbar' },
-      exitButton(),
+      el('button', { class: 'icon-btn', 'aria-label': '그만하기', onclick: showHome }, '✕'),
       counter,
       el('div', { class: 'bar' }, barFill),
       score,
@@ -5578,7 +5548,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 100;
+const APP_VERSION = 101;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
