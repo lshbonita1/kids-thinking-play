@@ -3787,7 +3787,7 @@ function todayTab() {
   return [
     el('header', { class: 'home-top' },
       logoTitle(),
-      el('button', { class: 'pill-btn guide-btn', 'aria-label': '사용 방법', title: '사용 방법', onclick: () => showGuide('howto') }, '📖')),
+      el('button', { class: 'pill-btn guide-btn', 'aria-label': '공유하기', title: '친구에게 공유하기', onclick: shareSite }, '📤')),
     levelPicker('compact'),
     levelTestLink(),
     dailyCard(),
@@ -3803,7 +3803,14 @@ function todayTab() {
           el('b', {}, '자주 묻는 질문'),
           el('small', {}, '궁금한 점, 여기서 먼저 찾아보세요')),
         el('span', { class: 'faq-go' }, '›')),
+      el('button', { class: 'about-banner', onclick: () => showGuide('about') },
+        el('span', { class: 'about-banner-icon' }, mascot('smile')),
+        el('span', { class: 'about-banner-text' },
+          el('b', {}, '쑥쑥 생각놀이 소개'),
+          el('small', {}, '만든 이유와 30초 소개 영상을 볼 수 있어요')),
+        el('span', { class: 'faq-go' }, '›')),
       el('div', { class: 'home-foot-links' },
+        el('button', { class: 'link-btn', onclick: () => showGuide('howto') }, '사용 방법'), ' · ',
         el('a', { href: 'privacy.html' }, '개인정보처리방침'), ' · ', el('span', {}, 'ssukssuknori.app'))),
   ];
 }
@@ -5302,7 +5309,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 91;
+const APP_VERSION = 92;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;

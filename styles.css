@@ -1921,3 +1921,24 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .parent-tip-x { flex: none; padding: 0 4px; color: #8f80b8; font-size: 15px; }
 .panel .setting-row + .setting-row { margin-top: 14px; }
 .rhythm-dots i.gap { margin-left: 26px; }
+
+/* 홈 맨 아래: 소개 배너 */
+.about-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 2px solid #b9dcc3;
+  border-radius: 22px;
+  background: #eef8f0;
+  color: var(--ink);
+  text-align: left;
+}
+.about-banner-icon { display: grid; place-items: center; flex: none; width: 50px; height: 50px; border-radius: 50%; background: #fff; overflow: hidden; }
+.about-banner-icon svg, .about-banner-icon .mascot { width: 40px; height: 40px; }
+.about-banner-text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.about-banner-text b { font-weight: 400; font-size: 18px; }
+.about-banner-text small { color: #4f7f5c; font-size: 14px; line-height: 1.4; word-break: keep-all; }
+.link-btn { padding: 0; color: var(--muted); font: inherit; text-decoration: underline; }
