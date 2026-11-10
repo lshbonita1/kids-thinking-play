@@ -4721,12 +4721,23 @@ function logVisit() {
     const r = document.referrer ? new URL(document.referrer) : null;
     if (r && r.hostname !== location.hostname) ref = `${r.hostname}${r.pathname}`.slice(0, 120);
   } catch {}
-  sendLog({ t: 'visit', page: 'home', ref });
+  // QR 코드로 들어오면 주소에 ?qr=이름 이 붙어 있음 → 'qr-이름'으로 따로 기록하고, 주소창에서는 지움(공유할 때 따라가지 않게)
+  let page = 'home';
+  try {
+    const url = new URL(location.href);
+    const qr = url.searchParams.get('qr');
+    if (qr && /^[a-z0-9-]{1,20}$/i.test(qr)) page = `qr-${qr.toLowerCase()}`;
+    if (url.searchParams.has('qr')) {
+      url.searchParams.delete('qr');
+      history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+  } catch {}
+  sendLog({ t: 'visit', page, ref });
 }
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 85;
+const APP_VERSION = 86;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;

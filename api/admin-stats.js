@@ -53,6 +53,18 @@ export default async function handler(req, res) {
     };
     const recent2w = (list) => list.filter((r) => r.day >= since);
 
+    // QR 코드로 들어온 방문 (page가 'qr-이름')
+    const qrVisits = visits.filter((r) => String(r.page || '').startsWith('qr-'));
+    const qr = {
+      today: qrVisits.filter((r) => r.day === today).length,
+      week2: recent2w(qrVisits).length,
+      total: qrVisits.length,
+      visitors: distinct(qrVisits, 'visitor_id'),
+      bySource: [...group(qrVisits, 'page')].map(([page, v]) => ({ source: page.slice(3), visits: v.length, visitors: distinct(v, 'visitor_id') }))
+        .sort((a, b) => b.visits - a.visits),
+      daily: [...group(recent2w(qrVisits), 'day')].map(([day, v]) => ({ day, visits: v.length })).sort((a, b) => (a.day < b.day ? 1 : -1)),
+    };
+
     // 지역별 접속 분포 (최근 2주, 서로 다른 IP 기준 · ip-api.com으로 추정)
     const ipInfo = new Map(); // IP → { last, visits }
     for (const r of recent2w(visits)) {
@@ -100,6 +112,7 @@ export default async function handler(req, res) {
       ipList: ipList.sort((a, b) => b.last - a.last).slice(0, 100),
       botIps: new Set(recent2w(botRows).map((r) => r.ip_address)).size,
       botToday: botRows.filter((r) => r.day === today).length,
+      qr,
       adminToday: rows.filter((r) => r.is_admin && r.day === today).length,
       keepDays: KEEP_DAYS,
     });

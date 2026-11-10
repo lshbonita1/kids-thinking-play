@@ -28,6 +28,7 @@
     .btn { padding: 12px 16px; border: 2px solid var(--line); border-radius: 16px; background: var(--card); color: var(--ink); font-family: var(--display); font-size: 18px; }
     .btn.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
     .btn:disabled { opacity: .5; cursor: default; }
+    .sub-h { margin: 16px 0 6px; font-size: 16px; font-weight: 400; color: var(--muted); }
     .jump { display: flex; flex-wrap: wrap; gap: 8px; }
     .jump a { padding: 8px 14px; border: 2px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); text-decoration: none; font-size: 15px; }
     .jump b { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: #e3a25a; color: #fff; font-size: 12px; font-weight: 400; }
@@ -91,6 +92,7 @@
     <main id="dash" hidden style="display:flex;flex-direction:column;gap:16px">
       <nav class="jump">
         <a href="#sec-feedback">💬 의견 게시판 <b id="fb-badge"></b></a>
+        <a href="#sec-qr">📱 QR</a>
         <a href="#sec-visits">📊 방문</a>
         <a href="#sec-regions">🗺️ 지역</a>
         <a href="#sec-games">🧩 놀이</a>
@@ -102,6 +104,16 @@
           <thead><tr><th>지표</th><th class="num" style="font-size:14px">오늘</th><th class="delta">전일 대비</th></tr></thead>
           <tbody id="kpi"></tbody>
         </table>
+      </section>
+
+      <section class="card" id="sec-qr">
+        <h2>📱 QR로 들어온 방문</h2>
+        <p class="muted">소개 자료 · 인쇄물의 QR 코드(주소에 ?qr=이름)로 들어온 방문만 따로 세요. 내 접속 · 해외 · 봇은 빼고 세요.</p>
+        <table><tbody id="qr-kpi"></tbody></table>
+        <h3 class="sub-h">QR 종류별</h3>
+        <table><tbody id="qr-src"></tbody></table>
+        <h3 class="sub-h">날짜별 (최근 2주)</h3>
+        <table><tbody id="qr-daily"></tbody></table>
       </section>
 
       <section class="card" id="sec-feedback">
@@ -250,8 +262,22 @@
         : '<tr><td class="muted" colspan="5">아직 기록이 없어요.</td></tr>';
     }
 
+    const QR_NAMES = { flyer: '소개 자료(A4)', print: '인쇄용 QR', poster: '포스터', card: '명함' };
+    function renderQr(q) {
+      if (!q) return;
+      $('qr-kpi').innerHTML = [['오늘', q.today, '건'], ['최근 2주', q.week2, '건'], ['전체 (6개월)', q.total, '건'], ['서로 다른 기기', q.visitors, '대']]
+        .map(([k, v, u]) => `<tr><td>${k}</td><td class="num">${fmt(v)}${u}</td></tr>`).join('');
+      $('qr-src').innerHTML = q.bySource.length
+        ? q.bySource.map((r) => `<tr><td>${esc(QR_NAMES[r.source] || r.source)} <span class="muted">(${esc(r.source)})</span></td><td class="num">${fmt(r.visits)}건 · 기기 ${fmt(r.visitors)}대</td></tr>`).join('')
+        : '<tr><td class="muted">아직 QR로 들어온 방문이 없어요.</td></tr>';
+      $('qr-daily').innerHTML = q.daily.length
+        ? q.daily.map((r) => `<tr><td>${esc(r.day)}</td><td class="num">${fmt(r.visits)}건</td></tr>`).join('')
+        : '<tr><td class="muted">최근 2주 기록이 없어요.</td></tr>';
+    }
+
     function render(s) {
       renderRegions(s);
+      renderQr(s.qr);
       const t = s.todayM, y = s.yesterdayM;
       $('kpi').innerHTML = [
         ['오늘 방문 로그', t.visits, y.visits, '건'],
