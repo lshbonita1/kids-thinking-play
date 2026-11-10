@@ -1972,3 +1972,26 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .home-top .logo { min-width: 0; }
 .home-top .logo svg { width: 100%; height: auto; }
 .install-steps { margin: 0 0 18px; padding: 0; list-style: none; }
+
+/* ---------- 좋아요 (하트) ---------- */
+.card-wrap { position: relative; display: flex; }
+.card-wrap > .game-card, .card-wrap > .pick-card { flex: 1; width: 100%; }
+.fav-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
+  font-size: 18px;
+  line-height: 1;
+}
+.fav-btn.on { animation: pop .3s; }
+.fav-section .pick-head h2 { color: #c2456b; }
+.fav-result { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 12px 0 2px; color: var(--muted); font-size: 16px; flex-wrap: wrap; }
+.fav-result .fav-btn { position: static; width: 44px; height: 44px; font-size: 22px; }
+.fav-result small { width: 100%; text-align: center; font-size: 13px; }

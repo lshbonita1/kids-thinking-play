@@ -3720,15 +3720,64 @@ function levelPicker(size = '', onPick = () => showHome()) {
     }, el('span', { class: 'seg-name' }, lv.name))));
 }
 
+/* ---------- 좋아요한 놀이 (이 기기에만 저장, 최근에 누른 것이 앞) ---------- */
+const FAV_KEY = 'favGames';
+const favIds = () => store.get(FAV_KEY, []).filter((id) => GAMES.some((g) => g.id === id));
+const isFav = (g) => favIds().includes(g.id);
+function toggleFav(g) {
+  const on = !isFav(g);
+  store.set(FAV_KEY, on ? [g.id, ...favIds()] : favIds().filter((id) => id !== g.id));
+  tone(on ? [660, 990] : [440], 0.08);
+  return on;
+}
+// 하트 버튼. refresh: 누른 뒤 화면을 다시 그려야 할 때(홈의 좋아요 목록)
+function favButton(g, refresh = null) {
+  const btn = el('button', { class: `fav-btn${isFav(g) ? ' on' : ''}`, 'aria-pressed': String(isFav(g)), 'aria-label': `${g.title} 좋아요` });
+  const draw = () => { const on = isFav(g); btn.textContent = on ? '❤️' : '🤍'; btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', String(on)); };
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const on = toggleFav(g);
+    if (on) toast(`좋아하는 놀이에 담았어요 ❤️ 홈에서 바로 할 수 있어요`);
+    if (refresh) refresh(); else draw();
+  });
+  draw();
+  return btn;
+}
+// 홈을 다시 그려도 보던 자리가 그대로이게
+function refreshHomeKeepScroll() {
+  const y = window.scrollY;
+  showHome('today');
+  window.scrollTo(0, y);
+}
+
+function favSection() {
+  const games = favIds().map((id) => GAMES.find((g) => g.id === id));
+  if (!games.length) return null;
+  return el('section', { class: 'pick-section fav-section' },
+    el('div', { class: 'pick-head' }, el('h2', {}, '❤️ 좋아하는 놀이')),
+    el('div', { class: 'pick-grid' }, games.map((g) => pickCard(g, refreshHomeKeepScroll))));
+}
+
+function pickCard(g, refresh = refreshHomeKeepScroll) {
+  return el('div', { class: 'card-wrap' },
+    el('button', { class: 'pick-card', style: `--c:${g.color}`, onclick: () => playGame(g) },
+      el('span', { class: 'pick-icon' }, g.icon),
+      el('b', {}, g.title),
+      el('span', {}, g.desc)),
+    favButton(g, refresh));
+}
+
 function gameCard(g) {
   const best = store.get(bestKey(g, settings.level), null);
-  return el('button', { class: 'game-card', style: `--c:${g.color}`, onclick: () => playGame(g) },
-    el('div', { class: 'gc-icon' }, g.icon),
-    el('div', { class: 'gc-body' },
-      el('div', { class: 'gc-title' }, g.title),
-      el('div', { class: 'gc-desc' }, g.desc),
-      el('span', { class: 'gc-skill' }, g.skill)),
-    best == null ? null : el('div', { class: 'gc-best' }, `최고 ${best}점`));
+  return el('div', { class: 'card-wrap' },
+    el('button', { class: 'game-card', style: `--c:${g.color}`, onclick: () => playGame(g) },
+      el('div', { class: 'gc-icon' }, g.icon),
+      el('div', { class: 'gc-body' },
+        el('div', { class: 'gc-title' }, g.title),
+        el('div', { class: 'gc-desc' }, g.desc),
+        el('span', { class: 'gc-skill' }, g.skill)),
+      best == null ? null : el('div', { class: 'gc-best' }, `최고 ${best}점`)),
+    favButton(g));
 }
 
 function tabHeader(title, sub) {
@@ -3744,11 +3793,7 @@ function gamePicks() {
     el('div', { class: 'pick-head' },
       el('h2', {}, '🧩 이런 놀이도 있어요'),
       el('button', { class: 'pick-all', onclick: () => showHome('games') }, `전체 ${GAMES.length}가지 ›`)),
-    el('div', { class: 'pick-grid' }, picks.map((g) =>
-      el('button', { class: 'pick-card', style: `--c:${g.color}`, onclick: () => playGame(g) },
-        el('span', { class: 'pick-icon' }, g.icon),
-        el('b', {}, g.title),
-        el('span', {}, g.desc)))));
+    el('div', { class: 'pick-grid' }, picks.map((g) => pickCard(g))));
 }
 
 // 사이트 로고: 왼쪽에 쑥쑥이(새싹 친구), 오른쪽에 장난감 블록 글자 (쑥쑥 · 생각놀이)
@@ -3792,6 +3837,7 @@ function todayTab() {
     levelTestLink(),
     dailyCard(),
     stickerCard(),
+    favSection(),
     gamePicks(),
     helperCard(),
     feedbackCard(),
@@ -5307,6 +5353,12 @@ function showResult(session, state) {
       el('div', { class: 'result-score' }, `${state.score}점`),
       state.newSticker ? el('div', { class: 'result-sticker pop' }, `⭐ 칭찬 스티커를 받았어요! (모두 ${stickerCount()}개)`) : null,
       session.schedule && rewardToday() ? el('div', { class: 'result-reward pop' }, `🎁 약속한 ${rewardToday().join(' ')} 시간이에요!`) : null,
+      (() => {
+        const games = new Set(state.records.map((r) => r.game));
+        if (session.schedule || games.size !== 1) return null;
+        const g = [...games][0];
+        return el('div', { class: 'fav-result' }, el('span', {}, '이 놀이가 좋았나요?'), favButton(g), el('small', {}, '누르면 홈에 모여요'));
+      })(),
       el('div', { class: 'result-actions' },
         el('button', { class: 'btn-main', onclick: session.restart }, '다시 하기'),
         el('button', { class: 'btn-main alt', onclick: showHome }, '처음으로'))),
@@ -5367,7 +5419,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 95;
+const APP_VERSION = 96;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 let lastUpdateCheck = 0;
