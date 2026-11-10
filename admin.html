@@ -431,7 +431,7 @@
       if (!btn) return;
       const action = btn.dataset.ig;
       if (action === 'now' && !confirm('이 게시물을 지금 인스타에 올릴까요?')) return;
-      btn.disabled = true; btn.textContent = action === 'now' ? '올리는 중… (최대 1분)' : '…';
+      btn.disabled = true; btn.textContent = action === 'now' ? '올리는 중… (최대 3분)' : '…';
       try {
         const res = await fetch(`${API}/admin-insta`, {
           method: 'POST',
@@ -441,6 +441,7 @@
         const d = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(d.detail || d.error || res.status);
         if (d.message) alert(d.message);
+        else if (d.status === 'processing') alert('인스타가 아직 영상을 처리하고 있어요. 1~2분 뒤 [지금 올리기]를 한 번 더 눌러 주세요.');
       } catch (err) {
         alert(`처리하지 못했어요. (${err.message})`);
       }

@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     }
     const { action, id } = readBody(req);
     if (action === 'now') {
-      res.status(200).json(await runOnce({ forceId: String(id || '') || null, waitMs: 45000 }));
+      res.status(200).json(await runOnce({ forceId: String(id || '') || null, waitMs: 100000 }));
     } else if (action === 'reset') {
       await resetPost(String(id));
       res.status(200).json({ ok: true });
