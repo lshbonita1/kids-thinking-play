@@ -2381,3 +2381,11 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .look-btn .mascot, .look-btn svg { width: 100%; height: 100%; display: block; }
 .swatch { width: 70%; aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .08); }
 .swatch { width: 24px; height: 24px; aspect-ratio: auto; }
+
+/* 쑥쑥이 그림 칸 크기 맞추기 (그림만 커지고 칸은 64px로 남아 한쪽으로 쏠리던 것) */
+.wardrobe-preview .mascot { width: 88px; height: 88px; }
+.wardrobe-preview svg { width: 100%; height: 100%; }
+.trophy-row .hero .mascot { width: 70px; height: 70px; }
+.dress-body .mascot { width: 80px; height: 80px; }
+.swing.me .mascot { width: 80px; height: 80px; }
+.bubble-hero .mascot { width: 64px; height: 64px; }
