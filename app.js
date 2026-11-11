@@ -96,7 +96,7 @@ const settings = {
   level: store.get('level', 0), // 처음엔 쉬움부터
   voice: store.get('voice', ''), // 고른 목소리 이름 (없으면 자동)
   pitch: store.get('pitch', 1.1), // 목소리 높이: 높을수록 밝고 어린 느낌 (기본: 보통)
-  rate: store.get('rate', 1), // 빠르기 (기본: 보통)
+  rate: store.get('rate', 0.85), // 빠르기 (기본: 조금 느리게 — 천천히 말하면 더 부드럽게 들림)
   tips: store.get('tips', true), // 놀이를 시작할 때 보호자 도움말 보이기
   missSound: store.get('missSound', false), // 틀렸을 때 효과음 (소리에 예민한 아이가 많아 기본은 끔)
   autoHint: store.get('autoHint', true), // 한동안 누르지 않으면 정답을 반짝여 도와주기
@@ -115,15 +115,23 @@ function koreanVoices() {
   if (!('speechSynthesis' in window)) return [];
   return speechSynthesis.getVoices().filter((v) => v.lang?.replace('_', '-').toLowerCase().startsWith('ko'));
 }
-// 고른 목소리 → 없으면 여성 목소리(이름으로 추정) → 기기 안 목소리 → 아무 한국어 목소리
+// 고른 목소리 → 없으면 가장 자연스럽고 부드러운 목소리(점수가 높은 것)
+// 기기마다 들어 있는 고품질 음성: 엣지 'Natural'(SunHi 등), 아이폰 '향상됨 · 프리미엄'(유나), 구글 한국어
 const SOFT_VOICE_HINTS = ['유나', 'yuna', 'sora', 'female', 'heami', 'sunhi', 'jimin', 'seoyeon', 'google 한국'];
+function voiceScore(v) {
+  const n = v.name.toLowerCase();
+  let sc = 0;
+  if (/natural|neural|online/.test(n)) sc += 6;
+  if (/premium|enhanced|향상|프리미엄/.test(n)) sc += 5;
+  if (/sunhi|선희|yuna|유나/.test(n)) sc += 3;
+  if (n.includes('google')) sc += 2;
+  if (SOFT_VOICE_HINTS.some((h) => n.includes(h))) sc += 1;
+  if (/compact|male|injoon|인준|hyunsu/.test(n)) sc -= 3;
+  return sc;
+}
 function pickKoreanVoice() {
-  const voices = koreanVoices();
-  koVoice = voices.find((v) => v.name === settings.voice)
-    ?? voices.find((v) => SOFT_VOICE_HINTS.some((h) => v.name.toLowerCase().includes(h)))
-    ?? voices.find((v) => v.localService)
-    ?? voices[0]
-    ?? null;
+  const voices = [...koreanVoices()].sort((a, b) => voiceScore(b) - voiceScore(a));
+  koVoice = voices.find((v) => v.name === settings.voice) ?? voices[0] ?? null;
 }
 if ('speechSynthesis' in window) {
   pickKoreanVoice();
@@ -133,11 +141,13 @@ if ('speechSynthesis' in window) {
 // force: 말하기 카드처럼 소리 설정과 상관없이 꼭 말해야 할 때
 function speak(text, force = false) {
   if ((!settings.sound && !force) || !('speechSynthesis' in window)) return;
-  const u = new SpeechSynthesisUtterance(text);
+  // 느낌표는 차분한 말투로, 물결표는 빼서 부드럽게 읽음 (화면 글자는 그대로)
+  const u = new SpeechSynthesisUtterance(String(text).replace(/!+/g, '.').replace(/~/g, ''));
   u.lang = 'ko-KR';
   if (koVoice) u.voice = koVoice;
   u.rate = settings.rate;
   u.pitch = settings.pitch;
+  u.volume = 0.9;
   // 아이패드에서 음성이 '일시 정지' 상태로 멈춰 있는 경우가 있어 풀어 줌
   speechSynthesis.resume();
   if (speechSynthesis.speaking || speechSynthesis.pending) {
@@ -4339,7 +4349,7 @@ function recordsTab() {
 
 // 목소리 고르기 · 높이 · 빠르기 · 들어 보기
 function voiceSettings() {
-  const voices = koreanVoices();
+  const voices = [...koreanVoices()].sort((a, b) => voiceScore(b) - voiceScore(a));
   const preview = () => {
     unlockSound();
     speak('안녕! 나는 쑥쑥이야. 같이 놀자!');
@@ -4368,11 +4378,12 @@ function voiceSettings() {
     },
   },
   el('option', { value: '' }, '자동으로 고르기'),
-  voices.map((v) => el('option', { value: v.name, selected: v.name === settings.voice }, v.name)));
+  voices.map((v, k) => el('option', { value: v.name, selected: v.name === settings.voice }, k === 0 && voiceScore(v) > 0 ? `${v.name} (부드러움 추천)` : v.name)));
   return el('div', { class: 'voice-box' },
     el('div', { class: 'setting-name' }, '🗣️ 목소리'),
     voices.length > 1 ? select : el('p', { class: 'setting-desc' },
       voices.length ? `이 기기의 한국어 목소리: ${voices[0].name}` : '이 기기에서 한국어 목소리를 찾지 못했어요.'),
+    el('p', { class: 'setting-desc voice-help' }, '더 부드러운 목소리를 받을 수 있어요 — 아이폰 · 아이패드: 설정 › 손쉬운 사용 › 읽기 및 말하기 › 음성 › 한국어에서 "유나(향상됨 또는 프리미엄)" 받기 · 갤럭시: 설정 › 일반 › 텍스트 음성 변환에서 "Google 음성 인식 및 합성"의 한국어 음성 받기'),
     el('div', { class: 'setting-desc voice-label' }, '목소리 높이'),
     optionSeg(PITCH_OPTIONS, settings.pitch, 'pitch'),
     el('div', { class: 'setting-desc voice-label' }, '빠르기'),
@@ -6981,7 +6992,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 117;
+const APP_VERSION = 118;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

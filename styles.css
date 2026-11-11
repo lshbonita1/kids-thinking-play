@@ -2451,3 +2451,4 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .village-home.compact .vh-hero .vtalk { bottom: 70%; }
 @media (prefers-reduced-motion: reduce) { .vh-cloud { animation: none; } }
 .village-home.compact .vh-hero { width: 13%; left: 44%; }
+.voice-help { margin: 4px 0 6px; font-size: 13px; line-height: 1.55; word-break: keep-all; }
