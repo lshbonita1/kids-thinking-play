@@ -2247,3 +2247,63 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .scene-card .scene-one { margin-top: 0; }
 @media (prefers-reduced-motion: reduce) { .vmap.art .vplace.quest .vbuild, .scene-backdrop .bd-move { animation: none; } }
 .scene-card { align-self: stretch; width: min(100%, 560px); box-sizing: border-box; }
+
+/* ---------- 쑥쑥 마을 5: 장난감 같은 마을 ---------- */
+.vmap.art { border: 5px solid #fff; box-shadow: 0 14px 30px rgba(60, 45, 30, .16), inset 0 0 0 2px #bfe0a9; }
+.vbuild { position: relative; }
+.vbuild::before { content: ''; position: absolute; left: 2%; right: 2%; bottom: 0; height: 26%; border-radius: 50%; background: radial-gradient(ellipse at 50% 35%, #d6f0c4, #b3dd98); box-shadow: 0 4px 0 #94c77a; z-index: -1; }
+.vmap.art .vplace { z-index: 2; }
+.vmap.art .vplace b { background: #fff; font-size: 14px; padding: 3px 12px; box-shadow: 0 3px 0 rgba(60, 45, 30, .14); }
+.vmap.art .vplace:hover .vbuild, .vmap.art .vplace:focus-visible .vbuild { transform: translateY(-3px); }
+.vbuild svg .smoke circle { animation: smoke 3.2s ease-out infinite; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.vbuild svg .smoke circle:nth-child(2) { animation-delay: 1s; }
+.vbuild svg .smoke circle:nth-child(3) { animation-delay: 2s; }
+@keyframes smoke { 0% { opacity: 0; transform: translateY(8px) scale(.5); } 30% { opacity: .85; } 100% { opacity: 0; transform: translateY(-6px) scale(1.2); } }
+.vlife { position: absolute; z-index: 3; padding: 0; border: 0; background: none; cursor: pointer; line-height: 1; -webkit-tap-highlight-color: transparent; }
+.vlife.poked { animation: poked .5s ease-out; }
+@keyframes poked { 30% { transform: scale(1.35) rotate(-8deg); } 60% { transform: scale(.95) rotate(6deg); } }
+.vcar { width: 13%; }
+.vcar svg { display: block; width: 100%; }
+.vcar.h { top: 47%; animation: carh 11s linear infinite; }
+.vcar.v { left: 45.5%; width: 9%; animation: carv 14s linear infinite; animation-delay: -5s; }
+.vcar.v svg { transform: rotate(90deg); }
+@keyframes carh { 0% { left: 14%; } 46% { left: 74%; } 50% { left: 74%; transform: scaleX(-1); } 96% { left: 14%; transform: scaleX(-1); } 100% { left: 14%; } }
+@keyframes carv { 0% { top: 22%; } 46% { top: 72%; } 50% { top: 72%; transform: scaleY(-1); } 96% { top: 22%; transform: scaleY(-1); } 100% { top: 22%; } }
+.vcar.poked { animation-play-state: paused; }
+.vduck { left: 28%; top: 67%; font-size: 24px; animation: bob 2.4s ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-3px) rotate(3deg); } }
+.vsheep { left: 64%; top: 90%; font-size: 24px; animation: bob 3s ease-in-out infinite; }
+.vfly { font-size: 20px; }
+.vfly.f1 { animation: fly1 12s ease-in-out infinite; }
+.vfly.f2 { font-size: 16px; animation: fly2 15s ease-in-out infinite; }
+@keyframes fly1 { 0% { left: 30%; top: 30%; } 25% { left: 40%; top: 24%; } 50% { left: 34%; top: 38%; } 75% { left: 26%; top: 34%; } 100% { left: 30%; top: 30%; } }
+@keyframes fly2 { 0% { left: 66%; top: 66%; } 33% { left: 74%; top: 72%; } 66% { left: 62%; top: 76%; } 100% { left: 66%; top: 66%; } }
+.vmap.art .vwalker { width: 60px; height: 60px; z-index: 4; }
+.vtalk { position: absolute; left: 50%; bottom: 100%; margin-bottom: 14px; transform: translateX(-50%); padding: 4px 10px; border-radius: 12px; background: #fff; box-shadow: 0 3px 8px rgba(60, 45, 30, .18); font-family: 'Jua', sans-serif; font-size: 13px; white-space: nowrap; animation: talkin .4s ease-out; }
+.vtalk::after { content: ''; position: absolute; left: 50%; top: 100%; margin-left: -6px; border: 6px solid transparent; border-top-color: #fff; }
+@keyframes talkin { from { opacity: 0; transform: translate(-50%, 6px); } }
+.vwalker.walking .hero { animation: hop2 .32s ease-in-out infinite alternate; }
+@keyframes hop2 { from { transform: translateY(0) scale(1.04, .96); } to { transform: translateY(-9px) scale(.97, 1.03); } }
+/* 장면: 장난감 버튼 · 둥실 그림 · 별 반짝 */
+.scene { background: linear-gradient(180deg, var(--scene, #fbf8f2) 0, #fffdf8 360px, #f3f9ec 100%); }
+.scene .btn-main { border: 0; background: linear-gradient(#ffe08a, #ffcf55); box-shadow: 0 6px 0 #e3a92a, 0 10px 16px rgba(227, 169, 42, .25); color: #5b4320; font-family: 'Jua', sans-serif; font-size: 22px; padding: 14px 28px; border-radius: 22px; }
+.scene .btn-main:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 #e3a92a; }
+.scene .btn-main:disabled { background: #f0eadf; box-shadow: 0 4px 0 #ddd3c2; color: #a39684; }
+.scene .btn-main.alt { background: linear-gradient(#cfe8ff, #a9d3fb); box-shadow: 0 6px 0 #6fa8dc; color: #2b4a6b; }
+.scene-big { position: relative; display: grid; place-items: center; width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle at 50% 45%, #fff 0, #fff 45%, var(--scene, #fff3d6) 100%); box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .04); animation: floaty 3s ease-in-out infinite; font-size: 96px; }
+.scene-big.small { width: 110px; height: 110px; font-size: 58px; }
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.scene-card { position: relative; border: 3px solid #fff; background: rgba(255, 255, 255, .94); box-shadow: 0 10px 24px rgba(60, 45, 30, .1); }
+.burst { position: absolute; left: 50%; top: 45%; width: 0; height: 0; pointer-events: none; z-index: 5; }
+.burst i { position: absolute; left: -10px; top: -10px; font-size: 20px; font-style: normal; animation: burst .8s ease-out forwards; }
+@keyframes burst { from { transform: translate(0, 0) scale(.4); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) scale(1.1); opacity: 0; } }
+.bubble-hero.jump { animation: jump .6s ease-out; }
+@keyframes jump { 30% { transform: translateY(-14px) scale(1.05); } 60% { transform: translateY(0) scale(.95, 1.05); } }
+.scene .tile.choice { border-radius: 22px; box-shadow: 0 5px 0 rgba(60, 45, 30, .1); }
+@media (prefers-reduced-motion: reduce) {
+  .vcar.h, .vcar.v, .vduck, .vsheep, .vfly, .vbuild svg .smoke circle, .vwalker.walking .hero, .scene-big, .burst i, .bubble-hero.jump, .vlife.poked { animation: none; }
+  .vcar.h { left: 20%; } .vcar.v { top: 70%; } .vfly.f1 { left: 30%; top: 30%; } .vfly.f2 { left: 66%; top: 70%; }
+}
+.vtalk { left: 88%; bottom: 62%; margin-bottom: 0; transform: none; }
+.vtalk::after { left: -5px; top: 60%; margin-left: 0; border: 6px solid transparent; border-right-color: #fff; border-left: 0; }
+@keyframes talkin { from { opacity: 0; transform: translateX(-6px); } }

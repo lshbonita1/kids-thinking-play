@@ -5705,6 +5705,7 @@ const SHADOW = '<ellipse cx="40" cy="75" rx="31" ry="5" fill="#000" opacity=".12
 const VILLAGE_ART = {
   home: `${SHADOW}
     <rect x="15" y="36" width="50" height="37" rx="4" fill="#fff4e2"/><rect x="15" y="36" width="50" height="6" fill="#f3e3c6"/>
+    <g class="smoke"><circle cx="57" cy="8" r="3.5" fill="#fff"/><circle cx="60" cy="2" r="4.5" fill="#fff"/><circle cx="56" cy="-5" r="5" fill="#fff"/></g>
     <rect x="53" y="12" width="8" height="16" rx="1.5" fill="#c9604f"/>
     <path d="M7 40 L40 11 L73 40 Z" fill="#ef7d6a"/><path d="M7 40 L40 11 L40 17 L13 41 Z" fill="#f59a87"/>
     <rect x="34" y="50" width="13" height="23" rx="3" fill="#b9825a"/><circle cx="44" cy="62" r="1.3" fill="#ffd76e"/>
@@ -5850,14 +5851,15 @@ const VILLAGE_GROUND = `<svg viewBox="0 0 100 100" preserveAspectRatio="none" ar
 function showVillage() {
   window.speechSynthesis?.cancel();
   const at = VILLAGE_PLACES.find((p) => p.id === store.get('villagePos', '')) ?? { x: 50, y: 50 };
-  const walker = el('div', { class: 'vwalker', style: `left:${at.x}%;top:${at.y}%` }, hero('smile'));
+  const talk = el('span', { class: 'vtalk' }, '어디 갈까?');
+  const walker = el('div', { class: 'vwalker', style: `left:${at.x}%;top:${at.y}%` }, hero('smile'), talk);
   const mission = todayMission();
   const counts = villageCounts();
   let moving = false;
   const map = el('div', { class: 'vmap art' },
     el('div', { class: 'vground' }),
-    el('span', { class: 'vdeco', style: 'left:31%;top:68%' }, '🦆'),
     el('div', { class: 'vcloud c1' }, '☁️'), el('div', { class: 'vcloud c2' }, '☁️'),
+    ...villageLife(),
     VILLAGE_PLACES.map((p) => {
       const n = counts[p.id] ?? 0;
       const isMission = mission.ids.includes(p.id);
@@ -5869,6 +5871,7 @@ function showVillage() {
           if (moving) return;
           moving = true;
           speak(`${p.name}에 가요`);
+          talk.textContent = `${p.name} 가자!`;
           walk(walker, at, p, () => { if (screenId === my) openPlace(p.id); });
           store.set('villagePos', p.id);
         },
@@ -5908,6 +5911,27 @@ function showVillage() {
 }
 
 // 길을 따라 걷기: 지금 자리 → 가운데 네거리 → 가고 싶은 곳
+// 마을 곳곳의 움직이는 친구들: 누르면 소리를 내요
+function poke(node, say, freqs) {
+  speak(say);
+  tone(freqs, 0.08);
+  node.classList.remove('poked');
+  void node.offsetWidth;
+  node.classList.add('poked');
+}
+const CAR_SVG = (body, roof) => `<svg viewBox="0 0 40 24" aria-hidden="true"><ellipse cx="20" cy="22" rx="16" ry="2.5" fill="#000" opacity=".15"/><rect x="3" y="9" width="34" height="10" rx="5" fill="${body}"/><path d="M10 9 Q12 2 20 2 Q28 2 30 9 Z" fill="${roof}"/><rect x="13" y="4" width="6" height="5" rx="1.5" fill="#dff1ff"/><rect x="21" y="4" width="6" height="5" rx="1.5" fill="#dff1ff"/><circle cx="11" cy="19" r="3.6" fill="#3a3f47"/><circle cx="29" cy="19" r="3.6" fill="#3a3f47"/><circle cx="11" cy="19" r="1.4" fill="#cfd6dd"/><circle cx="29" cy="19" r="1.4" fill="#cfd6dd"/><circle cx="36" cy="13" r="1.5" fill="#ffe7a8"/></svg>`;
+function villageLife() {
+  const car = el('button', { class: 'vlife vcar h', 'aria-label': '자동차', onclick: () => poke(car, '빵빵!', [520, 520]) });
+  car.innerHTML = CAR_SVG('#ef6b5b', '#f59a87');
+  const bus = el('button', { class: 'vlife vcar v', 'aria-label': '버스', onclick: () => poke(bus, '부릉부릉!', [330, 392]) });
+  bus.innerHTML = CAR_SVG('#ffc94d', '#ffd76e');
+  const duck = el('button', { class: 'vlife vduck', 'aria-label': '오리', onclick: () => poke(duck, '꽥꽥!', [700, 600]) }, '🦆');
+  const sheep = el('button', { class: 'vlife vsheep', 'aria-label': '양', onclick: () => poke(sheep, '메에~', [440, 400]) }, '🐑');
+  const bf1 = el('button', { class: 'vlife vfly f1', 'aria-label': '나비', onclick: () => poke(bf1, '팔랑팔랑~', [900, 1100]) }, '🦋');
+  const bf2 = el('button', { class: 'vlife vfly f2', 'aria-label': '무당벌레', onclick: () => poke(bf2, '안녕!', [880, 990]) }, '🐞');
+  return [car, bus, duck, sheep, bf1, bf2];
+}
+
 function walk(walker, from, to, then) {
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const path = [];
@@ -6024,6 +6048,17 @@ function playScene(scene) {
       tone([660, 880], 0.1);
       const cheer = el('div', { class: 'step-cheer' }, pick(['잘했어요!', '좋아요!', '멋져요!']));
       stage.append(cheer);
+      // 별 반짝 · 쑥쑥이 깡충
+      const card = stage.querySelector('.scene-card');
+      if (card && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        const b = el('div', { class: 'burst' });
+        for (let j = 0; j < 8; j++) {
+          const a = (Math.PI * 2 * j) / 8;
+          b.append(el('i', { style: `--dx:${Math.round(Math.cos(a) * 90)}px;--dy:${Math.round(Math.sin(a) * 70)}px` }, pick(['⭐', '✨', '💛'])));
+        }
+        card.append(b);
+      }
+      stage.querySelector('.bubble-hero')?.classList.add('jump');
       k++;
       setTimeout(show, 1000);
     };
@@ -6568,7 +6603,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 108;
+const APP_VERSION = 109;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
