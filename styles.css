@@ -2442,3 +2442,12 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .village-home.compact .vh-title { font-size: 19px; }
 .village-home.compact .vh-sub { font-size: 12px; }
 .vh-mini.mission { padding: 5px 8px; gap: 6px; overflow: hidden; } .vh-mini .vh-mission-icons { gap: 3px; } .vh-row { gap: 5px; }
+
+/* 홈 미니 마을 그림 다듬기 */
+.village-home.compact .vh-scene { aspect-ratio: 3 / 1; box-shadow: 0 4px 0 rgba(60, 45, 30, .08), inset 0 0 0 1px rgba(255, 255, 255, .6); }
+.vh-cloud { animation: vhcloud 30s linear infinite; }
+@keyframes vhcloud { from { transform: translateX(-40px); } to { transform: translateX(400px); } }
+.village-home.compact .vh-hero { width: 15%; bottom: 14%; left: 46%; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .18)); }
+.village-home.compact .vh-hero .vtalk { bottom: 70%; }
+@media (prefers-reduced-motion: reduce) { .vh-cloud { animation: none; } }
+.village-home.compact .vh-hero { width: 13%; left: 44%; }

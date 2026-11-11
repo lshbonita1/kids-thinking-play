@@ -5888,12 +5888,28 @@ function villageCard() {
   // 미니 마을 그림: 건물 다섯 채 + 길 + 내 쑥쑥이
   const scene = el('button', { class: 'vh-scene', 'aria-label': '쑥쑥 마을로 가기', onclick: showVillage });
   const builds = ['home', 'shop', 'playground', 'hospital', 'farm'];
-  scene.innerHTML = `<svg viewBox="0 0 360 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <defs><linearGradient id="vhg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dff1fb"/><stop offset=".45" stop-color="#e9f7dd"/><stop offset="1" stop-color="#c6e5b2"/></linearGradient></defs>
-    <rect width="360" height="150" fill="url(#vhg)"/>
-    <circle cx="330" cy="22" r="13" fill="#ffd76e" opacity=".9"/>
-    <rect x="0" y="104" width="360" height="26" fill="#a9b0b8"/><path d="M8 117 H352" stroke="#fff" stroke-width="2.5" stroke-dasharray="10 9"/>
-    ${builds.map((id, k) => `<g transform="translate(${6 + k * 72} ${k % 2 ? 30 : 24}) scale(.82)">${VILLAGE_ART[id]}</g>`).join('')}
+  const winter = s.id === 'winter';
+  const hill1 = winter ? '#e3eef8' : '#bfe3a9', hill2 = winter ? '#f4f9fe' : '#a6d891';
+  const cloud = (x, y, k) => `<g class="vh-cloud" style="animation-delay:${-k * 9}s"><g transform="translate(${x} ${y})" fill="#fff"><ellipse cx="0" cy="6" rx="22" ry="8"/><circle cx="-8" cy="1" r="9"/><circle cx="6" cy="-2" r="11"/><circle cx="17" cy="4" r="7"/></g></g>`;
+  scene.innerHTML = `<svg viewBox="0 0 360 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="vhsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${winter ? '#cfe4f6' : '#b9e3fb'}"/><stop offset="1" stop-color="#f1f9ff"/></linearGradient>
+      <radialGradient id="vhsun"><stop offset="0" stop-color="#fff6c8"/><stop offset=".55" stop-color="#ffd76e"/><stop offset="1" stop-color="#ffd76e" stop-opacity="0"/></radialGradient>
+      <g id="vhtree"><ellipse cx="0" cy="11" rx="8" ry="2.2" fill="#000" opacity=".12"/><rect x="-1.6" y="2" width="3.2" height="9" rx="1" fill="#a7774f"/><circle cx="0" cy="-3" r="8" fill="${winter ? '#8cc79c' : '#7cc48f'}"/><circle cx="-4" cy="0" r="5.5" fill="#6cb880"/><circle cx="4" cy="-1" r="5.5" fill="#8fd19e"/>${winter ? '<path d="M-7 -6 Q0 -13 7 -6 Q0 -9 -7 -6Z" fill="#fff"/>' : ''}</g>
+    </defs>
+    <rect width="360" height="120" fill="url(#vhsky)"/>
+    <circle cx="34" cy="24" r="26" fill="url(#vhsun)"/><circle cx="34" cy="24" r="10" fill="#ffd25c"/>
+    ${cloud(110, 18, 0)}${cloud(250, 12, 1)}
+    <path d="M128 26 q4 -4 8 0 q4 -4 8 0" stroke="#7a8794" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M150 18 q3 -3 6 0 q3 -3 6 0" stroke="#7a8794" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    <path d="M0 70 Q60 46 130 62 T260 56 T360 60 V120 H0 Z" fill="${hill1}"/>
+    <path d="M0 84 Q90 66 180 80 T360 76 V120 H0 Z" fill="${hill2}"/>
+    ${[['home', 0, 40], ['shop', 66, 38], ['playground', 136, 42], ['hospital', 210, 36], ['farm', 284, 40]].map(([id, x, y]) => `<g transform="translate(${x + 4} ${y}) scale(.68)">${VILLAGE_ART[id]}</g>`).join('')}
+    <use href="#vhtree" x="60" y="80"/><use href="#vhtree" x="128" y="82"/><use href="#vhtree" x="202" y="80"/><use href="#vhtree" x="278" y="82"/><use href="#vhtree" x="352" y="80"/>
+    <rect x="0" y="92" width="360" height="7" fill="#f4ead2"/><rect x="0" y="98.5" width="360" height="1.5" fill="#e2d3b0"/>
+    ${[22, 96, 170, 244, 318].map((x, k) => `<g transform="translate(${x} 95)"><circle r="1.8" fill="${['#f29bb5', '#ffd76e', '#fff', '#f6a46b', '#f29bb5'][k]}"/><circle cx="5" cy="1" r="1.5" fill="#ffd76e"/></g>`).join('')}
+    <rect x="0" y="100" width="360" height="20" fill="#a3abb4"/>
+    <path d="M6 110 H354" stroke="#fff" stroke-width="2" stroke-dasharray="11 9" stroke-linecap="round"/>
+    <g fill="#fff" opacity=".9">${[0, 1, 2, 3, 4].map((k) => `<rect x="${118 + k * 7}" y="101" width="4" height="18" rx="1"/>`).join('')}</g>
   </svg>`;
   scene.append(
     el('span', { class: 'vh-hero' }, hero('happy'), el('span', { class: 'vtalk' }, m.claimed ? '내일 또 놀자!' : '놀러 와!')),
@@ -6965,7 +6981,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 116;
+const APP_VERSION = 117;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
