@@ -5653,10 +5653,14 @@ function showResult(session, state) {
 // 실제로 가기 전에 마트 · 버스 · 병원을 화면에서 한 단계씩 해 보는 곳 (사전 노출 · 비디오 모델링처럼)
 // 한 화면에 할 일은 하나, 갑작스러운 소리나 번쩍임 없이, 실패 없이 끝까지 가도록
 const VILLAGE_PLACES = [
-  { id: 'home', icon: '🏠', name: '우리 집', x: 24, y: 24, color: '#fde2e2' },
-  { id: 'shop', icon: '🛒', name: '마트', x: 76, y: 24, color: '#fff1c9' },
-  { id: 'bus', icon: '🚏', name: '버스 정류장', x: 24, y: 76, color: '#dbeefd' },
-  { id: 'hospital', icon: '🏥', name: '병원', x: 76, y: 76, color: '#e3f3e6' },
+  { id: 'home', icon: '🏠', name: '우리 집', x: 18, y: 17, color: '#fde2e2' },
+  { id: 'dress', icon: '👕', name: '옷 입기', x: 50, y: 13, color: '#dcefff' },
+  { id: 'shop', icon: '🛒', name: '마트', x: 82, y: 17, color: '#fff1c9' },
+  { id: 'cross', icon: '🚦', name: '횡단보도', x: 15, y: 50, color: '#e8f3e1' },
+  { id: 'playground', icon: '🛝', name: '놀이터', x: 85, y: 50, color: '#fdeccf' },
+  { id: 'bus', icon: '🚏', name: '버스 정류장', x: 18, y: 83, color: '#dbeefd' },
+  { id: 'farm', icon: '🐮', name: '농장', x: 50, y: 87, color: '#eef6dc' },
+  { id: 'hospital', icon: '🏥', name: '병원', x: 82, y: 83, color: '#e3f3e6' },
 ];
 const VILLAGE_DONE_KEY = 'villageDone';
 const villageDone = () => store.get(VILLAGE_DONE_KEY, 0);
@@ -5682,7 +5686,7 @@ function showVillage() {
     el('p', { class: 'village-lead' }, '가고 싶은 곳을 눌러요'),
     el('div', { class: 'vmap' },
       el('div', { class: 'vroad h' }), el('div', { class: 'vroad v' }),
-      ['🌳', '🌷', '🌳', '🌼', '🌲', '🌸'].map((t, k) => el('span', { class: 'vdeco', style: `left:${[8, 44, 92, 50, 8, 92][k]}%;top:${[50, 8, 50, 92, 92, 8][k]}%` }, t)),
+      ['🌳', '🌷', '🌲', '🌼'].map((t, k) => el('span', { class: 'vdeco', style: `left:${[34, 66, 34, 66][k]}%;top:${[34, 34, 66, 66][k]}%` }, t)),
       VILLAGE_PLACES.map((p) => el('button', {
         class: 'vplace', style: `left:${p.x}%;top:${p.y}%;--c:${p.color}`,
         onclick: () => {
@@ -5707,6 +5711,10 @@ function openPlace(id) {
   if (id === 'home') return showRoom();
   if (id === 'shop') return playScene(shopScene());
   if (id === 'bus') return playScene(busScene());
+  if (id === 'cross') return playScene(crossScene());
+  if (id === 'playground') return playScene(playgroundScene());
+  if (id === 'farm') return playScene(farmScene());
+  if (id === 'dress') return playScene(dressScene());
   return playScene(hospitalScene());
 }
 
@@ -5762,6 +5770,10 @@ const HOME_TRY_VILLAGE = {
   shop: '마트에 가기 전에 그림이나 사진으로 장보기 목록을 2~3개 만들어 아이가 직접 찾아 담게 해 보세요.',
   bus: '버스를 탈 때 "기다려요 → 카드 찍어요 → 앉아요 → 벨 눌러요" 순서를 똑같은 말로 짧게 알려 주세요.',
   hospital: '병원 가기 전날 이 연습을 함께 하고, 그림 이야기 "병원에 가요"도 같이 보면 좋아요.',
+  cross: '횡단보도 앞에서 "멈춰요 → 손잡아요 → 초록 불 → 왼쪽 오른쪽 → 건너요"를 늘 같은 말로 해 주세요.',
+  playground: '놀이터에서 "줄 맨 뒤에 서요", "이번엔 친구 차례" 같은 말을 똑같이 써 주세요.',
+  farm: '동물 그림책이나 실제 동물을 보며 "토끼는 당근을 먹어요"처럼 짧게 이야기해 주세요.',
+  dress: '아침에 창밖 날씨를 함께 보고, 아이가 직접 옷 하나를 골라 보게 해 주세요.',
 };
 
 // 큰 버튼 하나로 끝나는 단계
@@ -5942,6 +5954,215 @@ function hospitalScene() {
   };
 }
 
+// 보기에서 하나 고르기 (틀리면 안내만 하고 다시 고르게)
+function pickStep(prompt2, choices, answer, render, wrongSay, hintAfter = 8000) {
+  return (done, alive) => {
+    let ok = false;
+    const buttons = choices.map((c) => {
+      const b = el('button', { class: 'tile choice', onclick: () => {
+        if (ok) return;
+        if (c !== answer) { b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); speak(wrongSay(c)); return; }
+        ok = true; b.classList.add('good'); done();
+      } }, render(c));
+      return b;
+    });
+    setTimeout(() => { if (alive() && !ok && settings.autoHint) buttons[choices.indexOf(answer)].classList.add('hint'); }, hintAfter);
+    return el('div', { class: 'scene-one' }, prompt2, el('div', { class: 'choices', style: choicesStyle(choices.length) }, buttons));
+  };
+}
+
+/* 횡단보도: 멈추기 → 손잡기 → 초록 불 기다리기 → 왼쪽 · 오른쪽 보기 → 건너기 */
+function crossScene() {
+  const lv = settings.level;
+  return {
+    id: 'cross', icon: '🚦', title: '찻길을 건너요', color: '#e8f3e1', done: '안전하게 건넜어요!', remake: crossScene,
+    steps: [
+      { icon: '✋', say: '찻길 앞에서는 먼저 멈춰요', view: tapStep('🚸', '✋ 멈춰요') },
+      { icon: '🤝', say: '엄마 아빠 손을 꼭 잡아요', view: tapStep('🤝', '🤝 손잡기') },
+      { icon: '🚦', say: '빨간 불이에요. 초록 불이 켜질 때까지 기다려요', view: (done, alive) => {
+        let green = false;
+        const light = el('div', { class: 'tlight' }, el('span', { class: 'red on' }), el('span', { class: 'green' }));
+        const btn = el('button', { class: 'btn-main', onclick: () => {
+          if (!green) { speak('빨간 불이에요. 멈춰서 기다려요'); return; }
+          done();
+        } }, '🚶 건너도 될까요?');
+        setTimeout(() => {
+          if (!alive()) return;
+          green = true;
+          light.children[0].classList.remove('on');
+          light.children[1].classList.add('on');
+          btn.textContent = '🟢 초록 불! 건널 준비';
+          btn.classList.add('pop');
+          speak('초록 불이 켜졌어요');
+        }, [4, 5, 7][lv] * 1000);
+        return el('div', { class: 'scene-one' }, light, btn);
+      } },
+      { icon: '👀', say: '차가 오는지 왼쪽, 오른쪽을 봐요', view: (done) => {
+        const seen = new Set();
+        const look = (side, b) => {
+          seen.add(side);
+          b.disabled = true;
+          b.textContent = side === 'L' ? '👈 왼쪽 ✔' : '👉 오른쪽 ✔';
+          speak(side === 'L' ? '왼쪽, 차가 없어요' : '오른쪽, 차가 없어요');
+          if (seen.size === 2) setTimeout(done, 700);
+        };
+        const l = el('button', { class: 'btn-main alt', onclick: () => look('L', l) }, '👈 왼쪽 보기');
+        const r = el('button', { class: 'btn-main alt', onclick: () => look('R', r) }, '👉 오른쪽 보기');
+        return el('div', { class: 'scene-one' }, el('div', { class: 'scene-big' }, '🛣️'), el('div', { class: 'btn-row' }, l, r));
+      } },
+      { icon: '🚶', say: '손을 잡고 천천히 건너요', view: (done) => {
+        const walker = el('span', { class: 'cross-walker' }, mascot('happy'));
+        const road = el('div', { class: 'crosswalk' }, walker);
+        const btn = el('button', { class: 'btn-main', onclick: () => {
+          btn.disabled = true;
+          road.classList.add('go');
+          setTimeout(done, 1800);
+        } }, '🚶 천천히 건너기');
+        return el('div', { class: 'scene-one' }, road, btn);
+      } },
+    ],
+  };
+}
+
+/* 놀이터: 줄 맨 뒤에 서기 → 차례 기다려 미끄럼틀 → 그네 번갈아 타기 → 인사 */
+function playgroundScene() {
+  const lv = settings.level;
+  const kids = ['👧', '👦', '🧒'].slice(0, [1, 2, 3][lv]);
+  return {
+    id: 'playground', icon: '🛝', title: '놀이터에 가요', color: '#fdeccf', done: '친구들과 사이좋게 놀았어요!', remake: playgroundScene,
+    steps: [
+      { icon: '🧍', say: '미끄럼틀에 친구들이 줄을 서 있어요. 맨 뒤에 서요', view: (done) => {
+        const spots = [...kids, null].map((k, i) => el('button', { class: `queue-spot${k ? ' kid' : ' empty'}`, onclick: () => {
+          if (k) { speak('친구가 서 있어요. 맨 뒤에 서요'); return; }
+          spots[i].replaceChildren(mascot('smile'));
+          done();
+        } }, k ?? '⬜'));
+        return el('div', { class: 'scene-one' }, el('div', { class: 'scene-big small' }, '🛝'), el('div', { class: 'queue-row' }, spots));
+      } },
+      { icon: '⏳', say: '내 차례가 올 때까지 기다려요', view: (done, alive) => {
+        let ahead = kids.length;
+        const line = el('div', { class: 'shop-line' });
+        const btn = el('button', { class: 'btn-main', disabled: true, onclick: done }, '기다려요…');
+        const draw = () => line.replaceChildren(...kids.slice(kids.length - ahead).map((p) => el('span', {}, p)), el('span', { class: 'me' }, mascot('smile')));
+        draw();
+        const tick = () => {
+          if (!alive()) return;
+          ahead--;
+          draw();
+          speak('슝~');
+          if (ahead > 0) return setTimeout(tick, 2400);
+          btn.disabled = false;
+          btn.textContent = '🛝 내 차례! 슝~ 타기';
+          btn.classList.add('pop');
+          speak('내 차례예요!');
+        };
+        setTimeout(tick, 2400);
+        return el('div', { class: 'scene-one' }, el('div', { class: 'scene-big small' }, '🛝'), line, btn);
+      } },
+      { icon: '🔄', say: '그네는 친구와 번갈아 타요', view: (done, alive) => {
+        let left = [2, 2, 3][lv];
+        const who = el('div', { class: 'swing-who' });
+        const btn = el('button', { class: 'btn-main' }, '');
+        const friendTurn = () => {
+          who.replaceChildren(el('span', { class: 'swing' }, '👧'), el('b', {}, '친구 차례예요. 기다려요'));
+          btn.disabled = true;
+          btn.textContent = '기다려요…';
+          setTimeout(() => {
+            if (!alive()) return;
+            who.replaceChildren(el('span', { class: 'swing me' }, mascot('happy')), el('b', {}, '내 차례예요!'));
+            btn.disabled = false;
+            btn.textContent = '🔄 그네 타기';
+            speak('내 차례예요');
+          }, 2200);
+        };
+        btn.onclick = () => {
+          left--;
+          speak('슝~ 이제 친구 차례');
+          if (left <= 0) { btn.disabled = true; setTimeout(done, 800); return; }
+          friendTurn();
+        };
+        friendTurn();
+        return el('div', { class: 'scene-one' }, who, btn);
+      } },
+      { icon: '👋', say: '다 놀았어요. 친구에게 "안녕" 인사해요', view: tapStep('👋', '👋 안녕, 또 놀자') },
+    ],
+  };
+}
+
+/* 농장: 인사 → 먹이 주기 → 소리 듣고 동물 찾기 → 손 씻기 */
+const FARM_FEED = [['🐰', '토끼', '🥕'], ['🐶', '강아지', '🦴'], ['🐄', '젖소', '🌾'], ['🐔', '닭', '🌽'], ['🐷', '돼지', '🍎']];
+const FARM_SOUND = [['🐄', '음매'], ['🐷', '꿀꿀'], ['🐶', '멍멍'], ['🐑', '메에'], ['🦆', '꽥꽥'], ['🐱', '야옹']];
+function farmScene() {
+  const lv = settings.level;
+  const feedN = [2, 3, 3][lv];
+  const feeds = sample(FARM_FEED, feedN);
+  const snd = sample(FARM_SOUND, [2, 3, 3][lv]);
+  const sAns = snd[0];
+  const feedSteps = feeds.map(([a, name, food], i) => {
+    const others = FARM_FEED.filter((f) => f[2] !== food);
+    const choices = shuffle([food, ...sample(others, [1, 2, 2][lv]).map((f) => f[2])]);
+    return { icon: a, say: `${name}에게 먹이를 줘요. 무엇을 먹을까요?`, view: pickStep(
+      el('div', { class: 'need-scene' }, pic(a)), choices, food, (c) => c,
+      () => `${name}는 그걸 먹지 않아요. 다시 골라 볼까요?`) };
+  });
+  return {
+    id: 'farm', icon: '🐮', title: '농장에 가요', color: '#e3f3e6', done: '동물 친구들과 잘 놀았어요!', remake: farmScene,
+    steps: [
+      { icon: '👋', say: '농장에 왔어요. 동물 친구에게 살살 인사해요', view: tapStep('🐮', '👋 안녕, 동물 친구들') },
+      ...feedSteps,
+      { icon: '🔊', say: `"${sAns[1]}" 소리를 내는 동물은 누구일까요?`, view: pickStep(
+        el('button', { class: 'sound-play', onclick: () => speak(`${sAns[1]}! ${sAns[1]}!`) }, '🔊 ', el('b', {}, sAns[1])),
+        shuffle(snd.map(([e]) => e)), sAns[0], (c) => (PHOTOS[c] && snd.every(([e]) => PHOTOS[e]) ? pic(c) : c),
+        () => `다시 들어 봐요. ${sAns[1]}!`) },
+      { icon: '🧼', say: '동물을 만진 뒤에는 손을 깨끗이 씻어요', view: tapStep('🧼', '🧼 손 씻기') },
+    ],
+  };
+}
+
+/* 옷 입기: 오늘 날씨 보기 → 날씨에 맞는 옷 고르기 → 거울 보기 */
+const WEATHER_DRESS = [
+  { key: 'hot', icon: '☀️', say: '오늘은 해가 쨍쨍, 더워요', items: [['🩳', '반바지'], ['👒', '모자'], ['🩴', '샌들'], ['🕶️', '선글라스']] },
+  { key: 'cold', icon: '❄️', say: '오늘은 눈이 와요, 추워요', items: [['🧥', '외투'], ['🧣', '목도리'], ['🧤', '장갑'], ['🥾', '부츠']] },
+  { key: 'rain', icon: '🌧️', say: '오늘은 비가 와요', items: [['☂️', '우산'], ['👢', '장화']] },
+];
+function dressScene() {
+  const lv = settings.level;
+  const w = pick(WEATHER_DRESS);
+  const need = sample(w.items, Math.min([2, 2, 3][lv], w.items.length));
+  const wrong = sample(WEATHER_DRESS.filter((x) => x !== w).flatMap((x) => x.items), [2, 3, 4][lv]);
+  const all = shuffle([...need, ...wrong]);
+  return {
+    id: 'dress', icon: '👕', title: '날씨에 맞게 입어요', color: '#dcefff', done: '날씨에 맞게 잘 입었어요!', remake: dressScene,
+    steps: [
+      { icon: w.icon, say: `창밖을 봐요. ${w.say}`, view: tapStep(w.icon, '알았어요!') },
+      { icon: '👕', say: `날씨에 맞는 것을 ${need.length}개 골라 쑥쑥이에게 입혀요`, view: (done, alive) => {
+        const worn = new Set();
+        const body = el('div', { class: 'dress-body' }, mascot('smile'), el('div', { class: 'dress-worn' }));
+        const buttons = all.map(([e, n]) => {
+          const b = el('button', { class: 'tile choice dress-item', 'aria-label': n, onclick: () => {
+            if (worn.has(e)) return;
+            if (!need.some(([x]) => x === e)) { b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); speak(`${w.say}. ${n}는 오늘 안 맞아요`); return; }
+            worn.add(e);
+            b.classList.add('in-cart'); b.disabled = true;
+            body.lastChild.textContent = [...worn].join(' ');
+            speak(n);
+            if (worn.size === need.length) done();
+          } }, el('span', { class: 'dress-emoji' }, e), el('small', {}, n));
+          return b;
+        });
+        const nudge = () => {
+          if (!alive() || worn.size === need.length) return;
+          const b = buttons.find((x, k) => need.some(([e]) => e === all[k][0]) && !worn.has(all[k][0]));
+          if (settings.autoHint && b) b.classList.add('hint');
+        };
+        setTimeout(nudge, 9000);
+        return el('div', { class: 'scene-one' }, el('div', { class: 'dress-weather' }, w.icon), body, el('div', { class: 'choices', style: choicesStyle(4) }, buttons));
+      } },
+      { icon: '🪞', say: '다 입었어요! 거울을 봐요', view: tapStep('🪞', '🪞 멋져요!') },
+    ],
+  };
+}
+
 /* 우리 집: 모은 별로 내 방 꾸미기 (오늘의 학습 스티커 + 마을 연습) */
 const ROOM_ITEMS = [['🛏️', 0], ['🧸', 0], ['🪴', 1], ['🖼️', 2], ['🚂', 3], ['🎈', 4], ['📚', 5], ['🐠', 6], ['🎹', 8], ['🪁', 10], ['🌟', 12], ['🏰', 15]];
 const ROOM_SLOTS = 9;
@@ -6034,7 +6255,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 105;
+const APP_VERSION = 106;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

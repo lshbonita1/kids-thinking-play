@@ -2094,3 +2094,34 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .room-item.locked small { font-size: 11px; }
 @media (prefers-reduced-motion: reduce) { .vwalker { transition: none; } .bus-ride { animation: none; left: 40%; } }
 .scene-end .btn-main { white-space: nowrap; }
+
+/* 쑥쑥 마을 2단계: 8곳 지도 · 횡단보도 · 놀이터 · 옷 입기 */
+.vplace { width: 27%; padding: 8px 2px 6px; border-radius: 18px; }
+.vplace-icon { font-size: 34px; }
+.vplace b { font-size: 14px; white-space: nowrap; }
+.vdeco { font-size: 22px; }
+.tlight { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 26px; background: #3a3f47; }
+.tlight span { width: 64px; height: 64px; border-radius: 50%; background: #5b6069; }
+.tlight .red.on { background: #ef4444; box-shadow: 0 0 18px #ef4444; }
+.tlight .green.on { background: #22c55e; box-shadow: 0 0 18px #22c55e; }
+.crosswalk { position: relative; width: min(90%, 340px); height: 120px; border-radius: 16px; background: repeating-linear-gradient(90deg, #fff 0 26px, #555 26px 44px); }
+.cross-walker { position: absolute; left: 4px; top: 30px; width: 60px; height: 60px; transition: left 1.6s ease-in-out; }
+.cross-walker svg { width: 100%; height: 100%; }
+.crosswalk.go .cross-walker { left: calc(100% - 64px); }
+.queue-row { display: flex; gap: 10px; }
+.queue-spot { width: 70px; height: 70px; border: 3px solid #fff; border-radius: 18px; background: #fdeccf; font-size: 40px; cursor: pointer; }
+.queue-spot.empty { background: #fff; border: 3px dashed #e0c99c; font-size: 26px; }
+.queue-spot svg { width: 56px; height: 56px; }
+.swing-who { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.swing { font-size: 72px; line-height: 1; display: inline-block; animation: swing 1.4s ease-in-out infinite; transform-origin: top center; }
+.swing.me svg { width: 80px; height: 80px; }
+.swing-who b { font-family: 'Jua', sans-serif; font-weight: 400; font-size: 18px; }
+@keyframes swing { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+.dress-weather { font-size: 54px; line-height: 1; }
+.dress-body { display: flex; align-items: center; gap: 8px; }
+.dress-body svg { width: 80px; height: 80px; }
+.dress-worn { min-width: 40px; font-size: 36px; }
+.dress-item { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.dress-emoji { font-size: 40px; line-height: 1.1; }
+.dress-item small { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .swing { animation: none; } .cross-walker { transition: none; } }
