@@ -73,6 +73,10 @@
     .province:hover { opacity: .85; }
     .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; border-radius: 3px; border: 1px solid var(--line); vertical-align: -1px; }
     @media (max-width: 480px) { .chart small { display: none; } .chart .col:nth-child(odd) small { display: block; } }
+    .blog-box { display: grid; gap: 6px; padding: 8px 0; }
+    .blog-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .blog-head .btn { margin-left: auto; padding: 6px 12px; font-size: 15px; }
+    .blog-box textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; line-height: 1.6; padding: 8px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; background: var(--card); color: var(--ink); }
   </style>
 </head>
 <body>
@@ -429,13 +433,37 @@
           }
           const thBtn = d.thUser && r?.status === 'published' && r.th_status !== 'published'
             ? `<button class="btn" data-ig="${r.th_status === 'error' ? 'th-reset' : 'threads'}" data-id="${esc(q.id)}">${r.th_status === 'error' ? '스레드 다시' : '스레드 올리기'}</button>` : '';
-          return `<tr><td>${esc(q.date.slice(5).replace('-', '/'))}</td><td>${esc(q.caption.split('\n')[0])}${err}</td><td>${st}${link}${th}</td><td>${btn}${thBtn}</td></tr>`;
+          const blogBtn = q.blog ? `<button class="btn" data-blog="${esc(q.id)}">📝 블로그</button>` : '';
+          const blog = q.blog ? `<tr class="blog-row" data-blog-row="${esc(q.id)}" hidden><td colspan="4">
+            <div class="blog-box">
+              <div class="blog-head"><b>제목</b><button class="btn" data-copy="title">복사</button></div>
+              <textarea readonly rows="2" data-part="title">${esc(q.blog.title)}</textarea>
+              <div class="blog-head"><b>본문</b> <span class="muted">[사진N] 자리에 사진을 넣어 주세요 (다운로드/쑥쑥생각놀이_블로그/${esc(q.id)})</span><button class="btn" data-copy="body">복사</button></div>
+              <textarea readonly rows="16" data-part="body">${esc(q.blog.body)}</textarea>
+              <div class="blog-head"><b>태그</b><button class="btn" data-copy="tags">복사</button></div>
+              <textarea readonly rows="2" data-part="tags">${esc(q.blog.tags)}</textarea>
+            </div></td></tr>` : '';
+          return `<tr><td>${esc(q.date.slice(5).replace('-', '/'))}</td><td>${esc(q.caption.split('\n')[0])}${err}</td><td>${st}${link}${th}</td><td>${btn}${thBtn}${blogBtn}</td></tr>${blog}`;
         }).join('')}</tbody></table>`;
       } catch (e) {
         $('ig-admin').innerHTML = `<p class="muted">불러오지 못했어요. (${esc(e.message)})</p>`;
       }
     }
     $('ig-admin').addEventListener('click', async (e) => {
+      const blogBtn = e.target.closest('[data-blog]');
+      if (blogBtn) {
+        const row = $('ig-admin').querySelector(`[data-blog-row="${CSS.escape(blogBtn.dataset.blog)}"]`);
+        if (row) row.hidden = !row.hidden;
+        return;
+      }
+      const copyBtn = e.target.closest('[data-copy]');
+      if (copyBtn) {
+        const ta = copyBtn.closest('.blog-box').querySelector(`[data-part="${copyBtn.dataset.copy}"]`);
+        try { await navigator.clipboard.writeText(ta.value); } catch { ta.select(); document.execCommand('copy'); }
+        copyBtn.textContent = '✅ 복사됨';
+        setTimeout(() => { copyBtn.textContent = '복사'; }, 1500);
+        return;
+      }
       const btn = e.target.closest('[data-ig]');
       if (!btn) return;
       const action = btn.dataset.ig;
