@@ -5653,11 +5653,11 @@ function showResult(session, state) {
 // 실제로 가기 전에 마트 · 버스 · 병원을 화면에서 한 단계씩 해 보는 곳 (사전 노출 · 비디오 모델링처럼)
 // 한 화면에 할 일은 하나, 갑작스러운 소리나 번쩍임 없이, 실패 없이 끝까지 가도록
 const VILLAGE_PLACES = [
-  { id: 'home', icon: '🏠', name: '우리 집', x: 18, y: 17, color: '#fde2e2' },
-  { id: 'dress', icon: '👕', name: '옷 입기', x: 50, y: 13, color: '#dcefff' },
-  { id: 'shop', icon: '🛒', name: '마트', x: 82, y: 17, color: '#fff1c9' },
-  { id: 'cross', icon: '🚦', name: '횡단보도', x: 15, y: 50, color: '#e8f3e1' },
-  { id: 'playground', icon: '🛝', name: '놀이터', x: 85, y: 50, color: '#fdeccf' },
+  { id: 'home', icon: '🏠', name: '우리 집', x: 18, y: 19, color: '#fde2e2' },
+  { id: 'dress', icon: '👕', name: '옷 입기', x: 50, y: 17, color: '#dcefff' },
+  { id: 'shop', icon: '🛒', name: '마트', x: 82, y: 19, color: '#fff1c9' },
+  { id: 'cross', icon: '🚦', name: '횡단보도', x: 15, y: 53, color: '#e8f3e1' },
+  { id: 'playground', icon: '🛝', name: '놀이터', x: 85, y: 53, color: '#fdeccf' },
   { id: 'bus', icon: '🚏', name: '버스 정류장', x: 18, y: 83, color: '#dbeefd' },
   { id: 'farm', icon: '🐮', name: '농장', x: 50, y: 87, color: '#eef6dc' },
   { id: 'hospital', icon: '🏥', name: '병원', x: 82, y: 83, color: '#e3f3e6' },
@@ -5699,6 +5699,132 @@ function hero(mood = 'smile', cls = '') {
   return node;
 }
 
+/* ---------- 쑥쑥 마을 그림 (직접 그린 SVG) ---------- */
+// 건물은 80×80 칸 안에 그림. 바닥 그림자 · 부드러운 색 · 굵은 외곽선 없이
+const SHADOW = '<ellipse cx="40" cy="75" rx="31" ry="5" fill="#000" opacity=".12"/>';
+const VILLAGE_ART = {
+  home: `${SHADOW}
+    <rect x="15" y="36" width="50" height="37" rx="4" fill="#fff4e2"/><rect x="15" y="36" width="50" height="6" fill="#f3e3c6"/>
+    <rect x="53" y="12" width="8" height="16" rx="1.5" fill="#c9604f"/>
+    <path d="M7 40 L40 11 L73 40 Z" fill="#ef7d6a"/><path d="M7 40 L40 11 L40 17 L13 41 Z" fill="#f59a87"/>
+    <rect x="34" y="50" width="13" height="23" rx="3" fill="#b9825a"/><circle cx="44" cy="62" r="1.3" fill="#ffd76e"/>
+    <rect x="19" y="47" width="11" height="10" rx="2" fill="#bfe3f7"/><rect x="51" y="47" width="11" height="10" rx="2" fill="#bfe3f7"/>
+    <path d="M24.5 47 V57 M19 52 H30 M56.5 47 V57 M51 52 H62" stroke="#fff" stroke-width="1.4"/>`,
+  dress: `${SHADOW}
+    <rect x="10" y="28" width="60" height="45" rx="4" fill="#fdf6ec"/>
+    <rect x="20" y="8" width="40" height="15" rx="5" fill="#5b9be0"/>
+    <path d="M34 11 L31 13 L32.5 16 L34 15 V21 H46 V15 L47.5 16 L49 13 L46 11 Q40 14 34 11 Z" fill="#fff"/>
+    <path d="M8 28 H72 V36 Q68 40 64 36 Q60 40 56 36 Q52 40 48 36 Q44 40 40 36 Q36 40 32 36 Q28 40 24 36 Q20 40 16 36 Q12 40 8 36 Z" fill="#7cb7ec"/>
+    <path d="M16 28 V36 M32 28 V36 M48 28 V36 M64 28 V36" stroke="#fff" stroke-width="6" opacity=".9"/>
+    <rect x="15" y="44" width="24" height="20" rx="3" fill="#dceefd"/><path d="M22 49 L20 51 L21 53 L22 52.5 V60 H32 V52.5 L33 53 L34 51 L32 49 Q27 51 22 49 Z" fill="#f29bb5"/>
+    <rect x="46" y="46" width="16" height="27" rx="3" fill="#9fc6ee"/><rect x="47.5" y="48" width="13" height="23" rx="2" fill="#cfe6fb"/>`,
+  shop: `${SHADOW}
+    <rect x="5" y="28" width="70" height="45" rx="4" fill="#fffaf0"/>
+    <rect x="14" y="8" width="52" height="16" rx="5" fill="#4fb06f"/>
+    <text x="40" y="20.5" text-anchor="middle" font-family="Jua, sans-serif" font-size="11" fill="#fff">마트</text>
+    <path d="M3 28 H77 V36 Q73 40 69 36 Q65 40 61 36 Q57 40 53 36 Q49 40 45 36 Q41 40 37 36 Q33 40 29 36 Q25 40 21 36 Q17 40 13 36 Q9 40 5 36 L3 36 Z" fill="#6cc08a"/>
+    <path d="M12 28 V36 M28 28 V36 M44 28 V36 M60 28 V36" stroke="#fff" stroke-width="6" opacity=".85"/>
+    <rect x="28" y="45" width="24" height="28" rx="2" fill="#9fd3c7"/><path d="M40 45 V73" stroke="#fff" stroke-width="1.5"/><rect x="30" y="47" width="8.5" height="24" fill="#d8f1eb"/><rect x="41.5" y="47" width="8.5" height="24" fill="#d8f1eb"/>
+    <rect x="9" y="44" width="15" height="13" rx="2" fill="#ffe7a8"/><circle cx="13.5" cy="50" r="2.6" fill="#ef4444"/><circle cx="19" cy="51" r="2.6" fill="#f6a46b"/>
+    <rect x="56" y="44" width="15" height="13" rx="2" fill="#ffe7a8"/><path d="M59 52 Q63 46 68 51" stroke="#facc15" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+  cross: `<ellipse cx="40" cy="75" rx="31" ry="5" fill="#000" opacity=".1"/>
+    <g fill="#fff"><rect x="10" y="62" width="9" height="12" rx="1"/><rect x="24" y="62" width="9" height="12" rx="1"/><rect x="38" y="62" width="9" height="12" rx="1"/><rect x="52" y="62" width="9" height="12" rx="1"/><rect x="66" y="62" width="6" height="12" rx="1"/></g>
+    <rect x="37" y="26" width="6" height="40" rx="2" fill="#8a929c"/>
+    <rect x="29" y="4" width="22" height="40" rx="7" fill="#3a3f47"/>
+    <circle cx="40" cy="14" r="5.5" fill="#ef4444"/><circle cx="40" cy="26" r="5.5" fill="#facc15" opacity=".45"/><circle cx="40" cy="38" r="5.5" fill="#22c55e" opacity=".45"/>`,
+  playground: `${SHADOW}
+    <rect x="6" y="64" width="68" height="9" rx="4" fill="#f6e3b4"/>
+    <path d="M12 72 L22 22 M34 72 L22 22" stroke="#7cb7ec" stroke-width="4" stroke-linecap="round"/>
+    <path d="M14 34 H30 M13 46 H31 M11 58 H33" stroke="#7cb7ec" stroke-width="2.5"/>
+    <rect x="18" y="20" width="10" height="5" rx="2" fill="#5b9be0"/>
+    <path d="M27 24 Q36 30 40 50 Q43 66 52 68" stroke="#f6a46b" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M52 72 L60 26 L70 72" stroke="#f29bb5" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M56 26 H66" stroke="#f29bb5" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M58 28 V52 M64 28 V52" stroke="#a7988a" stroke-width="1.3"/><rect x="55.5" y="51" width="11" height="3.5" rx="1.5" fill="#ffd76e"/>`,
+  bus: `${SHADOW}
+    <rect x="8" y="18" width="52" height="7" rx="3" fill="#4c8bd6"/>
+    <rect x="11" y="25" width="3.5" height="47" fill="#9aa6b2"/><rect x="53" y="25" width="3.5" height="47" fill="#9aa6b2"/>
+    <rect x="14.5" y="28" width="38.5" height="30" fill="#dceefd" opacity=".85"/>
+    <rect x="18" y="56" width="31" height="5" rx="2" fill="#c78b5b"/><rect x="20" y="61" width="3" height="11" fill="#a96f45"/><rect x="44" y="61" width="3" height="11" fill="#a96f45"/>
+    <rect x="66" y="22" width="3" height="51" fill="#8a929c"/>
+    <circle cx="67.5" cy="18" r="9" fill="#ffd76e"/><rect x="61.5" y="13" width="12" height="9" rx="2" fill="#4c8bd6"/><rect x="63" y="14.5" width="9" height="3.5" fill="#dceefd"/><circle cx="64" cy="23" r="1.4" fill="#3a3f47"/><circle cx="71" cy="23" r="1.4" fill="#3a3f47"/>`,
+  farm: `${SHADOW}
+    <rect x="18" y="32" width="44" height="41" fill="#e45f4f"/>
+    <path d="M13 36 L40 11 L67 36 Z" fill="#b8473a"/><path d="M13 36 L40 11 L40 16 L18 37 Z" fill="#cc5547"/>
+    <rect x="32" y="20" width="16" height="9" rx="2" fill="#fff4e2"/>
+    <rect x="29" y="47" width="22" height="26" fill="#fff4e2"/><path d="M29 47 L51 73 M51 47 L29 73" stroke="#e45f4f" stroke-width="3"/>
+    <g fill="#fff"><rect x="3" y="58" width="3" height="15" rx="1"/><rect x="11" y="58" width="3" height="15" rx="1"/><rect x="66" y="58" width="3" height="15" rx="1"/><rect x="74" y="58" width="3" height="15" rx="1"/></g>
+    <path d="M2 62 H17 M63 62 H78 M2 68 H17 M63 68 H78" stroke="#fff" stroke-width="2"/>`,
+  hospital: `${SHADOW}
+    <rect x="10" y="20" width="60" height="53" rx="4" fill="#ffffff"/><rect x="10" y="20" width="60" height="7" rx="3" fill="#9fd3c7"/>
+    <circle cx="40" cy="14" r="10" fill="#fff"/><rect x="37" y="7" width="6" height="14" rx="1.5" fill="#ef5b5b"/><rect x="33" y="11" width="14" height="6" rx="1.5" fill="#ef5b5b"/>
+    <g fill="#bfe3f7"><rect x="15" y="32" width="10" height="9" rx="2"/><rect x="28" y="32" width="10" height="9" rx="2"/><rect x="42" y="32" width="10" height="9" rx="2"/><rect x="55" y="32" width="10" height="9" rx="2"/>
+    <rect x="15" y="45" width="10" height="9" rx="2"/><rect x="55" y="45" width="10" height="9" rx="2"/></g>
+    <rect x="30" y="50" width="20" height="23" rx="2" fill="#9fd3c7"/><path d="M40 50 V73" stroke="#fff" stroke-width="1.5"/>`,
+};
+
+// 마을 바닥: 풀밭 · 길(인도 · 차선) · 나무 · 꽃 · 연못 (360×360)
+const VILLAGE_GROUND_ART = `<svg viewBox="0 0 360 360" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <radialGradient id="vg2" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#e9f7dd"/><stop offset="1" stop-color="#c6e5b2"/></radialGradient>
+    <g id="tree"><ellipse cx="0" cy="13" rx="10" ry="3" fill="#000" opacity=".1"/><rect x="-2" y="2" width="4" height="11" rx="1" fill="#a7774f"/><circle cx="0" cy="-4" r="10" fill="#7cc48f"/><circle cx="-5" cy="0" r="7" fill="#6cb880"/><circle cx="5" cy="-1" r="7" fill="#8fd19e"/></g>
+    <g id="flw"><circle r="2.4" fill="#f29bb5"/><circle cx="4" cy="2" r="2" fill="#ffd76e"/><circle cx="-3" cy="3" r="2" fill="#fff"/></g>
+  </defs>
+  <rect width="360" height="360" fill="url(#vg2)"/>
+  <g fill="#d6eec8" opacity=".8"><circle cx="110" cy="110" r="22"/><circle cx="250" cy="250" r="26"/><circle cx="252" cy="108" r="18"/><circle cx="108" cy="252" r="18"/></g>
+  <rect x="58" y="157" width="244" height="46" rx="14" fill="#f4ead2"/><rect x="157" y="58" width="46" height="244" rx="14" fill="#f4ead2"/>
+  <rect x="64" y="163" width="232" height="34" rx="10" fill="#a9b0b8"/><rect x="163" y="64" width="34" height="232" rx="10" fill="#a9b0b8"/>
+  <path d="M74 180 H158 M202 180 H286 M180 74 V158 M180 202 V286" stroke="#fff" stroke-width="2.5" stroke-dasharray="9 8" stroke-linecap="round"/>
+  <g fill="#fff" opacity=".95"><rect x="139" y="166" width="6" height="28" rx="1"/><rect x="148" y="166" width="6" height="28" rx="1"/><rect x="206" y="166" width="6" height="28" rx="1"/><rect x="215" y="166" width="6" height="28" rx="1"/></g>
+  <ellipse cx="112" cy="250" rx="30" ry="15" fill="#a7d8f0"/><ellipse cx="106" cy="246" rx="11" ry="3.5" fill="#d9f1fb"/>
+  <use href="#tree" x="128" y="118"/><use href="#tree" x="236" y="122"/><use href="#tree" x="246" y="236"/><use href="#tree" x="34" y="132"/><use href="#tree" x="326" y="228"/><use href="#tree" x="320" y="128"/>
+  <use href="#flw" x="104" y="120"/><use href="#flw" x="262" y="104"/><use href="#flw" x="236" y="266"/><use href="#flw" x="142" y="236"/><use href="#flw" x="60" y="300"/><use href="#flw" x="300" y="64"/>
+</svg>`;
+
+// 장면 위쪽 배경 그림 (360×110)
+const SCENE_BACKDROPS = {
+  shop: `<rect width="360" height="110" fill="#fff6e0"/>
+    <g fill="#e9d3a6"><rect y="34" width="360" height="5"/><rect y="72" width="360" height="5"/></g>
+    ${[...Array(16)].map((_, k) => `<rect x="${8 + k * 22}" y="${14 + (k % 3) * 2}" width="16" height="${20 - (k % 3) * 2}" rx="3" fill="${['#ef8a7a', '#7cb7ec', '#8fd19e', '#ffd76e'][k % 4]}"/>`).join('')}
+    ${[...Array(16)].map((_, k) => `<circle cx="${18 + k * 22}" cy="62" r="${7 + (k % 2) * 2}" fill="${['#ef4444', '#facc15', '#f6a46b', '#6cc08a'][k % 4]}"/>`).join('')}
+    <rect y="96" width="360" height="14" fill="#f3e3c6"/>`,
+  bus: `<rect width="360" height="110" fill="#e7f1fb"/>
+    <rect x="12" y="14" width="336" height="70" rx="14" fill="#cbe7ff"/>
+    <g class="bd-move"><circle cx="40" cy="70" r="18" fill="#8fd19e"/><circle cx="130" cy="74" r="14" fill="#7cc48f"/><rect x="190" y="44" width="34" height="40" fill="#f3d7cf"/><rect x="232" y="54" width="26" height="30" fill="#fde9d6"/><circle cx="300" cy="70" r="20" fill="#8fd19e"/></g>
+    <rect x="12" y="78" width="336" height="6" fill="#a9b0b8"/>
+    <path d="M120 14 V84 M240 14 V84" stroke="#e7f1fb" stroke-width="8"/>
+    <g fill="none" stroke="#9aa6b2" stroke-width="3"><path d="M60 0 V8"/><circle cx="60" cy="13" r="5"/><path d="M180 0 V8"/><circle cx="180" cy="13" r="5"/><path d="M300 0 V8"/><circle cx="300" cy="13" r="5"/></g>
+    <rect y="92" width="360" height="18" fill="#5b9be0"/>`,
+  hospital: `<rect width="360" height="110" fill="#eef8f5"/>
+    <rect y="80" width="360" height="30" fill="#d6ece6"/>
+    <circle cx="300" cy="38" r="20" fill="#fff"/><rect x="295" y="24" width="10" height="28" rx="2" fill="#ef5b5b"/><rect x="286" y="33" width="28" height="10" rx="2" fill="#ef5b5b"/>
+    <rect x="30" y="20" width="70" height="44" rx="6" fill="#fff"/><rect x="36" y="26" width="58" height="32" rx="4" fill="#bfe3f7"/>
+    <g fill="#9fd3c7"><rect x="140" y="60" width="26" height="22" rx="5"/><rect x="172" y="60" width="26" height="22" rx="5"/><rect x="204" y="60" width="26" height="22" rx="5"/></g>`,
+  cross: `<rect width="360" height="110" fill="#e9f5fd"/>
+    <g fill="#f3d7cf"><rect x="10" y="20" width="60" height="56"/><rect x="290" y="28" width="60" height="48"/></g><g fill="#fde9d6"><rect x="80" y="36" width="44" height="40"/><rect x="236" y="14" width="46" height="62"/></g>
+    <rect y="76" width="360" height="34" fill="#a9b0b8"/>
+    <g fill="#fff">${[...Array(12)].map((_, k) => `<rect x="${12 + k * 30}" y="82" width="16" height="22" rx="2"/>`).join('')}</g>`,
+  playground: `<rect width="360" height="110" fill="#e9f5fd"/>
+    <circle cx="320" cy="26" r="16" fill="#ffd76e"/>
+    <path d="M0 80 Q90 60 180 78 T360 74 V110 H0 Z" fill="#a9db9a"/>
+    <path d="M60 96 L76 40 M92 96 L76 40" stroke="#7cb7ec" stroke-width="4"/><path d="M82 46 Q100 60 104 80 Q108 94 122 96" stroke="#f6a46b" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M220 96 L236 44 L252 96 M236 44 H276 M276 44 L292 96" stroke="#f29bb5" stroke-width="3.5" fill="none"/><path d="M256 46 V76 M266 46 V76" stroke="#a7988a" stroke-width="1.3"/><rect x="252" y="75" width="18" height="4" rx="2" fill="#ffd76e"/>`,
+  farm: `<rect width="360" height="110" fill="#e9f5fd"/>
+    <path d="M0 70 Q80 40 170 66 T360 58 V110 H0 Z" fill="#b8e0a4"/><path d="M0 90 Q120 74 240 92 T360 88 V110 H0 Z" fill="#9fd38b"/>
+    <rect x="250" y="34" width="56" height="44" fill="#e45f4f"/><path d="M244 38 L278 14 L312 38 Z" fill="#b8473a"/><rect x="268" y="52" width="20" height="26" fill="#fff4e2"/>
+    <g fill="#fff"><rect x="20" y="70" width="4" height="22"/><rect x="50" y="70" width="4" height="22"/><rect x="80" y="70" width="4" height="22"/><rect x="110" y="70" width="4" height="22"/></g><path d="M18 76 H116 M18 86 H116" stroke="#fff" stroke-width="3"/>`,
+  dress: `<rect width="360" height="110" fill="#fdf2e6"/>
+    <rect x="120" y="10" width="120" height="80" rx="8" fill="#fff"/><rect x="128" y="18" width="104" height="64" rx="4" fill="#cbe7ff"/>
+    <path d="M120 10 Q150 50 136 90 L120 90 Z M240 10 Q210 50 224 90 L240 90 Z" fill="#f29bb5" opacity=".85"/>
+    <rect x="30" y="30" width="60" height="70" rx="6" fill="#e9b47e"/><path d="M60 30 V100" stroke="#d79a62" stroke-width="2"/>
+    <rect x="270" y="40" width="60" height="6" rx="3" fill="#a7988a"/><path d="M282 46 L276 70 H294 L288 46 M310 46 L304 74 H322 L316 46" fill="#7cb7ec"/>`,
+};
+
+function svgArt(body, viewBox, cls, aspect = 'xMidYMid meet') {
+  const n = el('span', { class: cls, 'aria-hidden': 'true' });
+  n.innerHTML = `<svg viewBox="${viewBox}" preserveAspectRatio="${aspect}">${body}</svg>`;
+  return n;
+}
+
 function villageCard() {
   const m = todayMission();
   return el('button', { class: 'village-card', onclick: showVillage },
@@ -5728,10 +5854,10 @@ function showVillage() {
   const mission = todayMission();
   const counts = villageCounts();
   let moving = false;
-  const map = el('div', { class: 'vmap' },
+  const map = el('div', { class: 'vmap art' },
     el('div', { class: 'vground' }),
+    el('span', { class: 'vdeco', style: 'left:31%;top:68%' }, '🦆'),
     el('div', { class: 'vcloud c1' }, '☁️'), el('div', { class: 'vcloud c2' }, '☁️'),
-    ['🌳', '🌷', '🌲', '🌼', '🦆'].map((t, k) => el('span', { class: 'vdeco', style: `left:${[34, 66, 66, 34, 33][k]}%;top:${[32, 32, 72, 82, 64][k]}%` }, t)),
     VILLAGE_PLACES.map((p) => {
       const n = counts[p.id] ?? 0;
       const isMission = mission.ids.includes(p.id);
@@ -5748,11 +5874,11 @@ function showVillage() {
         },
       },
       isMission ? el('span', { class: `vquest${missionDone ? ' done' : ''}` }, missionDone ? '✅' : '⭐') : null,
-      el('span', { class: 'vplace-icon' }, p.icon), el('b', {}, p.name),
-      p.id === 'home' ? el('small', { class: 'vpips' }, '꾸미기') : el('small', { class: 'vpips' }, [0, 1, 2].map((k) => (k < Math.min(n, 3) ? '★' : '☆')).join('')));
+      svgArt(VILLAGE_ART[p.id], '0 0 80 80', 'vbuild'), el('b', {}, p.name),
+      p.id === 'home' ? null : el('small', { class: 'vpips' }, [0, 1, 2].map((k) => (k < Math.min(n, 3) ? '★' : '☆')).join('')));
     }),
     walker);
-  map.firstChild.innerHTML = VILLAGE_GROUND;
+  map.firstChild.innerHTML = VILLAGE_GROUND_ART;
 
   const all = mission.done.length >= 3;
   const missionBar = el('div', { class: `vmission${all && !mission.claimed ? ' ready' : ''}` },
@@ -5903,10 +6029,11 @@ function playScene(scene) {
     };
     speak(step.say);
     stage.replaceChildren(
+      SCENE_BACKDROPS[scene.id] ? svgArt(SCENE_BACKDROPS[scene.id], '0 0 360 110', 'scene-backdrop', 'xMidYMid slice') : null,
       el('div', { class: 'scene-bubble' }, hero(k === 0 ? 'smile' : 'happy', 'bubble-hero'),
         el('div', { class: 'bubble-text' }, el('span', {}, step.say),
           el('button', { class: 'speak-btn', 'aria-label': '다시 듣기', onclick: () => speak(step.say) }, '🔊'))),
-      el('div', { class: 'scene-in' }, step.view(done, alive)));
+      el('div', { class: 'scene-card scene-in' }, step.view(done, alive)));
   }
   show();
 }
@@ -6441,7 +6568,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 107;
+const APP_VERSION = 108;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
