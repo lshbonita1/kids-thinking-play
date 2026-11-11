@@ -2423,3 +2423,18 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .vh-go { display: block; width: 100%; margin-top: 12px; padding: 14px; border: 0; border-radius: 20px; background: linear-gradient(#ffe08a, #ffcf55); box-shadow: 0 6px 0 #e3a92a; font-family: 'Jua', sans-serif; font-size: 20px; color: #5b4320; cursor: pointer; }
 .vh-go:active { transform: translateY(4px); box-shadow: 0 2px 0 #e3a92a; }
 @media (prefers-reduced-motion: reduce) { .vh-hero { animation: none; } }
+
+/* 홈: 쑥쑥 마을 작게 (그림 한 줄 + 정보 한 줄) */
+.village-home.compact { padding: 8px 8px 10px; border-radius: 22px; }
+.village-home.compact .vh-scene { aspect-ratio: 3 / 1; border-radius: 16px; }
+.vh-badge { position: absolute; left: 8px; top: 6px; z-index: 4; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, .92); font-family: 'Jua', sans-serif; font-size: 15px; color: #4a3f31; }
+.vh-fest-chip { position: absolute; right: 8px; top: 6px; z-index: 4; padding: 3px 10px; border-radius: 999px; background: #ef6b5b; color: #fff; font-family: 'Jua', sans-serif; font-size: 13px; }
+.village-home.compact .vh-hero { width: 17%; bottom: 4%; }
+.village-home.compact .vh-hero .vtalk { font-size: 12px; padding: 3px 8px; }
+.vh-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.vh-mini { display: flex; align-items: center; gap: 4px; padding: 6px 10px; border: 0; border-radius: 999px; background: #fff; font-family: 'Jua', sans-serif; font-size: 14px; color: inherit; white-space: nowrap; }
+.vh-mini.mission { flex: 1; justify-content: space-between; min-width: 0; cursor: pointer; }
+.vh-mini.mission.ready { background: #fff1c9; }
+.vh-mini .vh-mission-icons span { width: 24px; height: 24px; border-radius: 8px; font-size: 14px; }
+.vh-go.small { flex: none; width: 40px; height: 34px; margin: 0; padding: 0; border-radius: 14px; font-size: 16px; box-shadow: 0 3px 0 #e3a92a; }
+@media (max-width: 360px) { .vh-mini { padding: 6px 7px; font-size: 13px; } .vh-mini .vh-mission-icons { display: none; } }

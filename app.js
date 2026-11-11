@@ -5899,41 +5899,19 @@ function villageCard() {
     el('span', { class: 'vh-hero' }, hero('happy'), el('span', { class: 'vtalk' }, m.claimed ? '내일 또 놀자!' : '놀러 와!')),
     el('span', { class: `vfx fx-${s.id}` }, [...Array(7)].map((_, k) => el('i', { style: `left:${(k * 41) % 100}%;animation-delay:${-(k * 1.6)}s;animation-duration:${8 + (k % 3) * 2}s;font-size:${11 + (k % 3) * 3}px` }, s.fx))));
 
-  // 다음에 열리는 선물 (방 꾸미기 · 몸 색깔 · 머리 위 중 가장 가까운 것)
-  const nexts = [
-    ...ROOM_ITEMS.map(([e, c]) => ({ c, show: el('span', { class: 'vh-next-icon' }, e), name: '방 꾸미기 선물' })),
-    ...LOOK_COLORS.map(([col, n, c]) => ({ c, show: el('span', { class: 'vh-next-icon' }, lookMascot('smile', { color: col, top: currentLook().top })), name: `${n} 쑥쑥이` })),
-    ...LOOK_TOPS.map(([t, n, c]) => ({ c, show: el('span', { class: 'vh-next-icon' }, lookMascot('smile', { color: currentLook().color, top: t })), name: `${n} 머리` })),
-  ].filter((x) => x.c > stars).sort((x, y) => x.c - y.c);
-  const next = nexts[0];
-
   const missionDone = m.done.length;
-  return el('section', { class: 'village-home' },
-    el('button', { class: 'vh-head', onclick: showVillage },
-      el('span', { class: 'vh-title' }, '🏘️ 쑥쑥 마을'),
-      el('span', { class: 'vh-sub' }, '마트 · 버스 · 병원을 미리 연습하고 꾸며요'),
-      el('span', { class: 'faq-go' }, '›')),
+  scene.append(
+    el('span', { class: 'vh-badge' }, '🏘️ 쑥쑥 마을'),
+    el('span', { class: 'vh-fest-chip', role: 'button', onclick: (e) => { e.stopPropagation(); playScene(s.make()); } }, `${s.icon} 축제`));
+  return el('section', { class: 'village-home compact' },
     scene,
-    el('div', { class: 'vh-stats' },
-      el('span', { class: 'vh-chip' }, el('b', {}, `⭐ ${stars}`), el('small', {}, '모은 별')),
-      el('span', { class: 'vh-chip' }, el('b', {}, `🎒 ${stampCount()}/${SCENE_PLACES().length}`), el('small', {}, '도장')),
-      el('span', { class: 'vh-chip' }, el('b', {}, `🏅 ${earnedBadges().length}`), el('small', {}, '배지'))),
-    el('button', { class: `vh-mission${missionDone >= 3 && !m.claimed ? ' ready' : ''}`, onclick: showVillage },
-      el('span', { class: 'vh-mission-title' }, m.claimed ? '🎉 오늘의 미션 완료' : missionDone >= 3 ? '🎁 보물상자를 열어요!' : `🗺️ 오늘의 미션 ${missionDone}/3`),
-      el('span', { class: 'vh-mission-icons' }, m.ids.map((id) => {
-        const p = VILLAGE_PLACES.find((x) => x.id === id);
-        return el('span', { class: m.done.includes(id) ? 'got' : '' }, p.icon, m.done.includes(id) ? el('i', {}, '✓') : null);
-      }))),
-    el('div', { class: 'vh-fest' },
-      el('button', { class: `fest-btn season-${s.id}`, onclick: () => playScene(s.make()) },
-        el('span', { class: 'fest-icon' }, s.icon), el('span', { class: 'fest-text' }, el('b', {}, s.name), el('small', {}, '계절 축제'))),
-      el('button', { class: 'fest-btn bday', onclick: () => playScene(birthdayScene()) },
-        el('span', { class: 'fest-icon' }, '🎂'), el('span', { class: 'fest-text' }, el('b', {}, '생일 파티'), el('small', {}, '언제나')))),
-    next ? el('button', { class: 'vh-next', onclick: showRoom },
-      next.show,
-      el('span', {}, el('b', {}, `⭐ ${next.c - stars}개 더 모으면`), el('small', {}, `${next.name}가 열려요`)),
-      el('span', { class: 'faq-go' }, '›')) : null,
-    el('button', { class: 'vh-go', onclick: showVillage }, '▶ 마을로 놀러 가기'));
+    el('div', { class: 'vh-row' },
+      el('span', { class: 'vh-mini' }, `⭐ ${stars}`),
+      el('span', { class: 'vh-mini' }, `🎒 ${stampCount()}/${SCENE_PLACES().length}`),
+      el('button', { class: `vh-mini mission${missionDone >= 3 && !m.claimed ? ' ready' : ''}`, onclick: showVillage },
+        m.claimed ? '🎉 미션 완료' : missionDone >= 3 ? '🎁 보물상자!' : `🗺️ 미션 ${missionDone}/3`,
+        el('span', { class: 'vh-mission-icons' }, m.ids.map((id) => el('span', { class: m.done.includes(id) ? 'got' : '' }, VILLAGE_PLACES.find((x) => x.id === id).icon)))),
+      el('button', { class: 'vh-go small', 'aria-label': '마을로 놀러 가기', onclick: showVillage }, '▶')));
 }
 
 // 마을 바닥 그림 (풀밭 · 길 · 차선 · 연못)
@@ -6984,7 +6962,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 114;
+const APP_VERSION = 115;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
