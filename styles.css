@@ -2350,3 +2350,34 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .trophy-row { display: flex; align-items: flex-end; justify-content: center; gap: 4px; }
 .trophy-row .snowman { width: 180px; height: 164px; }
 .trophy-row .hero svg { width: 70px; height: 70px; }
+
+/* 쑥쑥이 꾸미기: 몸 색깔 · 머리 위 */
+.wardrobe { align-items: flex-start; max-width: 460px; }
+.wardrobe-preview { width: 104px; height: 104px; padding-top: 0; background: radial-gradient(circle at 50% 40%, #fff, #f4f0e6); }
+.wardrobe-preview svg { width: 92px; height: 92px; }
+.wardrobe-sets { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.wardrobe-sets > b { font-family: 'Jua', sans-serif; font-weight: 400; font-size: 15px; }
+.look-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.look-btn { aspect-ratio: 1; display: grid; place-items: center; padding: 3px; border: 2px solid #ebe4d6; border-radius: 14px; background: #fff; cursor: pointer; }
+.look-btn.on { border-color: #3f8a55; box-shadow: 0 0 0 2px #cfe7d3; }
+.look-btn.locked { background: #f2eee6; color: var(--muted); font-size: 12px; }
+.look-btn.locked span { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+.look-btn.locked small { font-size: 9px; }
+.look-btn .mascot, .look-btn svg { width: 100%; height: 100%; display: block; }
+.swatch { width: 70%; aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .08); }
+
+/* 쑥쑥이 꾸미기: 몸 색깔 · 머리 위 */
+.wardrobe { align-items: flex-start; max-width: 460px; }
+.wardrobe-preview { width: 104px; height: 104px; padding-top: 0; background: radial-gradient(circle at 50% 40%, #fff, #f4f0e6); }
+.wardrobe-preview svg { width: 92px; height: 92px; }
+.wardrobe-sets { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.wardrobe-sets > b { font-family: 'Jua', sans-serif; font-weight: 400; font-size: 15px; }
+.look-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.look-btn { aspect-ratio: 1; display: grid; place-items: center; padding: 3px; border: 2px solid #ebe4d6; border-radius: 14px; background: #fff; cursor: pointer; }
+.look-btn.on { border-color: #3f8a55; box-shadow: 0 0 0 2px #cfe7d3; }
+.look-btn.locked { background: #f2eee6; color: var(--muted); font-size: 12px; }
+.look-btn.locked span { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+.look-btn.locked small { font-size: 9px; }
+.look-btn .mascot, .look-btn svg { width: 100%; height: 100%; display: block; }
+.swatch { width: 70%; aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .08); }
+.swatch { width: 24px; height: 24px; aspect-ratio: auto; }

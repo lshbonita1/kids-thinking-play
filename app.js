@@ -235,7 +235,32 @@ function prompt(text, say = true) {
 
 /* ---------- 쑥쑥이 (새싹 친구 캐릭터) ---------- */
 // 표정: smile(기본 미소) · happy(눈웃음 + 활짝 웃는 입)
-function mascotSvg(mood = 'smile') {
+// 머리 위 모양 (쑥쑥 마을 꾸미기). 모두 줄기에서 자라난 모습으로 그려서 몸과 하나로 보이게
+const MASCOT_TOPS = {
+  leaf: `<path d="M50 36 V22" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="37" cy="20" rx="14" ry="7.5" fill="#6cc08a" transform="rotate(-28 37 20)"/>
+    <ellipse cx="63" cy="20" rx="14" ry="7.5" fill="#4fa86f" transform="rotate(28 63 20)"/>`,
+  clover: `<path d="M50 36 V24" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
+    <g fill="#6cc08a"><circle cx="42" cy="17" r="8"/><circle cx="58" cy="17" r="8"/></g>
+    <g fill="#4fa86f"><circle cx="50" cy="9" r="8"/><circle cx="50" cy="24" r="6"/></g><circle cx="50" cy="17" r="3" fill="#8fd19e"/>`,
+  flower: `<path d="M50 36 V18" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="41" cy="28" rx="8" ry="4.5" fill="#6cc08a" transform="rotate(-25 41 28)"/>
+    <g fill="#f8a9c2"><circle cx="50" cy="6" r="6"/><circle cx="58.5" cy="12" r="6"/><circle cx="55.5" cy="21" r="6"/><circle cx="44.5" cy="21" r="6"/><circle cx="41.5" cy="12" r="6"/></g>
+    <circle cx="50" cy="14" r="4.5" fill="#ffd76e"/>`,
+  heart: `<path d="M50 36 V24" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
+    <path d="M50 27 C38 19 36 8 44 6 C48 5 50 8 50 10 C50 8 52 5 56 6 C64 8 62 19 50 27 Z" fill="#f47c8f"/>
+    <ellipse cx="45" cy="11" rx="2.5" ry="1.6" fill="#fff" opacity=".7"/>`,
+  star: `<path d="M50 36 V24" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
+    <path d="M50 2 L54.7 11.6 L65.2 13.1 L57.6 20.5 L59.4 31 L50 26 L40.6 31 L42.4 20.5 L34.8 13.1 L45.3 11.6 Z" fill="#ffd25c" stroke="#f0b93c" stroke-width="1.5" stroke-linejoin="round"/>`,
+  tulip: `<path d="M50 36 V20" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="60" cy="28" rx="8" ry="4" fill="#4fa86f" transform="rotate(25 60 28)"/>
+    <path d="M40 10 L44 15 L50 6 L56 15 L60 10 L60 18 Q60 26 50 26 Q40 26 40 18 Z" fill="#f6a46b"/>
+    <path d="M50 6 L56 15 L60 10 L60 18 Q60 26 50 26 Z" fill="#ef8a5a"/>`,
+};
+
+function mascotSvg(mood = 'smile', look = null) {
+  const body = look?.color ?? '#a9dea1';
+  const top = MASCOT_TOPS[look?.top] ?? MASCOT_TOPS.leaf;
   const ink = '#3b3226';
   const eyes = mood === 'happy'
     ? `<path d="M34 59 Q40 52 46 59" stroke="${ink}" stroke-width="3.6" stroke-linecap="round" fill="none"/>
@@ -246,10 +271,9 @@ function mascotSvg(mood = 'smile') {
     ? `<path d="M41 66 Q50 80 59 66 Z" fill="${ink}"/><path d="M45.5 72.5 Q50 77 54.5 72.5 Q50 70 45.5 72.5 Z" fill="#f08a80"/>`
     : `<path d="M43 68 Q50 75 57 68" stroke="${ink}" stroke-width="3.2" stroke-linecap="round" fill="none"/>`;
   return `<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-    <path d="M50 36 V22" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
-    <ellipse cx="37" cy="20" rx="14" ry="7.5" fill="#6cc08a" transform="rotate(-28 37 20)"/>
-    <ellipse cx="63" cy="20" rx="14" ry="7.5" fill="#4fa86f" transform="rotate(28 63 20)"/>
-    <circle cx="50" cy="62" r="28" fill="#a9dea1"/>
+    ${top}
+    <circle cx="50" cy="62" r="28" fill="${body}"/>
+    <ellipse cx="40" cy="45" rx="7" ry="4" fill="#fff" opacity=".35" transform="rotate(-30 40 45)"/>
     <circle cx="32" cy="68" r="4.5" fill="#f4a9a0" opacity=".8"/><circle cx="68" cy="68" r="4.5" fill="#f4a9a0" opacity=".8"/>
     ${eyes}${mouth}
   </svg>`;
@@ -5692,13 +5716,23 @@ const stampCount = () => SCENE_PLACES().filter((p) => villageCounts()[p.id]).len
 const badgeStats = () => ({ stamps: stampCount(), missions: store.get('missionClears', 0), done: villageDone(), fest: EVENT_IDS.reduce((t, id) => t + (villageCounts()[id] ?? 0), 0) });
 const earnedBadges = () => VILLAGE_BADGES.filter((b) => b.ok(badgeStats()));
 
-// 쑥쑥이 모자 (별로 열림)
-const HATS = [['', '없음', 0], ['🧢', '야구 모자', 1], ['🎀', '리본', 3], ['👒', '밀짚모자', 5], ['🎩', '멋쟁이 모자', 8], ['🎓', '박사 모자', 11], ['👑', '왕관', 15]];
-function hero(mood = 'smile', cls = '') {
-  const hat = store.get('hat', '');
-  const node = el('span', { class: `hero ${cls}` }, mascot(mood));
-  if (hat && roomStars() >= (HATS.find(([h]) => h === hat)?.[2] ?? 99)) node.append(el('span', { class: 'hero-hat' }, hat));
+// 쑥쑥이 꾸미기: 몸 색깔과 머리 위 모양 (별로 열림)
+const LOOK_COLORS = [['#a9dea1', '연두', 0], ['#ffe38a', '노랑', 1], ['#f9c4d2', '분홍', 3], ['#b9dcf7', '하늘', 5], ['#d9c8f2', '보라', 7], ['#ffd2b0', '살구', 9]];
+const LOOK_TOPS = [['leaf', '새싹 잎', 0], ['clover', '네잎클로버', 2], ['flower', '꽃', 4], ['heart', '하트', 6], ['star', '별', 10], ['tulip', '튤립', 14]];
+function currentLook() {
+  const stars = roomStars();
+  const want = store.get('look', {});
+  const color = LOOK_COLORS.find(([c, , cost]) => c === want.color && stars >= cost)?.[0] ?? LOOK_COLORS[0][0];
+  const top = LOOK_TOPS.find(([t, , cost]) => t === want.top && stars >= cost)?.[0] ?? 'leaf';
+  return { color, top };
+}
+function lookMascot(mood, look = currentLook()) {
+  const node = el('span', { class: 'mascot' });
+  node.innerHTML = mascotSvg(mood, look);
   return node;
+}
+function hero(mood = 'smile', cls = '') {
+  return el('span', { class: `hero ${cls}` }, lookMascot(mood));
 }
 
 /* ---------- 쑥쑥 마을 그림 (직접 그린 SVG) ---------- */
@@ -5923,7 +5957,7 @@ function showVillage() {
     el('div', { class: 'vhud' },
       el('span', { class: 'vhud-pill' }, `⭐ ${roomStars()}`),
       el('button', { class: 'vhud-pill btn', onclick: showStamps }, `🎒 도장 ${stampCount()}/${SCENE_PLACES().length}`),
-      el('button', { class: 'vhud-pill btn', onclick: showRoom }, '🎩 꾸미기')),
+      el('button', { class: 'vhud-pill btn', onclick: showRoom }, '🎨 꾸미기')),
     missionBar,
     festivalBar(),
     map,
@@ -6826,17 +6860,28 @@ function showRoom() {
         }, open ? e : el('span', {}, '🔒', el('small', {}, `⭐${cost}`)));
       })),
       next ? el('p', { class: 'room-next' }, `다음 선물 ${next[0]} : 별 ${next[1]}개 (지금 ${stars}개). 오늘의 학습을 끝내거나 마을에서 연습하면 별을 받아요.`) : el('p', { class: 'room-next' }, '선물을 다 열었어요! 🎉'),
-      el('h2', { class: 'stamp-h' }, '🎩 쑥쑥이 꾸미기'),
-      el('div', { class: 'wardrobe' },
-        el('div', { class: 'wardrobe-preview' }, hero('happy')),
-        el('div', { class: 'wardrobe-hats' }, HATS.map(([h, name, cost]) => {
-          const open = stars >= cost;
-          const on = store.get('hat', '') === h;
-          return el('button', {
-            class: `hat-btn${on ? ' on' : ''}${open ? '' : ' locked'}`, disabled: !open, 'aria-label': open ? name : `별 ${cost}개가 있으면 열려요`,
-            onclick: () => { store.set('hat', h); tone([760], 0.06); speak(h ? `${name}를 썼어요` : '모자를 벗었어요'); showRoomBody(); },
-          }, open ? (h || '🙅') : el('span', {}, '🔒', el('small', {}, `⭐${cost}`)));
-        }))),
+      el('h2', { class: 'stamp-h' }, '🎨 쑥쑥이 꾸미기'),
+      (() => {
+        const look = currentLook();
+        const choose = (key, value, name) => {
+          store.set('look', { ...look, [key]: value });
+          tone([760], 0.06);
+          speak(name);
+          showRoomBody();
+        };
+        const option = (open, on, label, cost, content, onclick) => el('button', {
+          class: `look-btn${on ? ' on' : ''}${open ? '' : ' locked'}`, disabled: !open, 'aria-label': open ? label : `별 ${cost}개가 있으면 열려요`, onclick,
+        }, open ? content : el('span', {}, '🔒', el('small', {}, `⭐${cost}`)));
+        return el('div', { class: 'wardrobe' },
+          el('div', { class: 'wardrobe-preview' }, lookMascot('happy', look)),
+          el('div', { class: 'wardrobe-sets' },
+            el('b', {}, '몸 색깔'),
+            el('div', { class: 'look-row' }, LOOK_COLORS.map(([c, name, cost]) => option(stars >= cost, look.color === c, name, cost,
+              el('span', { class: 'swatch', style: `background:${c}` }), () => choose('color', c, name)))),
+            el('b', {}, '머리 위'),
+            el('div', { class: 'look-row' }, LOOK_TOPS.map(([t, name, cost]) => option(stars >= cost, look.top === t, name, cost,
+              lookMascot('smile', { color: look.color, top: t }), () => choose('top', t, name))))));
+      })(),
     );
   }
   showRoomBody();
@@ -6894,7 +6939,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 111;
+const APP_VERSION = 112;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
