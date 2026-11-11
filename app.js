@@ -5901,9 +5901,12 @@ function villageCard() {
 
   const missionDone = m.done.length;
   scene.append(
-    el('span', { class: 'vh-badge' }, '🏘️ 쑥쑥 마을'),
     el('span', { class: 'vh-fest-chip', role: 'button', onclick: (e) => { e.stopPropagation(); playScene(s.make()); } }, `${s.icon} 축제`));
   return el('section', { class: 'village-home compact' },
+    el('button', { class: 'vh-head', onclick: showVillage },
+      el('span', { class: 'vh-title' }, '🏘️ 쑥쑥 마을'),
+      el('span', { class: 'vh-sub' }, '마트 · 버스 · 병원을 미리 연습해요'),
+      el('span', { class: 'faq-go' }, '›')),
     scene,
     el('div', { class: 'vh-row' },
       el('span', { class: 'vh-mini' }, `⭐ ${stars}`),
@@ -6962,7 +6965,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 115;
+const APP_VERSION = 116;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
