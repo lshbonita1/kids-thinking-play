@@ -5883,12 +5883,57 @@ function svgArt(body, viewBox, cls, aspect = 'xMidYMid meet') {
 
 function villageCard() {
   const m = todayMission();
-  return el('button', { class: 'village-card', onclick: showVillage },
-    el('span', { class: 'village-card-icon' }, '🏘️'),
-    el('span', { class: 'village-card-text' },
-      el('b', {}, '쑥쑥 마을 놀러 가기'),
-      el('small', {}, m.claimed ? '오늘의 미션 완료! 🎁 내일 또 만나요' : `오늘의 미션 ${m.done.length}/3 · 마트 · 버스 · 병원을 미리 연습해요`)),
-    el('span', { class: 'faq-go' }, '›'));
+  const stars = roomStars();
+  const s = currentSeason();
+  // 미니 마을 그림: 건물 다섯 채 + 길 + 내 쑥쑥이
+  const scene = el('button', { class: 'vh-scene', 'aria-label': '쑥쑥 마을로 가기', onclick: showVillage });
+  const builds = ['home', 'shop', 'playground', 'hospital', 'farm'];
+  scene.innerHTML = `<svg viewBox="0 0 360 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><linearGradient id="vhg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dff1fb"/><stop offset=".45" stop-color="#e9f7dd"/><stop offset="1" stop-color="#c6e5b2"/></linearGradient></defs>
+    <rect width="360" height="150" fill="url(#vhg)"/>
+    <circle cx="330" cy="22" r="13" fill="#ffd76e" opacity=".9"/>
+    <rect x="0" y="104" width="360" height="26" fill="#a9b0b8"/><path d="M8 117 H352" stroke="#fff" stroke-width="2.5" stroke-dasharray="10 9"/>
+    ${builds.map((id, k) => `<g transform="translate(${6 + k * 72} ${k % 2 ? 30 : 24}) scale(.82)">${VILLAGE_ART[id]}</g>`).join('')}
+  </svg>`;
+  scene.append(
+    el('span', { class: 'vh-hero' }, hero('happy'), el('span', { class: 'vtalk' }, m.claimed ? '내일 또 놀자!' : '놀러 와!')),
+    el('span', { class: `vfx fx-${s.id}` }, [...Array(7)].map((_, k) => el('i', { style: `left:${(k * 41) % 100}%;animation-delay:${-(k * 1.6)}s;animation-duration:${8 + (k % 3) * 2}s;font-size:${11 + (k % 3) * 3}px` }, s.fx))));
+
+  // 다음에 열리는 선물 (방 꾸미기 · 몸 색깔 · 머리 위 중 가장 가까운 것)
+  const nexts = [
+    ...ROOM_ITEMS.map(([e, c]) => ({ c, show: el('span', { class: 'vh-next-icon' }, e), name: '방 꾸미기 선물' })),
+    ...LOOK_COLORS.map(([col, n, c]) => ({ c, show: el('span', { class: 'vh-next-icon' }, lookMascot('smile', { color: col, top: currentLook().top })), name: `${n} 쑥쑥이` })),
+    ...LOOK_TOPS.map(([t, n, c]) => ({ c, show: el('span', { class: 'vh-next-icon' }, lookMascot('smile', { color: currentLook().color, top: t })), name: `${n} 머리` })),
+  ].filter((x) => x.c > stars).sort((x, y) => x.c - y.c);
+  const next = nexts[0];
+
+  const missionDone = m.done.length;
+  return el('section', { class: 'village-home' },
+    el('button', { class: 'vh-head', onclick: showVillage },
+      el('span', { class: 'vh-title' }, '🏘️ 쑥쑥 마을'),
+      el('span', { class: 'vh-sub' }, '마트 · 버스 · 병원을 미리 연습하고 꾸며요'),
+      el('span', { class: 'faq-go' }, '›')),
+    scene,
+    el('div', { class: 'vh-stats' },
+      el('span', { class: 'vh-chip' }, el('b', {}, `⭐ ${stars}`), el('small', {}, '모은 별')),
+      el('span', { class: 'vh-chip' }, el('b', {}, `🎒 ${stampCount()}/${SCENE_PLACES().length}`), el('small', {}, '도장')),
+      el('span', { class: 'vh-chip' }, el('b', {}, `🏅 ${earnedBadges().length}`), el('small', {}, '배지'))),
+    el('button', { class: `vh-mission${missionDone >= 3 && !m.claimed ? ' ready' : ''}`, onclick: showVillage },
+      el('span', { class: 'vh-mission-title' }, m.claimed ? '🎉 오늘의 미션 완료' : missionDone >= 3 ? '🎁 보물상자를 열어요!' : `🗺️ 오늘의 미션 ${missionDone}/3`),
+      el('span', { class: 'vh-mission-icons' }, m.ids.map((id) => {
+        const p = VILLAGE_PLACES.find((x) => x.id === id);
+        return el('span', { class: m.done.includes(id) ? 'got' : '' }, p.icon, m.done.includes(id) ? el('i', {}, '✓') : null);
+      }))),
+    el('div', { class: 'vh-fest' },
+      el('button', { class: `fest-btn season-${s.id}`, onclick: () => playScene(s.make()) },
+        el('span', { class: 'fest-icon' }, s.icon), el('span', { class: 'fest-text' }, el('b', {}, s.name), el('small', {}, '계절 축제'))),
+      el('button', { class: 'fest-btn bday', onclick: () => playScene(birthdayScene()) },
+        el('span', { class: 'fest-icon' }, '🎂'), el('span', { class: 'fest-text' }, el('b', {}, '생일 파티'), el('small', {}, '언제나')))),
+    next ? el('button', { class: 'vh-next', onclick: showRoom },
+      next.show,
+      el('span', {}, el('b', {}, `⭐ ${next.c - stars}개 더 모으면`), el('small', {}, `${next.name}가 열려요`)),
+      el('span', { class: 'faq-go' }, '›')) : null,
+    el('button', { class: 'vh-go', onclick: showVillage }, '▶ 마을로 놀러 가기'));
 }
 
 // 마을 바닥 그림 (풀밭 · 길 · 차선 · 연못)
@@ -6939,7 +6984,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 113;
+const APP_VERSION = 114;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
