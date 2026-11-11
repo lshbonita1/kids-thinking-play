@@ -21,7 +21,7 @@
 | `flower.jpg` | 꽃 | [2022166-PINK FLOWER UNDER THE RAIN](https://www.flickr.com/photos/168583569@N03/51911606845) | amalthus | CC0 1.0 |
 | `frog.jpg` | 개구리 | [Green Tree Frog This American green](https://www.rawpixel.com/image/4028992/photo-image-plant-leaf-summer) | U.S. Fish and Wildlife Service | CC0 1.0 |
 | `goal.jpg` | 골대 | [Zeller Park](https://www.flickr.com/photos/140641142@N05/52371785398) | dankeck | CC0 1.0 |
-| `grapes.jpg` | 포도 | [Free purple grapes branch image](https://www.rawpixel.com/image/5917173/image-background-public-domain-green) | - | CC0 1.0 |
+| `grapes.jpg` | 포도 | [巨峰の房、窓辺.jpg](https://commons.wikimedia.org/wiki/File:%E5%B7%A8%E5%B3%B0%E3%81%AE%E6%88%BF%E3%80%81%E7%AA%93%E8%BE%BA.jpg) | Kanko* | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) |
 | `honey.jpg` | 꿀 | [Small Honey Jar with Honeycomb](https://www.flickr.com/photos/184594136@N08/51330638681) | Alabama Extension | CC0 1.0 |
 | `milk.jpg` | 우유 | [Glass Milk](https://stocksnap.io/photo/glass-milk-P2QSUXKCN5) | Krzysztof Puszczyński | CC0 1.0 |
 | `notebook.jpg` | 공책 | [Paper Notebook](https://stocksnap.io/photo/paper-notebook-8OQDMSXGTN) | Copper and Wild | CC0 1.0 |
@@ -50,9 +50,9 @@
 | `giraffe.jpg` | 기린 | [Rothschild's Giraffe Portrait Image01.jpg](https://commons.wikimedia.org/wiki/File:Rothschild%27s_Giraffe_Portrait_Image01.jpg) | Timothy Akolamazima | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | `orange.jpg` | 오렌지 | [Orange Fruit Close-up.jpg](https://commons.wikimedia.org/wiki/File:Orange_Fruit_Close-up.jpg) | freestock.ca | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
 | `penguin.jpg` | 펭귄 | [penguin](https://www.flickr.com/photos/141457238@N03/26834524313) | code84 | CC0 1.0 |
-| `pig.jpg` | 돼지 | [5707778059_e7d85012cf_o](https://www.flickr.com/photos/41284017@N08/6302435631) | USDAgov | PDM 1.0 |
+| `pig.jpg` | 돼지 | [Contre-jour photograph of a standing piglet at sunset with c](https://commons.wikimedia.org/wiki/File:Contre-jour_photograph_of_a_standing_piglet_at_sunset_with_colorful_sky_in_Don_Det_Laos.jpg) | Basile Morin | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | `rabbit.jpg` | 토끼 | [Cute rabbit white background](https://www.rawpixel.com/image/6033281/photo-image-public-domain-nature-cute) | - | CC0 1.0 |
-| `rice.jpg` | 밥 | [A bowl of rice with furikake](https://wordpress.org/photos/photo/187642d6a6/) | Marina Koleva | CC0 1.0 |
+| `rice.jpg` | 밥 | [Steamed rice in bowl 01.jpg](https://commons.wikimedia.org/wiki/File:Steamed_rice_in_bowl_01.jpg) | Anna Frodesiak | CC0 1.0 |
 | `strawberry.jpg` | 딸기 | [Fresh strawberry white background](https://www.rawpixel.com/image/6031439/photo-image-background-public-domain-plant) | - | CC0 1.0 |
 | `teddy.jpg` | 곰인형 | [Teddy bear early 1900s - Smithsonian Museum of Natural Histo](https://commons.wikimedia.org/wiki/File:Teddy_bear_early_1900s_-_Smithsonian_Museum_of_Natural_History.jpg) | Smithsonian Museum of Natural History | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) |
 | `watermelon.jpg` | 수박 | [Watermelon](https://www.flickr.com/photos/154960850@N02/40041737880) | vtc160094694 | CC0 1.0 |
@@ -66,7 +66,7 @@
 | `car_3.jpg` | 자동차 (다른 사진) | [2013 Porsche 911 Carrera 4S (991) (9626546987).jpg](https://commons.wikimedia.org/wiki/File:2013_Porsche_911_Carrera_4S_(991)_(9626546987).jpg) | David Villarreal Fernández | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) |
 | `balloon_2.jpg` | 풍선 (다른 사진) | [Congrats bqt.jpg](https://commons.wikimedia.org/wiki/File:Congrats_bqt.jpg) | Photographer: Warren Denning. Creative Director: Stan Weir. Marketing Director: | 퍼블릭 도메인 |
 | `butterfly_2.jpg` | 나비 (다른 사진) | [Peacock butterfly (Aglais io) 2.jpg](https://commons.wikimedia.org/wiki/File:Peacock_butterfly_(Aglais_io)_2.jpg) | Charles J. Sharp | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) |
-| `butterfly_3.jpg` | 나비 (다른 사진) | [Gold rim swallowtail (Battus polydamas jamaicensis) undersid](https://commons.wikimedia.org/wiki/File:Gold_rim_swallowtail_(Battus_polydamas_jamaicensis)_underside_worn_2.JPG) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| `butterfly_3.jpg` | 나비 (다른 사진) | [Monarch butterfly male (52341).jpg](https://commons.wikimedia.org/wiki/File:Monarch_butterfly_male_(52341).jpg) | Rhododendrites | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | `flower_2.jpg` | 꽃 (다른 사진) | [Hoverfly on flower edit.jpg](https://commons.wikimedia.org/wiki/File:Hoverfly_on_flower_edit.jpg) | Alvesgaspar | [CC BY 2.5](https://creativecommons.org/licenses/by/2.5/) |
 | `flower_3.jpg` | 꽃 (다른 사진) | [Magnolia × soulangeana blossom.jpg](https://commons.wikimedia.org/wiki/File:Magnolia_%C3%97_soulangeana_blossom.jpg) | James F. | [CC BY 1.0](https://creativecommons.org/licenses/by/1.0/) |
 | `elephant_2.jpg` | 코끼리 (다른 사진) | [African elephant (Loxodonta africana) 2.jpg](https://commons.wikimedia.org/wiki/File:African_elephant_(Loxodonta_africana)_2.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
