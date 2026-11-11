@@ -5686,8 +5686,10 @@ const VILLAGE_BADGES = [
   { icon: '🥇', name: '마을 박사', desc: '도장 7개를 모두 모았어요', ok: (n) => n.stamps >= 7 },
   { icon: '🏆', name: '미션 대장', desc: '오늘의 미션을 3번 끝냈어요', ok: (n) => n.missions >= 3 },
   { icon: '💎', name: '연습 왕', desc: '마을 연습을 20번 했어요', ok: (n) => n.done >= 20 },
+  { icon: '🎉', name: '축제 친구', desc: '계절 축제나 생일 파티를 했어요', ok: (n) => n.fest >= 1 },
 ];
-const badgeStats = () => ({ stamps: Object.keys(villageCounts()).length, missions: store.get('missionClears', 0), done: villageDone() });
+const stampCount = () => SCENE_PLACES().filter((p) => villageCounts()[p.id]).length;
+const badgeStats = () => ({ stamps: stampCount(), missions: store.get('missionClears', 0), done: villageDone(), fest: EVENT_IDS.reduce((t, id) => t + (villageCounts()[id] ?? 0), 0) });
 const earnedBadges = () => VILLAGE_BADGES.filter((b) => b.ok(badgeStats()));
 
 // 쑥쑥이 모자 (별로 열림)
@@ -5813,6 +5815,25 @@ const SCENE_BACKDROPS = {
     <path d="M0 70 Q80 40 170 66 T360 58 V110 H0 Z" fill="#b8e0a4"/><path d="M0 90 Q120 74 240 92 T360 88 V110 H0 Z" fill="#9fd38b"/>
     <rect x="250" y="34" width="56" height="44" fill="#e45f4f"/><path d="M244 38 L278 14 L312 38 Z" fill="#b8473a"/><rect x="268" y="52" width="20" height="26" fill="#fff4e2"/>
     <g fill="#fff"><rect x="20" y="70" width="4" height="22"/><rect x="50" y="70" width="4" height="22"/><rect x="80" y="70" width="4" height="22"/><rect x="110" y="70" width="4" height="22"/></g><path d="M18 76 H116 M18 86 H116" stroke="#fff" stroke-width="3"/>`,
+  snowman: `<rect width="360" height="110" fill="#dcecf8"/>
+    <path d="M0 70 Q90 50 180 68 T360 62 V110 H0 Z" fill="#fff"/><path d="M0 92 Q120 80 240 94 T360 90 V110 H0 Z" fill="#eef6fd"/>
+    <g fill="#fff">${[...Array(18)].map((_, k) => `<circle cx="${(k * 53) % 360}" cy="${8 + ((k * 29) % 56)}" r="${2 + (k % 3)}"/>`).join('')}</g>
+    <path d="M300 70 L316 36 L332 70 Z" fill="#6cb880"/><path d="M304 56 L316 28 L328 56 Z" fill="#7cc48f"/><path d="M300 70 L316 36 L332 70 Z" fill="#fff" opacity=".35"/>`,
+  birthday: `<rect width="360" height="110" fill="#fff0f5"/>
+    <path d="M0 10 Q45 34 90 10 Q135 34 180 10 Q225 34 270 10 Q315 34 360 10" stroke="#e9b4c4" stroke-width="2" fill="none"/>
+    ${[...Array(8)].map((_, k) => `<path d="M${22 + k * 45} 16 l10 0 l-5 14 z" fill="${['#f29bb5', '#ffd76e', '#7cb7ec', '#8fd19e'][k % 4]}"/>`).join('')}
+    ${[[40, 60, '#f29bb5'], [80, 50, '#7cb7ec'], [290, 56, '#ffd76e'], [325, 48, '#8fd19e']].map(([x, y, c]) => `<ellipse cx="${x}" cy="${y}" rx="13" ry="16" fill="${c}"/><path d="M${x} ${y + 16} q4 10 -2 20" stroke="#c9b8a8" fill="none"/>`).join('')}
+    <rect y="94" width="360" height="16" fill="#fde2ec"/>`,
+  spring: `<rect width="360" height="110" fill="#eaf6ff"/><circle cx="320" cy="24" r="14" fill="#ffd76e"/>
+    <path d="M0 76 Q100 60 200 74 T360 70 V110 H0 Z" fill="#b8e0a4"/>
+    ${[...Array(9)].map((_, k) => `<g transform="translate(${20 + k * 38} ${78 + (k % 2) * 8})"><path d="M0 0 V14" stroke="#6cb880" stroke-width="2"/><circle r="6" fill="${['#f29bb5', '#ffd76e', '#fff', '#f6a46b'][k % 4]}"/><circle r="2.4" fill="#f6a46b"/></g>`).join('')}`,
+  summer: `<rect width="360" height="110" fill="#d6f1fb"/><circle cx="60" cy="26" r="16" fill="#ffd76e"/>
+    <rect y="58" width="360" height="30" fill="#7cc8ea"/><path d="M0 64 q15 -6 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0" stroke="#fff" stroke-width="2" fill="none"/>
+    <rect y="86" width="360" height="24" fill="#f6e3b4"/><path d="M290 86 L300 40 L310 86" fill="none" stroke="#a7774f" stroke-width="3"/><path d="M270 46 Q300 22 330 46 Z" fill="#ef6b5b"/>`,
+  autumn: `<rect width="360" height="110" fill="#fdf1e3"/>
+    <path d="M0 80 Q100 66 200 80 T360 76 V110 H0 Z" fill="#e8c48c"/>
+    ${[[50, '#f6a46b'], [140, '#ef6b5b'], [250, '#facc15'], [320, '#f6a46b']].map(([x, c]) => `<rect x="${x - 3}" y="52" width="6" height="30" fill="#a7774f"/><circle cx="${x}" cy="44" r="20" fill="${c}"/>`).join('')}
+    ${[...Array(10)].map((_, k) => `<circle cx="${15 + k * 35}" cy="${92 + (k % 3) * 4}" r="3" fill="${['#ef6b5b', '#facc15', '#a7774f'][k % 3]}"/>`).join('')}`,
   dress: `<rect width="360" height="110" fill="#fdf2e6"/>
     <rect x="120" y="10" width="120" height="80" rx="8" fill="#fff"/><rect x="128" y="18" width="104" height="64" rx="4" fill="#cbe7ff"/>
     <path d="M120 10 Q150 50 136 90 L120 90 Z M240 10 Q210 50 224 90 L240 90 Z" fill="#f29bb5" opacity=".85"/>
@@ -5856,10 +5877,11 @@ function showVillage() {
   const mission = todayMission();
   const counts = villageCounts();
   let moving = false;
-  const map = el('div', { class: 'vmap art' },
+  const map = el('div', { class: `vmap art${currentSeason().id === 'winter' ? ' winter' : ''}` },
     el('div', { class: 'vground' }),
     el('div', { class: 'vcloud c1' }, '☁️'), el('div', { class: 'vcloud c2' }, '☁️'),
     ...villageLife(),
+    seasonFx(),
     VILLAGE_PLACES.map((p) => {
       const n = counts[p.id] ?? 0;
       const isMission = mission.ids.includes(p.id);
@@ -5900,9 +5922,10 @@ function showVillage() {
       el('h1', {}, '🏘️ 쑥쑥 마을')),
     el('div', { class: 'vhud' },
       el('span', { class: 'vhud-pill' }, `⭐ ${roomStars()}`),
-      el('button', { class: 'vhud-pill btn', onclick: showStamps }, `🎒 도장 ${Object.keys(counts).length}/${SCENE_PLACES().length}`),
+      el('button', { class: 'vhud-pill btn', onclick: showStamps }, `🎒 도장 ${stampCount()}/${SCENE_PLACES().length}`),
       el('button', { class: 'vhud-pill btn', onclick: showRoom }, '🎩 꾸미기')),
     missionBar,
+    festivalBar(),
     map,
     el('p', { class: 'village-tip' }, '👪 내일 병원이나 마트에 간다면 오늘 미리 연습해 보세요. 한 번에 한 가지씩, 아이 속도에 맞춰 눌러요.'),
   ));
@@ -6005,7 +6028,7 @@ function showStamps() {
         el('div', {}, el('b', {}, b.name), el('small', {}, b.desc)));
     })),
   ));
-  speak(`도장 ${Object.keys(counts).length}개를 모았어요`);
+  speak(`도장 ${stampCount()}개를 모았어요`);
 }
 
 function openPlace(id) {
@@ -6063,12 +6086,12 @@ function playScene(scene) {
       setTimeout(show, 1000);
     };
     speak(step.say);
-    stage.replaceChildren(
+    stage.replaceChildren(...[
       SCENE_BACKDROPS[scene.id] ? svgArt(SCENE_BACKDROPS[scene.id], '0 0 360 110', 'scene-backdrop', 'xMidYMid slice') : null,
       el('div', { class: 'scene-bubble' }, hero(k === 0 ? 'smile' : 'happy', 'bubble-hero'),
         el('div', { class: 'bubble-text' }, el('span', {}, step.say),
           el('button', { class: 'speak-btn', 'aria-label': '다시 듣기', onclick: () => speak(step.say) }, '🔊'))),
-      el('div', { class: 'scene-card scene-in' }, step.view(done, alive)));
+      el('div', { class: 'scene-card scene-in' }, step.view(done, alive))].filter(Boolean));
   }
   show();
 }
@@ -6089,11 +6112,11 @@ function finishScene(scene, stage) {
   speak(`잘했어요! ${scene.done} 별을 하나 받았어요.${first ? ' 새 도장도 받았어요!' : ''}`);
   stage.replaceChildren(
     el('div', { class: 'scene-end' },
-      el('div', { class: 'result-mascot' }, hero('happy', 'bounce')),
+      scene.trophy ? el('div', { class: 'trophy-row' }, scene.trophy(), hero('happy', 'bounce')) : el('div', { class: 'result-mascot' }, hero('happy', 'bounce')),
       el('div', { class: 'result-title' }, `잘했어요! ${scene.done}`),
       el('div', { class: 'reward-row' },
         el('div', { class: 'reward-chip-big pop' }, el('span', { class: 'fly-star' }, '⭐'), el('b', {}, '+1'), el('small', {}, `별 ${roomStars()}개`)),
-        first ? el('div', { class: 'reward-chip-big stamp-new pop', style: `--c:${scene.color}` }, el('span', {}, scene.icon), el('b', {}, '새 도장!'), el('small', {}, `도장 ${Object.keys(counts).length}/${SCENE_PLACES().length}`)) : null,
+        first && !EVENT_IDS.includes(scene.id) ? el('div', { class: 'reward-chip-big stamp-new pop', style: `--c:${scene.color}` }, el('span', {}, scene.icon), el('b', {}, '새 도장!'), el('small', {}, `도장 ${stampCount()}/${SCENE_PLACES().length}`)) : null,
         missionNow ? el('div', { class: 'reward-chip-big pop' }, el('span', {}, '🗺️'), el('b', {}, `미션 ${m.done.length}/3`), el('small', {}, m.done.length >= 3 ? '보물상자를 열어요!' : '오늘의 미션')) : null),
       newBadges.map((b) => el('div', { class: 'badge-new pop' }, el('span', {}, b.icon), el('b', {}, `배지 받았어요: ${b.name}`))),
       HOME_TRY_VILLAGE[scene.id] && settings.tips ? el('div', { class: 'home-try' }, el('b', {}, '🏠 실제로 해 보기'), el('p', {}, HOME_TRY_VILLAGE[scene.id])) : null,
@@ -6111,6 +6134,11 @@ const HOME_TRY_VILLAGE = {
   playground: '놀이터에서 "줄 맨 뒤에 서요", "이번엔 친구 차례" 같은 말을 똑같이 써 주세요.',
   farm: '동물 그림책이나 실제 동물을 보며 "토끼는 당근을 먹어요"처럼 짧게 이야기해 주세요.',
   dress: '아침에 창밖 날씨를 함께 보고, 아이가 직접 옷 하나를 골라 보게 해 주세요.',
+  snowman: '눈이 오면 장갑 · 목도리를 같이 챙기고, 작은 눈덩이를 함께 굴려 보세요.',
+  birthday: '가족 생일에 초를 함께 세어 꽂고, 촛불 끄기 전에 "후~" 연습을 해 보세요.',
+  spring: '작은 화분에 씨앗을 심고, 매일 같은 시간에 아이가 물을 주게 해 보세요.',
+  summer: '물놀이 가기 전에 "선크림 → 튜브 → 수경" 챙기는 순서를 그림으로 보여 주세요.',
+  autumn: '공원에서 도토리 · 나뭇잎을 주워 같은 것끼리 나눠 보세요.',
 };
 
 // 큰 버튼 하나로 끝나는 단계
@@ -6500,6 +6528,269 @@ function dressScene() {
   };
 }
 
+/* ---------- 계절 축제 · 생일 파티 ---------- */
+// 계절마다 열리는 축제 하나 + 언제나 열리는 생일 파티. 마을 지도 위에도 계절이 보임(눈 · 꽃잎 · 낙엽 · 햇살)
+const SEASONS = [
+  { id: 'spring', months: [3, 4, 5], icon: '🌸', name: '봄 꽃 심기', fx: '🌸', make: () => springScene() },
+  { id: 'summer', months: [6, 7, 8], icon: '🍉', name: '여름 물놀이', fx: '✨', make: () => summerScene() },
+  { id: 'autumn', months: [9, 10], icon: '🌰', name: '가을 열매 줍기', fx: '🍂', make: () => autumnScene() },
+  { id: 'winter', months: [11, 12, 1, 2], icon: '⛄', name: '겨울 눈사람 만들기', fx: '❄️', make: () => snowmanScene() },
+];
+const EVENT_IDS = ['spring', 'summer', 'autumn', 'snowman', 'birthday'];
+const currentSeason = () => SEASONS.find((s) => s.months.includes(new Date().getMonth() + 1));
+
+function festivalBar() {
+  const s = currentSeason();
+  const counts = villageCounts();
+  const sid = s.id === 'winter' ? 'snowman' : s.id;
+  return el('div', { class: 'vfest' },
+    el('button', { class: `fest-btn season-${s.id}`, onclick: () => playScene(s.make()) },
+      el('span', { class: 'fest-icon' }, s.icon),
+      el('span', { class: 'fest-text' }, el('b', {}, s.name), el('small', {}, counts[sid] ? `지금만 열리는 계절 축제 · ${counts[sid]}번 했어요` : '지금만 열리는 계절 축제!')),
+      el('span', { class: 'fest-new' }, 'NEW')),
+    el('button', { class: 'fest-btn bday', onclick: () => playScene(birthdayScene()) },
+      el('span', { class: 'fest-icon' }, '🎂'),
+      el('span', { class: 'fest-text' }, el('b', {}, '생일 파티'), el('small', {}, '친구 생일을 축하해요'))));
+}
+
+// 지도 위로 천천히 내리는 계절 조각
+function seasonFx() {
+  const s = currentSeason();
+  const box = el('div', { class: `vfx fx-${s.id}`, 'aria-hidden': 'true' });
+  for (let k = 0; k < 12; k++) box.append(el('i', { style: `left:${(k * 37) % 100}%;animation-delay:${-(k * 1.3)}s;animation-duration:${9 + (k % 4) * 2}s;font-size:${12 + (k % 3) * 4}px` }, s.fx));
+  return box;
+}
+
+// 버튼 여러 개를 모두 한 번씩 누르면 끝 (장갑 · 목도리처럼)
+function multiTap(visual, items, onEach) {
+  return (done) => {
+    const got = new Set();
+    const row = el('div', { class: 'btn-row multi-tap' }, items.map(([key, label]) => {
+      const b = el('button', { class: 'btn-main alt', onclick: () => {
+        if (got.has(key)) return;
+        got.add(key);
+        b.disabled = true;
+        b.textContent = `${label} ✔`;
+        onEach?.(key);
+        speak(label.replace(/^\S+\s/, ''));
+        if (got.size === items.length) setTimeout(done, 600);
+      } }, label);
+      return b;
+    }));
+    return el('div', { class: 'scene-one' }, typeof visual === 'function' ? visual() : visual, row);
+  };
+}
+
+// 여러 번 눌러서 키우기 (눈덩이 굴리기 · 물 주기)
+function growTap(visual, label, times, onTap, sayEach) {
+  return (done) => {
+    let n = 0;
+    const btn = el('button', { class: 'btn-main', onclick: () => {
+      n++;
+      onTap(n / times, n);
+      tone([520 + n * 60], 0.06);
+      if (sayEach) speak(sayEach(n));
+      if (n >= times) { btn.disabled = true; setTimeout(done, 700); }
+    } }, label);
+    return el('div', { class: 'scene-one' }, visual, el('div', { class: 'grow-count' }, `${times}번 눌러요`), btn);
+  };
+}
+
+/* ⛄ 겨울: 따뜻하게 입기 → 큰 눈덩이 → 작은 눈덩이 올리기 → 얼굴 꾸미기 → 사진 */
+function snowmanSvg(st) {
+  const bodyR = 18 + 34 * st.body;
+  const headR = 10 + 20 * st.head;
+  const by = 182 - bodyR;
+  const hy = st.placed ? by - bodyR - headR + 10 : 182 - headR;
+  const hx = st.placed ? 100 : 160;
+  const d = st.decor;
+  return `<svg viewBox="0 0 220 200" aria-hidden="true">
+    <ellipse cx="110" cy="186" rx="96" ry="12" fill="#e8f2fb"/>
+    ${st.body > 0 ? `<circle cx="100" cy="${by}" r="${bodyR}" fill="#fff" stroke="#d6e6f5" stroke-width="3"/>` : ''}
+    ${st.head > 0 ? `<circle cx="${hx}" cy="${hy}" r="${headR}" fill="#fff" stroke="#d6e6f5" stroke-width="3"/>` : ''}
+    ${d.has('scarf') ? `<path d="M${hx - headR + 4} ${hy + headR - 6} Q${hx} ${hy + headR + 4} ${hx + headR - 4} ${hy + headR - 6} L${hx + headR - 2} ${hy + headR + 2} Q${hx} ${hy + headR + 12} ${hx - headR + 2} ${hy + headR + 2} Z" fill="#ef6b5b"/><rect x="${hx + 6}" y="${hy + headR}" width="9" height="22" rx="3" fill="#ef6b5b"/>` : ''}
+    ${d.has('eyes') ? `<circle cx="${hx - 8}" cy="${hy - 4}" r="3.5" fill="#3b3226"/><circle cx="${hx + 8}" cy="${hy - 4}" r="3.5" fill="#3b3226"/>` : ''}
+    ${d.has('nose') ? `<path d="M${hx} ${hy + 1} L${hx + 22} ${hy + 5} L${hx} ${hy + 8} Z" fill="#f6a46b"/>` : ''}
+    ${d.has('mouth') ? `<path d="M${hx - 9} ${hy + 12} Q${hx} ${hy + 19} ${hx + 9} ${hy + 12}" stroke="#3b3226" stroke-width="3" fill="none" stroke-linecap="round"/>` : ''}
+    ${d.has('hat') ? `<rect x="${hx - 20}" y="${hy - headR - 2}" width="40" height="6" rx="3" fill="#3a3f47"/><rect x="${hx - 13}" y="${hy - headR - 26}" width="26" height="26" rx="4" fill="#3a3f47"/><rect x="${hx - 13}" y="${hy - headR - 9}" width="26" height="5" fill="#ef6b5b"/>` : ''}
+    ${d.has('buttons') && st.body > 0 ? `<circle cx="100" cy="${by - 10}" r="4" fill="#5b9be0"/><circle cx="100" cy="${by + 8}" r="4" fill="#5b9be0"/>` : ''}
+  </svg>`;
+}
+function snowmanScene() {
+  const lv = settings.level;
+  const st = { body: 0, head: 0, placed: false, decor: new Set() };
+  const pic2 = el('div', { class: 'snowman' });
+  const draw = () => { pic2.innerHTML = snowmanSvg(st); };
+  draw();
+  const faces = [['eyes', '👀 눈'], ['nose', '🥕 당근 코'], ['mouth', '😊 웃는 입'], ['hat', '🎩 모자'], ['scarf', '🧣 목도리'], ['buttons', '🔵 단추']].slice(0, [3, 4, 6][lv]);
+  return {
+    id: 'snowman', icon: '⛄', title: '눈사람을 만들어요', color: '#e4f1fb', done: '멋진 눈사람을 만들었어요!', remake: snowmanScene,
+    trophy: () => { const t = el('div', { class: 'snowman trophy' }); t.innerHTML = snowmanSvg(st); return t; },
+    steps: [
+      { icon: '🧤', say: '하얀 눈이 왔어요! 밖에 나가기 전에 따뜻하게 입어요', view: multiTap(el('div', { class: 'scene-big' }, '❄️'), [['glove', '🧤 장갑'], ['scarf', '🧣 목도리']]) },
+      { icon: '⚪', say: '눈을 데굴데굴 굴려서 큰 눈덩이를 만들어요', view: growTap(pic2, '⚪ 데굴데굴 굴리기', [3, 4, 5][lv], (r) => { st.body = r; draw(); }) },
+      { icon: '⚪', say: '작은 눈덩이도 만들어요', view: growTap(pic2, '⚪ 데굴데굴', [2, 3, 3][lv], (r) => { st.head = r; draw(); }) },
+      { icon: '⬆️', say: '작은 눈덩이를 큰 눈덩이 위에 올려요', view: (done) => el('div', { class: 'scene-one' }, pic2,
+        el('button', { class: 'btn-main', onclick: (e) => { e.currentTarget.disabled = true; st.placed = true; draw(); speak('영차!'); setTimeout(done, 700); } }, '⬆️ 영차, 올리기')) },
+      { icon: '🥕', say: '눈사람 얼굴을 꾸며요', view: multiTap(pic2, faces, (k) => { st.decor.add(k); draw(); }) },
+      { icon: '📸', say: '다 만들었어요! 사진을 찍어요. 하나, 둘, 셋!', view: (done) => el('div', { class: 'scene-one' }, pic2,
+        el('button', { class: 'btn-main', onclick: (e) => { e.currentTarget.disabled = true; pic2.classList.add('snap'); speak('찰칵!'); setTimeout(done, 900); } }, '📸 찰칵')) },
+    ],
+  };
+}
+
+/* 🎂 생일 파티: 선물 고르기 → 초 꽂기(나이만큼) → 노래 → 촛불 끄기 → 케이크 나누기 → 축하 인사 */
+const BDAY_FRIENDS = [['🐰', '토끼'], ['🐻', '곰돌이'], ['🐶', '강아지'], ['🐱', '고양이']];
+// '생일 축하합니다'(Happy Birthday to You, 저작권 만료) 가락
+const BDAY_TUNE = [[392, 1], [392, 1], [440, 2], [392, 2], [523, 2], [494, 4], [392, 1], [392, 1], [440, 2], [392, 2], [587, 2], [523, 4]];
+function playTune(alive) {
+  let t = 0;
+  for (const [f, d] of BDAY_TUNE) {
+    setTimeout(() => { if (alive()) tone([f], 0.22); }, t);
+    t += d * 230;
+  }
+  return t;
+}
+function cakeView(age, lit, put) {
+  return el('div', { class: 'cake' },
+    el('div', { class: 'candles' }, [...Array(put)].map((_, k) => el('span', { class: `candle${k < lit ? ' lit' : ''}` }, el('i', {})))),
+    el('div', { class: 'cake-top' }), el('div', { class: 'cake-body' }, el('span', {}, '🍓 🍓 🍓')));
+}
+function birthdayScene() {
+  const lv = settings.level;
+  const [fe, fn] = pick(BDAY_FRIENDS);
+  const age = [3, 4, 5][lv];
+  const guests = sample(BDAY_FRIENDS.filter(([e]) => e !== fe), [2, 3, 3][lv]);
+  const subj = topicParticle(fn);
+  return {
+    id: 'birthday', icon: '🎂', title: '생일 파티', color: '#fde2ec', done: `${fn}의 생일을 축하했어요!`, remake: birthdayScene,
+    steps: [
+      { icon: '🎁', say: `오늘은 ${fn} 생일이에요. 선물을 하나 골라요`, view: (done) => el('div', { class: 'scene-one' },
+        el('div', { class: 'scene-big' }, fe),
+        el('div', { class: 'choices', style: choicesStyle(4) }, ['🧸', '⚽', '📚', '🖍️'].map((g) =>
+          el('button', { class: 'tile choice', onclick: (e) => { e.currentTarget.classList.add('good'); speak(`좋아요! ${subj} 정말 좋아할 거예요`); setTimeout(done, 500); } }, g)))) },
+      { icon: '🕯️', say: `${subj} ${age}살이 되었어요. 케이크에 초를 ${age}개 꽂아요`, view: (done) => {
+        let put = 0;
+        const box = el('div', {}, cakeView(age, 0, 0));
+        const btn = el('button', { class: 'btn-main', onclick: () => {
+          put++;
+          box.replaceChildren(cakeView(age, 0, put));
+          speak(['하나', '둘', '셋', '넷', '다섯'][put - 1]);
+          if (put >= age) { btn.disabled = true; setTimeout(done, 800); }
+        } }, '🕯️ 초 꽂기');
+        return el('div', { class: 'scene-one' }, box, el('div', { class: 'grow-count' }, `초 ${age}개`), btn);
+      } },
+      { icon: '🎵', say: '불을 켜고, 다 같이 생일 축하 노래를 불러요', view: (done, alive) => {
+        const box = el('div', {}, cakeView(age, age, age));
+        const btn = el('button', { class: 'btn-main', onclick: () => {
+          btn.disabled = true;
+          btn.textContent = '🎶 생일 축하합니다~';
+          const ms = playTune(alive);
+          setTimeout(() => { if (alive()) done(); }, ms + 300);
+        } }, '▶ 노래 부르기');
+        return el('div', { class: 'scene-one' }, box, el('div', { class: 'party-guests' }, [[fe], ...guests].map(([e]) => el('span', {}, e))), btn);
+      } },
+      { icon: '🌬️', say: '후~ 불어서 촛불을 하나씩 꺼요', view: (done) => {
+        let lit = age;
+        const box = el('div', {});
+        const draw = () => {
+          box.replaceChildren(cakeView(age, lit, age));
+          box.querySelectorAll('.candle').forEach((c, k) => c.addEventListener('click', () => {
+            if (k >= lit) return;
+            lit = k;
+            speak('후~');
+            tone([700, 500], 0.08);
+            draw();
+            if (lit === 0) setTimeout(done, 600);
+          }));
+        };
+        draw();
+        return el('div', { class: 'scene-one' }, box, el('div', { class: 'grow-count' }, '촛불을 눌러 꺼요'),
+          el('button', { class: 'btn-main alt', onclick: () => { lit = Math.max(0, lit - 1); speak('후~'); draw(); if (lit === 0) setTimeout(done, 600); } }, '🌬️ 후~ 불기'));
+      } },
+      { icon: '🍰', say: '케이크를 친구들과 나눠 먹어요. 접시에 하나씩 놓아요', view: (done) => {
+        const given = new Set();
+        const people = [[fe, fn], ...guests];
+        return el('div', { class: 'scene-one' }, el('div', { class: 'plates' }, people.map(([e, n], k) => {
+          const plate = el('button', { class: 'plate', 'aria-label': `${n} 접시`, onclick: () => {
+            if (given.has(k)) return;
+            given.add(k);
+            plate.querySelector('.plate-cake').textContent = '🍰';
+            speak(`${n}에게`);
+            if (given.size === people.length) setTimeout(done, 700);
+          } }, el('span', { class: 'plate-who' }, e), el('span', { class: 'plate-cake' }, '🍽️'));
+          return plate;
+        })));
+      } },
+      { icon: '🎉', say: `${fn}에게 축하 인사를 해요`, view: tapStep('🎉', '🎉 생일 축하해!') },
+    ],
+  };
+}
+
+/* 🌸 봄: 흙 담기 → 씨앗 심기 → 물 주기 → 햇볕 → 꽃 */
+function springScene() {
+  const lv = settings.level;
+  const plant = el('div', { class: 'scene-big' }, '🪴');
+  return {
+    id: 'spring', icon: '🌸', title: '봄 꽃 심기', color: '#fde7ef', done: '예쁜 꽃이 피었어요!', remake: springScene,
+    steps: [
+      { icon: '🪴', say: '따뜻한 봄이에요. 화분에 흙을 담아요', view: tapStep('🪴', '🪣 흙 담기') },
+      { icon: '🌰', say: '씨앗을 쏙 심어요', view: tapStep('🌰', '👇 씨앗 심기') },
+      { icon: '💧', say: '물을 주면 싹이 자라요', view: growTap(plant, '💧 물 주기', [2, 3, 4][lv], (r) => { plant.textContent = r < 0.5 ? '🌱' : '🌿'; }) },
+      { icon: '☀️', say: '햇볕을 쬐어요. 기다려요', view: waitStep([3, 4, 5][lv], '☀️', '쑥쑥 자라요…', '🌷 꽃이 피었어요! 보기', '꽃이 피었어요!') },
+      { icon: '🌷', say: '예쁜 꽃 냄새를 맡아요. 음~', view: tapStep('🌷', '👃 음~ 좋은 냄새') },
+    ],
+  };
+}
+
+/* 🍉 여름: 선크림 → 물놀이 챙기기 → 물장구 → 수건 */
+function summerScene() {
+  const lv = settings.level;
+  const pool = el('div', { class: 'scene-big' }, '🏊');
+  return {
+    id: 'summer', icon: '🍉', title: '여름 물놀이', color: '#dcf2fb', done: '신나게 물놀이를 했어요!', remake: summerScene,
+    steps: [
+      { icon: '🧴', say: '햇볕이 뜨거워요. 선크림을 발라요', view: multiTap(el('div', { class: 'scene-big' }, '🧴'), [['face', '😊 얼굴'], ['arm', '💪 팔'], ['leg', '🦵 다리']].slice(0, [2, 3, 3][lv])) },
+      { icon: '🛟', say: '물놀이에 필요한 것을 챙겨요', view: multiTap(el('div', { class: 'scene-big' }, '🎒'), [['tube', '🛟 튜브'], ['goggle', '🥽 수경'], ['hat', '👒 모자']].slice(0, [2, 2, 3][lv])) },
+      { icon: '🌊', say: '첨벙첨벙 물장구를 쳐요', view: growTap(pool, '💦 첨벙!', [3, 4, 5][lv], () => { pool.classList.remove('splash'); void pool.offsetWidth; pool.classList.add('splash'); }, () => '첨벙!') },
+      { icon: '🏖️', say: '물놀이가 끝나면 수건으로 닦아요', view: tapStep('🧺', '🏖️ 수건으로 닦기') },
+      { icon: '🍉', say: '시원한 수박을 먹어요', view: tapStep('🍉', '😋 냠냠') },
+    ],
+  };
+}
+
+/* 🌰 가을: 바구니 → 도토리만 줍기 → 다람쥐에게 나눠 주기 */
+function autumnScene() {
+  const lv = settings.level;
+  const need = [3, 4, 5][lv];
+  return {
+    id: 'autumn', icon: '🌰', title: '가을 열매 줍기', color: '#fbeedb', done: '도토리를 많이 주웠어요!', remake: autumnScene,
+    steps: [
+      { icon: '🧺', say: '알록달록 가을이에요. 바구니를 들어요', view: tapStep('🧺', '🧺 바구니 들기') },
+      { icon: '🌰', say: `떨어진 도토리만 ${need}개 주워요`, view: (done) => {
+        let got = 0;
+        const items = shuffle([...Array(need).fill('🌰'), ...sample(['🍂', '🍁', '🍂', '🍁', '🪨'], [2, 3, 4][lv])]);
+        const basket = el('div', { class: 'shop-cart' }, '🧺');
+        return el('div', { class: 'scene-one' },
+          el('div', { class: 'choices', style: choicesStyle(4) }, items.map((e) => {
+            const b = el('button', { class: 'tile choice', onclick: () => {
+              if (b.disabled) return;
+              if (e !== '🌰') { b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); speak(e === '🪨' ? '이건 돌멩이예요' : '이건 나뭇잎이에요'); return; }
+              b.disabled = true; b.classList.add('in-cart');
+              got++;
+              basket.textContent = `🧺 ${'🌰'.repeat(got)}`;
+              speak(['하나', '둘', '셋', '넷', '다섯'][got - 1]);
+              if (got >= need) setTimeout(done, 600);
+            } }, e);
+            return b;
+          })), basket);
+      } },
+      { icon: '🐿️', say: '다람쥐에게 도토리를 나눠 줘요', view: tapStep('🐿️', '🌰 나눠 주기') },
+      { icon: '🍂', say: '나뭇잎을 밟으면 바스락 소리가 나요', view: growTap(el('div', { class: 'scene-big' }, '🍂'), '👟 바스락', [2, 3, 3][lv], () => {}, () => '바스락!') },
+    ],
+  };
+}
+
 /* 우리 집: 모은 별로 내 방 꾸미기 (오늘의 학습 스티커 + 마을 연습) */
 const ROOM_ITEMS = [['🛏️', 0], ['🧸', 0], ['🪴', 1], ['🖼️', 2], ['🚂', 3], ['🎈', 4], ['📚', 5], ['🐠', 6], ['🎹', 8], ['🪁', 10], ['🌟', 12], ['🏰', 15]];
 const ROOM_SLOTS = 9;
@@ -6603,7 +6894,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 109;
+const APP_VERSION = 111;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
