@@ -3571,6 +3571,11 @@ const GAME_TIPS = {
 };
 // 놀이가 끝난 뒤 '오늘 집에서 해 보기' (화면에서 한 것을 생활 속 실제 물건 · 상황으로 다시 해 보기 = 일반화)
 const HOME_TRY = {
+  fish: '목욕할 때 물에 뜨는 장난감을 띄우고 "빨간 것 잡아 볼까?" 하고 놀아 보세요.',
+  tower: '종이컵이나 블록을 아이와 번갈아 한 개씩 높이 쌓아 보세요.',
+  catch: '부드러운 공을 굴리거나 던져 주고 바구니나 상자로 받아 보게 해 주세요.',
+  dots: '종이에 숫자 점 3~4개를 찍어 주고 1부터 차례로 이어 그림을 만들어 보세요.',
+  egg: '삶은 달걀 껍데기를 함께 톡톡 깨 보며 "알에서 누가 나올까?" 이야기해 보세요.',
   copy: '블록이나 단추 3~4개로 모양을 만들어 보여 주고, 아이가 옆에 똑같이 만들어 보게 해 주세요.',
   lines: '종이에 점 두 개를 찍고 "이어 볼까?" 하며 함께 선을 그어 보세요.',
   listen: '집에 있는 진짜 사과 · 컵 · 공을 놓고 "사과 주세요" 하며 골라 보게 해 주세요.',
@@ -3666,6 +3671,294 @@ const QUESTION_KEYS = {
 };
 const questionKey = (game, r) => `${game.id}:${(QUESTION_KEYS[game.id] ?? JSON.stringify)(r)}`;
 
+/* ---------- 게임 놀이: 짧고 손맛 좋은 놀이 5가지 ---------- */
+// 모두 실패로 끝나지 않음: 놓치거나 틀리면 부드럽게 다시. 움직임은 느리게, 동작 줄이기 설정이면 천천히 · 멈춤
+const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/* 🐟 물고기 잡기 */
+const FISH_COLORS = [['빨간', '#ef6b5b'], ['노란', '#ffc94d'], ['파란', '#5b9be0'], ['초록', '#5fbf7f'], ['보라', '#a98be0']];
+const fishSvg = (c) => `<svg viewBox="0 0 60 36" aria-hidden="true"><path d="M44 18 L60 4 L58 18 L60 32 Z" fill="${c}" opacity=".85"/><ellipse cx="26" cy="18" rx="24" ry="15" fill="${c}"/><path d="M20 6 Q26 18 20 30" stroke="#fff" stroke-width="2" opacity=".5" fill="none"/><circle cx="12" cy="14" r="4" fill="#fff"/><circle cx="11" cy="14" r="2.2" fill="#3b3226"/><path d="M6 21 Q9 23 12 21" stroke="#3b3226" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`;
+const fishGame = {
+  id: 'fish',
+  title: '물고기 잡기',
+  desc: '헤엄치는 물고기를 톡 잡아요',
+  skill: '색깔 · 움직임 따라가기',
+  icon: '🐟',
+  color: '#d6f0fb',
+
+  round(i, ctx) {
+    const colors = sample(FISH_COLORS, [2, 3, 4][ctx.level]);
+    const [tName, tCol] = colors[0];
+    const rec = { target: tName, color: tCol };
+    const speed = [10, 8, 6.5][ctx.level];
+    let target = null;
+    const sea = el('div', { class: 'arena sea' }, el('span', { class: 'sea-weed w1' }, '🌿'), el('span', { class: 'sea-weed w2' }, '🪸'));
+    shuffle(colors).forEach(([name, col], k) => {
+      const f = el('button', {
+        class: 'fish', 'aria-label': `${name} 물고기`,
+        style: `top:${14 + k * (70 / colors.length)}%;animation-duration:${speed + k * 1.3}s;animation-delay:${-k * 2.1}s`,
+        onclick: () => {
+          if (f !== target) { f.classList.remove('nope'); void f.offsetWidth; f.classList.add('nope'); ctx.miss(`그건 ${name} 물고기예요. ${tName} 물고기를 찾아요`); target.classList.add('hint'); return; }
+          f.classList.add('caught');
+          ctx.finish(true);
+        },
+      });
+      f.innerHTML = fishSvg(col);
+      if (col === tCol) target = f;
+      sea.append(f);
+    });
+    autoHint(ctx, target);
+    ctx.stage.append(prompt(`${tName} 물고기를 잡아요`), sea);
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, `${rec.target} 물고기`),
+};
+
+/* 🧱 블록 탑 쌓기: 움직이는 블록을 톡 → 떨어짐. 많이 비켜 나도 탑 위에 살짝 걸치게 잡아 줌 */
+const TOWER_COLORS = ['#ef8a7a', '#ffd76e', '#7cb7ec', '#8fd19e', '#c8a5ef', '#f6a46b'];
+const towerGame = {
+  id: 'tower',
+  title: '블록 탑 쌓기',
+  desc: '톡! 블록을 떨어뜨려 높이 쌓아요',
+  skill: '타이밍 · 눈과 손',
+  icon: '🧱',
+  color: '#fde9d6',
+
+  round(i, ctx) {
+    const need = [3, 4, 5][ctx.level];
+    const rec = { need };
+    const arena = el('div', { class: 'arena tower-arena' }, el('div', { class: 'tower-ground' }));
+    const counter = el('div', { class: 'grow-count' }, `0 / ${need}`);
+    const placed = [];
+    const W = 34; // 블록 너비(%)
+    let mover = null;
+    const spawn = () => {
+      mover = el('div', { class: 'tblock moving', style: `width:${W}%;background:${TOWER_COLORS[placed.length % TOWER_COLORS.length]};bottom:${16 + (placed.length + 1) * 13 + 10}%;animation-duration:${[3.4, 2.8, 2.2][ctx.level]}s` });
+      arena.append(mover);
+    };
+    const drop = () => {
+      if (!mover || placed.length >= need) return;
+      const a = arena.getBoundingClientRect(), b = mover.getBoundingClientRect();
+      let x = ((b.left - a.left) / a.width) * 100;
+      const prev = placed.length ? placed[placed.length - 1] : 50 - W / 2;
+      x = prev + Math.max(-W * 0.45, Math.min(W * 0.45, x - prev)); // 너무 비켜 나지 않게
+      mover.remove();
+      const blk = el('div', { class: 'tblock land', style: `width:${W}%;left:${x}%;background:${TOWER_COLORS[placed.length % TOWER_COLORS.length]};bottom:${16 + placed.length * 13}%` });
+      arena.append(blk);
+      placed.push(x);
+      tone([440 + placed.length * 90], 0.08);
+      counter.textContent = `${placed.length} / ${need}`;
+      if (placed.length >= need) { speak('우와, 높이 쌓았어요'); ctx.later(() => ctx.finish(true), 500); return; }
+      spawn();
+    };
+    arena.addEventListener('pointerdown', drop);
+    spawn();
+    ctx.stage.append(prompt(`블록을 ${need}개 쌓아요. 톡 누르면 떨어져요`), arena, counter,
+      el('button', { class: 'btn-main', onclick: drop }, '⬇️ 톡! 놓기'));
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, `블록 ${rec.need}개 쌓기`),
+};
+
+/* 🍎 과일 받기: 바구니를 끌거나 ◀ ▶로 움직여 떨어지는 과일 받기 */
+const CATCH_FRUITS = ['🍎', '🍌', '🍓', '🍊', '🍉', '🍇'];
+const catchGame = {
+  id: 'catch',
+  title: '과일 받기',
+  desc: '떨어지는 과일을 바구니로 받아요',
+  skill: '끌기 · 주의 집중',
+  icon: '🧺',
+  color: '#fff1c9',
+
+  round(i, ctx) {
+    const need = [3, 4, 5][ctx.level];
+    const fallMs = [5200, 4200, 3400][ctx.level] * (reduceMotion() ? 1.4 : 1);
+    const rec = { need };
+    let bx = 50, got = 0, fruit = null, fx = 50, start = 0, alive = true;
+    const basket = el('div', { class: 'catch-basket' }, '🧺');
+    const arena = el('div', { class: 'arena catch-arena' }, basket);
+    const counter = el('div', { class: 'grow-count' }, `🧺 0 / ${need}`);
+    const setB = (x) => { bx = Math.max(10, Math.min(90, x)); basket.style.left = `${bx}%`; };
+    setB(50);
+    const fromEvent = (e) => { const a = arena.getBoundingClientRect(); setB(((e.clientX - a.left) / a.width) * 100); };
+    arena.addEventListener('pointerdown', (e) => { try { arena.setPointerCapture(e.pointerId); } catch {} fromEvent(e); });
+    arena.addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'touch') fromEvent(e); });
+    const newFruit = () => {
+      fruit?.remove();
+      fx = 12 + Math.random() * 76;
+      fruit = el('span', { class: 'falling', style: `left:${fx}%;top:-10%` }, pick(CATCH_FRUITS));
+      arena.append(fruit);
+      start = performance.now();
+    };
+    const tick = () => {
+      if (!alive || !arena.isConnected) return;
+      const p = Math.max(0, (performance.now() - start) / fallMs);
+      if (fruit) fruit.style.top = `${-10 + p * 92}%`;
+      if (p >= 0.92 && fruit) {
+        if (Math.abs(fx - bx) < 15) {
+          got++;
+          tone([660, 880], 0.07);
+          counter.textContent = `🧺 ${got} / ${need}`;
+          basket.classList.remove('yum'); void basket.offsetWidth; basket.classList.add('yum');
+          if (got >= need) { alive = false; fruit.remove(); speak('바구니가 가득 찼어요'); ctx.finish(true); return; }
+        } else {
+          speak('앗, 다시 받아 봐요');
+        }
+        newFruit();
+      }
+      setTimeout(tick, 33);
+    };
+    newFruit();
+    setTimeout(tick, 33);
+    ctx.stage.append(prompt(`과일을 ${need}개 받아요. 바구니를 끌어요`), arena, counter,
+      el('div', { class: 'btn-row' },
+        el('button', { class: 'btn-main alt', onclick: () => setB(bx - 14) }, '◀ 왼쪽'),
+        el('button', { class: 'btn-main alt', onclick: () => setB(bx + 14) }, '오른쪽 ▶')));
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, `과일 ${rec.need}개 받기`),
+};
+
+/* ✏️ 점 잇기 그림: 1 → 2 → 3 … 순서대로 누르면 선이 이어지고 그림이 나타남 */
+const DOT_PICTURES = [
+  { level: 0, name: '연', emoji: '🪁', color: '#7cb7ec', pts: [[50, 8], [86, 46], [50, 92], [14, 46]] },
+  { level: 0, name: '선물 상자', emoji: '🎁', color: '#f29bb5', pts: [[18, 22], [82, 22], [82, 86], [18, 86]] },
+  { level: 1, name: '집', emoji: '🏠', color: '#f6a46b', pts: [[50, 8], [88, 40], [88, 90], [12, 90], [12, 40]] },
+  { level: 1, name: '튤립', emoji: '🌷', color: '#f29bb5', pts: [[20, 12], [50, 34], [80, 12], [76, 66], [24, 66]] },
+  { level: 2, name: '별', emoji: '⭐', color: '#ffd76e', pts: [[50, 6], [61, 36], [94, 38], [68, 58], [78, 92], [50, 72], [22, 92], [32, 58], [6, 38], [39, 36]] },
+  { level: 2, name: '물고기', emoji: '🐟', color: '#7cb7ec', pts: [[6, 50], [30, 26], [64, 26], [92, 10], [92, 90], [64, 74], [30, 74]] },
+];
+const dotsGame = {
+  id: 'dots',
+  title: '점 잇기 그림',
+  desc: '1, 2, 3… 이으면 그림이 나와요',
+  skill: '숫자 순서 · 소근육',
+  icon: '✏️',
+  color: '#e8e1f6',
+
+  round(i, ctx) {
+    const pic0 = pick(DOT_PICTURES.filter((d) => d.level === ctx.level));
+    const rec = { name: pic0.name, n: pic0.pts.length };
+    let next = 0;
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const box = el('div', { class: 'arena dots-arena' });
+    box.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true"><polygon class="dots-fill" points="${pic0.pts.map((p) => p.join(',')).join(' ')}" fill="${pic0.color}" opacity="0"/><g class="dots-lines"></g></svg>`;
+    const lines = box.querySelector('.dots-lines');
+    const reveal = el('div', { class: 'dots-reveal' }, pic0.emoji);
+    box.append(reveal);
+    const btns = pic0.pts.map(([x, y], k) => {
+      const b = el('button', { class: 'dot-btn', style: `left:${x}%;top:${y}%`, 'aria-label': `${k + 1}번 점`, onclick: () => {
+        if (k !== next) { b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); ctx.miss(`${next + 1}번을 찾아요`); btns[next].classList.add('hint'); return; }
+        b.classList.add('on'); b.classList.remove('hint');
+        speak(String(k + 1));
+        tone([520 + k * 50], 0.06);
+        if (k > 0) {
+          const [x1, y1] = pic0.pts[k - 1];
+          const ln = document.createElementNS(svgNS, 'line');
+          Object.entries({ x1, y1, x2: x, y2: y, stroke: '#4a3f31', 'stroke-width': 2.4, 'stroke-linecap': 'round' }).forEach(([a, v]) => ln.setAttribute(a, v));
+          lines.append(ln);
+        }
+        next++;
+        if (next === pic0.pts.length) {
+          const [x1, y1] = pic0.pts[next - 1]; const [x2, y2] = pic0.pts[0];
+          const ln = document.createElementNS(svgNS, 'line');
+          Object.entries({ x1, y1, x2, y2, stroke: '#4a3f31', 'stroke-width': 2.4, 'stroke-linecap': 'round' }).forEach(([a, v]) => ln.setAttribute(a, v));
+          lines.append(ln);
+          box.querySelector('.dots-fill').setAttribute('opacity', '.55');
+          reveal.classList.add('show');
+          speak(`${pic0.name}가 나왔어요`);
+          ctx.later(() => ctx.finish(true), 900);
+        } else {
+          autoHint(ctx, btns[next]);
+        }
+      } }, String(k + 1));
+      return b;
+    });
+    box.append(...btns);
+    autoHint(ctx, btns[0]);
+    ctx.stage.append(prompt('1번부터 순서대로 점을 이어요'), box);
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, `${rec.name} (점 ${rec.n}개)`),
+};
+
+/* 🥚 알 깨기: 톡톡 두드리면 금이 가고 동물이 나옴 → 도감에 모임. 보통부터는 "누가 나왔어요?" */
+const EGG_ANIMALS = [['🐥', '병아리'], ['🦆', '오리'], ['🐢', '거북이'], ['🐧', '펭귄'], ['🦖', '공룡'], ['🦜', '앵무새'], ['🦉', '부엉이'], ['🐊', '악어'], ['🐦', '아기 새'], ['🦕', '목 긴 공룡']];
+const EGG_ALBUM_KEY = 'eggAlbum';
+const eggSvg = (cracks) => `<svg viewBox="0 0 100 120" aria-hidden="true"><ellipse cx="50" cy="112" rx="34" ry="6" fill="#000" opacity=".1"/>
+  <path d="M50 6 C78 6 92 50 92 72 C92 98 74 112 50 112 C26 112 8 98 8 72 C8 50 22 6 50 6 Z" fill="#fff6e6" stroke="#ecd9b8" stroke-width="2"/>
+  <g fill="#f8c9d6"><circle cx="34" cy="50" r="5"/><circle cx="64" cy="38" r="4"/><circle cx="70" cy="74" r="6"/><circle cx="30" cy="84" r="4"/></g>
+  ${cracks > 0 ? '<path d="M50 22 L44 34 L54 42 L46 54" stroke="#a7988a" stroke-width="2.4" fill="none" stroke-linejoin="round"/>' : ''}
+  ${cracks > 1 ? '<path d="M46 54 L58 62 L50 74" stroke="#a7988a" stroke-width="2.4" fill="none" stroke-linejoin="round"/>' : ''}
+  ${cracks > 2 ? '<path d="M20 64 L32 60 L38 70 L50 66" stroke="#a7988a" stroke-width="2.4" fill="none" stroke-linejoin="round"/>' : ''}
+  ${cracks > 3 ? '<path d="M50 66 L62 76 L74 68 L82 74" stroke="#a7988a" stroke-width="2.4" fill="none" stroke-linejoin="round"/>' : ''}</svg>`;
+const eggGame = {
+  id: 'egg',
+  title: '알 깨기',
+  desc: '톡톡! 알에서 누가 나올까요?',
+  skill: '동물 이름 · 원인과 결과',
+  icon: '🥚',
+  color: '#fff3d6',
+
+  round(i, ctx) {
+    const taps = [3, 4, 5][ctx.level];
+    const [e, name] = pick(EGG_ANIMALS);
+    const rec = { e, name };
+    let n = 0;
+    const egg = el('button', { class: 'egg', 'aria-label': '알 두드리기' });
+    egg.innerHTML = eggSvg(0);
+    const album = new Set(store.get(EGG_ALBUM_KEY, []));
+    const note = el('div', { class: 'grow-count' }, `톡톡 ${taps}번 · 도감 ${album.size}/${EGG_ANIMALS.length}`);
+    const wrap = el('div', { class: 'egg-wrap' }, egg);
+    const hatch = () => {
+      album.add(e);
+      store.set(EGG_ALBUM_KEY, [...album]);
+      const isNew = album.size > (store.get('eggAlbumSeen', 0));
+      store.set('eggAlbumSeen', album.size);
+      tone([523, 659, 784], 0.1);
+      wrap.replaceChildren(el('div', { class: 'egg-out' }, el('span', { class: 'egg-shell l' }, ''), el('span', { class: 'hatched' }, e)));
+      if (ctx.level === 0) {
+        speak(`${name}가 나왔어요!`);
+        note.textContent = `${isNew ? '🆕 도감에 새로 들어왔어요! ' : ''}도감 ${album.size}/${EGG_ANIMALS.length}`;
+        ctx.later(() => ctx.finish(true), 1300);
+        return;
+      }
+      // 보통 · 어려움: 누가 나왔는지 고르기
+      speak('누가 나왔어요?');
+      const others = sample(EGG_ANIMALS.filter(([x]) => x !== e), ctx.level === 1 ? 1 : 2);
+      const choices = shuffle([[e, name], ...others]);
+      note.textContent = `${isNew ? '🆕 새 친구! ' : ''}도감 ${album.size}/${EGG_ANIMALS.length}`;
+      ctx.stage.append(el('div', { class: 'choices', style: choicesStyle(choices.length) }, choices.map(([ce, cn]) => {
+        const b = el('button', { class: 'tile choice wide-choice egg-name', onclick: () => {
+          if (ce !== e) { retryChoice(ctx, b, right); return; }
+          b.classList.add('good'); speak(`맞아요, ${name}`); ctx.finish(true);
+        } }, cn);
+        if (ce === e) right = b;
+        return b;
+      })));
+      autoHint(ctx, right);
+    };
+    let right = null;
+    egg.addEventListener('click', () => {
+      if (n >= taps) return;
+      n++;
+      egg.classList.remove('wobble'); void egg.offsetWidth; egg.classList.add('wobble');
+      tone([380 + n * 70], 0.06);
+      egg.innerHTML = eggSvg(Math.round((n / taps) * 4));
+      speak('톡');
+      if (n >= taps) ctx.later(hatch, 350);
+    });
+    ctx.stage.append(prompt('알을 톡톡 두드려요. 누가 나올까요?'), wrap, note);
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, `${rec.e} ${rec.name}`),
+};
+
 const GAMES = [
   copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, spaceGame, memoryGame, patternGame,
   countGame, oddGame, flipGame, shadowGame, orderGame, traceGame, sortGame, balloonGame, moleGame,
@@ -3674,6 +3967,7 @@ const GAMES = [
   oppositeGame, needGame, turnGame, waitGame,
   socialGame, missingGame, halfGame, safetyGame, groupGame, weatherGame, rhythmGame, whyGame,
   familyGame, sayGame,
+  fishGame, towerGame, catchGame, dotsGame, eggGame,
 ];
 // 오늘의 학습에 돌아가며 나오는 놀이 (보호자가 준비해야 하는 놀이는 뺌)
 const DAILY_GAMES = GAMES.filter((g) => !g.optional);
@@ -3867,7 +4161,7 @@ function playDaily() {
 const CATEGORIES = [
   { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame, imitateGame] },
   { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame, puzzleGame] },
-  { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame, rhythmGame] },
+  { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame, rhythmGame, fishGame, towerGame, catchGame, dotsGame, eggGame] },
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame, missingGame] },
   { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame, colorGame, oppositeGame, needGame, halfGame, groupGame, weatherGame] },
   { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame, numberGame] },
@@ -6992,7 +7286,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 118;
+const APP_VERSION = 119;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

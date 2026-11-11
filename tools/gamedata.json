@@ -32,7 +32,12 @@
    "games": [
     "balloon",
     "mole",
-    "rhythm"
+    "rhythm",
+    "fish",
+    "tower",
+    "catch",
+    "dots",
+    "egg"
    ]
   },
   {
@@ -527,6 +532,56 @@
    "color": "#fde2ec",
    "optional": true,
    "tip": "바로 답을 알려 주기보다 3~5초 기다려 주세요. 말이 어려운 아이는 말하기 카드를 눌러 대답해도 괜찮아요."
+  },
+  {
+   "id": "fish",
+   "title": "물고기 잡기",
+   "desc": "헤엄치는 물고기를 톡 잡아요",
+   "skill": "색깔 · 움직임 따라가기",
+   "icon": "🐟",
+   "color": "#d6f0fb",
+   "optional": false,
+   "tip": "정답보다 즐거움이 먼저예요. 잘 기다리고 따라 한 순간을 크게 칭찬해 주세요."
+  },
+  {
+   "id": "tower",
+   "title": "블록 탑 쌓기",
+   "desc": "톡! 블록을 떨어뜨려 높이 쌓아요",
+   "skill": "타이밍 · 눈과 손",
+   "icon": "🧱",
+   "color": "#fde9d6",
+   "optional": false,
+   "tip": "정답보다 즐거움이 먼저예요. 잘 기다리고 따라 한 순간을 크게 칭찬해 주세요."
+  },
+  {
+   "id": "catch",
+   "title": "과일 받기",
+   "desc": "떨어지는 과일을 바구니로 받아요",
+   "skill": "끌기 · 주의 집중",
+   "icon": "🧺",
+   "color": "#fff1c9",
+   "optional": false,
+   "tip": "정답보다 즐거움이 먼저예요. 잘 기다리고 따라 한 순간을 크게 칭찬해 주세요."
+  },
+  {
+   "id": "dots",
+   "title": "점 잇기 그림",
+   "desc": "1, 2, 3… 이으면 그림이 나와요",
+   "skill": "숫자 순서 · 소근육",
+   "icon": "✏️",
+   "color": "#e8e1f6",
+   "optional": false,
+   "tip": "정답보다 즐거움이 먼저예요. 잘 기다리고 따라 한 순간을 크게 칭찬해 주세요."
+  },
+  {
+   "id": "egg",
+   "title": "알 깨기",
+   "desc": "톡톡! 알에서 누가 나올까요?",
+   "skill": "동물 이름 · 원인과 결과",
+   "icon": "🥚",
+   "color": "#fff3d6",
+   "optional": false,
+   "tip": "정답보다 즐거움이 먼저예요. 잘 기다리고 따라 한 순간을 크게 칭찬해 주세요."
   }
  ],
  "worksheets": [

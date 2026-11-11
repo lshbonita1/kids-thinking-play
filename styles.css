@@ -2452,3 +2452,54 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 @media (prefers-reduced-motion: reduce) { .vh-cloud { animation: none; } }
 .village-home.compact .vh-hero { width: 13%; left: 44%; }
 .voice-help { margin: 4px 0 6px; font-size: 13px; line-height: 1.55; word-break: keep-all; }
+
+/* ---------- 게임 놀이 5가지 ---------- */
+.arena { position: relative; width: 100%; max-width: 520px; height: 300px; margin: 6px auto 8px; border-radius: 24px; overflow: hidden; border: 3px solid #fff; box-shadow: 0 6px 16px rgba(60, 45, 30, .08); touch-action: none; user-select: none; -webkit-user-select: none; }
+/* 물고기 */
+.sea { background: linear-gradient(#bfe6fb, #7cc8ea 70%, #f3e2b4 70%, #f3e2b4); }
+.sea-weed { position: absolute; bottom: 4%; font-size: 34px; }
+.sea-weed.w1 { left: 8%; } .sea-weed.w2 { right: 10%; }
+.fish { position: absolute; left: 0; width: 78px; padding: 0; border: 0; background: none; cursor: pointer; animation: swim 9s ease-in-out infinite alternate; }
+.fish svg { display: block; width: 100%; }
+@keyframes swim { 0% { left: 2%; transform: scaleX(1); } 49% { transform: scaleX(1); } 50% { left: 74%; transform: scaleX(-1); } 100% { left: 2%; transform: scaleX(-1); } }
+.fish.hint { filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 6px #ffd76e); }
+.fish.caught { animation: none; transform: scale(1.3); transition: transform .3s; }
+.fish.nope { animation-play-state: paused; }
+/* 블록 탑 */
+.tower-arena { background: linear-gradient(#e7f3fd, #fbf8f2); cursor: pointer; }
+.tower-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 16%; background: #b8e0a4; }
+.tblock { position: absolute; height: 13%; border-radius: 8px; box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .1), 0 2px 0 rgba(255, 255, 255, .6); }
+.tblock.moving { left: 0; animation: slide 3s ease-in-out infinite alternate; }
+@keyframes slide { from { left: 2%; } to { left: 64%; } }
+.tblock.land { animation: land .25s ease-out; }
+@keyframes land { from { transform: translateY(-18px); } to { transform: none; } }
+/* 과일 받기 */
+.catch-arena { background: linear-gradient(#dff1fb, #f4fbe9); cursor: grab; }
+.catch-basket { position: absolute; bottom: 4%; font-size: 56px; transform: translateX(-50%); transition: left .12s; pointer-events: none; }
+.catch-basket.yum { animation: yum .35s ease-out; }
+@keyframes yum { 40% { transform: translateX(-50%) scale(1.18, .9); } }
+.falling { position: absolute; font-size: 40px; transform: translateX(-50%); pointer-events: none; }
+/* 점 잇기 */
+.dots-arena { background: #fff; height: auto; aspect-ratio: 1; max-width: 340px; }
+.dots-arena svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.dots-fill { transition: opacity .6s; }
+.dot-btn { position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px; border: 3px solid #fff; border-radius: 50%; background: #ffd76e; box-shadow: 0 3px 0 #e3a92a; font-family: 'Jua', sans-serif; font-size: 17px; color: #5b4320; cursor: pointer; z-index: 2; }
+.dot-btn.on { background: #8fd19e; box-shadow: 0 3px 0 #5fa874; color: #fff; }
+.dots-reveal { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.3); font-size: 90px; opacity: 0; transition: all .5s; z-index: 1; pointer-events: none; }
+.dots-reveal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+/* 알 깨기 */
+.egg-wrap { display: grid; place-items: center; height: 230px; }
+.egg { width: 160px; height: 192px; padding: 0; border: 0; background: none; cursor: pointer; }
+.egg svg { width: 100%; height: 100%; }
+.egg.wobble { animation: wobble .35s ease-in-out; }
+@keyframes wobble { 25% { transform: rotate(-9deg); } 75% { transform: rotate(9deg); } }
+.egg-out { position: relative; display: grid; place-items: center; }
+.hatched { font-size: 120px; animation: hatch .6s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes hatch { from { transform: scale(.2) translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.egg-name { font-family: 'Jua', sans-serif; font-size: 22px; }
+.dot-btn.nope { animation: nope .4s; }
+@media (prefers-reduced-motion: reduce) {
+  .fish { animation-duration: 20s !important; }
+  .tblock.moving { animation-duration: 5s !important; }
+  .egg.wobble, .hatched, .tblock.land { animation: none; }
+}
