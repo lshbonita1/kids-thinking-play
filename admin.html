@@ -274,7 +274,7 @@
         : '<tr><td class="muted" colspan="5">아직 기록이 없어요.</td></tr>';
     }
 
-    const QR_NAMES = { flyer: '소개 자료(A4)', print: '인쇄용 QR', poster: '포스터', card: '명함', insta: '인스타그램', threads: '스레드', blog: '네이버 블로그', cafe: '맘카페 · 카페 글', kin: '네이버 지식iN', daangn: '당근', youtube: '유튜브' };
+    const QR_NAMES = { flyer: '소개 자료(A4)', print: '인쇄용 QR', poster: '포스터', card: '명함', insta: '인스타그램', threads: '스레드', blog: '네이버 블로그', cafe: '맘카페 · 카페 글', kin: '네이버 지식iN', daangn: '당근', youtube: '유튜브', brag: '자랑하기 카드', teacher: '선생님 안내 페이지' };
     function renderQr(q) {
       if (!q) return;
       $('qr-kpi').innerHTML = [['오늘', q.today, '건'], ['최근 2주', q.week2, '건'], ['전체 (6개월)', q.total, '건'], ['서로 다른 기기', q.visitors, '대']]

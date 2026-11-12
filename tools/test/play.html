@@ -1,0 +1,35 @@
+<!doctype html><meta charset="utf-8"><title>wait</title>
+<iframe id="f" src="../../index.html" style="width:390px;height:844px;border:0"></iframe><pre id="out"></pre>
+<script>
+const f = document.getElementById('f');
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+f.onload = () => setTimeout(async () => {
+  const w = f.contentWindow, d = f.contentDocument;
+  const errs = [];
+  w.addEventListener('error', (e) => errs.push(e.message));
+  w.eval("settings.sound=false; Element.prototype.setPointerCapture = function(){};");
+  const out = {};
+  const q = new URLSearchParams(location.search);
+  const ids = (q.get('games') || 'gaze,yesno,fill,two,real,share,calm,hidden,wh,letter').split(',');
+  for (const id of ids) {
+    for (const lv of [0, 1, 2]) {
+      w.localStorage.clear();
+      w.eval(`settings.sound=false; settings.level=${lv}; playGame(GAMES.find(g => g.id === '${id}'))`);
+      let clicks = 0, done = false;
+      for (let t = 0; t < 60 && !done; t++) {
+        await sleep(400);
+        if (d.querySelector('.screen.result')) { done = true; break; }
+        const hint = d.querySelector('.stage .hint:not(.found):not(.full):not(.good)');
+        const plate = d.querySelector('.share-plate:not(.full)');
+        if (hint) { hint.click(); clicks++; await sleep(1500); }
+        else if (plate && d.querySelector('.share-plate.full')) { plate.click(); clicks++; await sleep(200); }
+        else await sleep(8600);
+      }
+      const score = d.querySelector('.result-hero')?.textContent.slice(0, 40);
+      out[`${id}-${lv}`] = done ? `ok ${clicks} ${score}` : `STUCK ${clicks}`;
+    }
+  }
+  document.getElementById('out').textContent = JSON.stringify({ errs: errs.slice(0, 8), out });
+  document.title = 'done';
+}, 900);
+</script>

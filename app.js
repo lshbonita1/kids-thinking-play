@@ -4774,19 +4774,6 @@ function pickCard(g, refresh = refreshHomeKeepScroll) {
     favButton(g, refresh));
 }
 
-function gameCard(g) {
-  const best = store.get(bestKey(g, settings.level), null);
-  return el('div', { class: 'card-wrap' },
-    el('button', { class: 'game-card', style: `--c:${g.color}`, onclick: () => playGame(g) },
-      el('div', { class: 'gc-icon' }, g.icon),
-      el('div', { class: 'gc-body' },
-        el('div', { class: 'gc-title' }, g.title),
-        el('div', { class: 'gc-desc' }, g.desc),
-        el('span', { class: 'gc-skill' }, g.skill)),
-      best == null ? null : el('div', { class: 'gc-best' }, `최고 ${best}점`)),
-    favButton(g));
-}
-
 function tabHeader(title, sub) {
   return [el('header', { class: 'home-top' }, el('h1', {}, title)), sub ? el('p', { class: 'sub' }, sub) : null];
 }
@@ -4842,6 +4829,7 @@ function todayTab() {
       el('div', { class: 'head-actions' }, installTopButton(), shareTopButton())),
     levelPicker('compact'),
     levelTestLink(),
+    voiceNotice(),
     dailyCard(),
     stickerCard(true),
     villageCard(),
@@ -4858,8 +4846,31 @@ function todayTab() {
       el('div', { class: 'home-foot-links' },
         el('button', { class: 'link-btn', onclick: () => showGuide('howto') }, '사용 방법'), ' · ',
         el('a', { href: 'games/' }, '놀이 소개'), ' · ',
+        el('a', { href: 'teacher.html' }, '선생님 안내'), ' · ',
         el('a', { href: 'privacy.html' }, '개인정보처리방침'), ' · ', el('span', {}, 'ssukssuknori.app'))),
   ];
+}
+
+/* ---------- 말소리 안내 ---------- */
+// 기기에 목소리는 있는데 한국어 목소리만 없으면, 문제를 읽어 주지 못해요 → 홈에 보호자용 안내 (닫으면 다시 안 보임)
+// 목소리 목록이 늦게 들어오는 기기가 많아서 잠깐 기다렸다가 확인하고, 목록이 비어 있으면(확인 불가) 띄우지 않음
+function voiceNotice() {
+  if (!settings.sound || store.get('voiceNoticeOff', false)) return null;
+  const slot = el('div', { class: 'voice-notice-slot' });
+  const show = (text) => slot.replaceChildren(el('section', { class: 'voice-notice', role: 'status' },
+    el('span', { class: 'vn-icon', 'aria-hidden': 'true' }, '🔇'),
+    el('div', { class: 'vn-text' },
+      el('b', {}, '이 기기에서는 문제를 읽어 주는 말소리가 안 나요'),
+      el('span', {}, text)),
+    el('div', { class: 'vn-actions' },
+      el('button', { class: 'vn-go', onclick: () => showHome('settings') }, '방법 보기'),
+      el('button', { class: 'vn-close', onclick: () => { store.set('voiceNoticeOff', true); slot.remove(); } }, '닫기'))));
+  setTimeout(() => {
+    if (!slot.isConnected) return;
+    if (!('speechSynthesis' in window)) show('크롬이나 사파리로 열면 말소리가 나요.');
+    else if (speechSynthesis.getVoices().length && !koreanVoices().length) show('기기 설정의 ‘텍스트 음성 변환’에서 한국어 음성을 받으면 소리가 나요.');
+  }, 2500);
+  return slot;
 }
 
 /* ---------- 홈 화면에 추가 ---------- */
@@ -4973,7 +4984,8 @@ function gamesTab() {
     ...shown.map((c) => el('section', { class: 'cat-section' },
       el('h2', { class: 'cat-title' }, `${c.icon} ${c.name}`),
       el('p', { class: 'cat-desc' }, c.desc),
-      el('div', { class: 'game-list' }, c.games.map(gameCard)))),
+      // 그림 크게 + 이름만 (설명은 놀이를 시작하면 나와요). 하트는 이 자리에서 바로 바뀜
+      el('div', { class: 'pick-grid simple' }, c.games.map((g) => pickCard(g, null))))),
   ];
 }
 
@@ -6449,6 +6461,7 @@ function showResult(session, state) {
         levelUpButton(state.level < 2 ? `'${LEVELS[state.level + 1].name}'으로 올리기` : undefined)) : null,
       state.newSticker ? el('div', { class: 'result-sticker pop' }, `⭐ 칭찬 스티커를 받았어요! (모두 ${stickerCount()}개)`) : null,
       session.schedule && rewardToday() ? el('div', { class: 'result-reward pop' }, `🎁 약속한 ${rewardToday().join(' ')} 시간이에요!`) : null,
+      session.schedule ? el('button', { class: 'brag-btn', onclick: () => shareBrag(stars) }, '💌 가족에게 자랑하기') : null,
       (() => {
         const games = new Set(state.records.map((r) => r.game));
         if (session.schedule || games.size !== 1) return null;
@@ -6477,6 +6490,60 @@ function showResult(session, state) {
           r.game.review(r));
       })),
   ));
+}
+
+/* ---------- 오늘의 학습 자랑 카드 (가족 단톡방 · 선생님께 보내기) ---------- */
+// 아이 이름 · 점수 없이 날짜 · 별 · 칭찬 스티커만 그린 그림 한 장 (기기 안에서 만들고, 서버로 보내지 않음)
+async function bragImage(stars, stickers) {
+  const W = 1080;
+  const cv = el('canvas', { width: W, height: W });
+  const x = cv.getContext('2d');
+  try { await document.fonts.load('80px Jua'); } catch {}
+  x.fillStyle = '#fbf8f2';
+  x.fillRect(0, 0, W, W);
+  for (const [c, cx, cy, r] of [['#ffe3b8', 150, 170, 220], ['#d8efd3', 930, 250, 240], ['#dcebfb', 900, 920, 260], ['#fbd9df', 140, 900, 220]]) {
+    x.fillStyle = c; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+  }
+  const img = new Image();
+  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(mascotSvg('happy').replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '))}`;
+  try { await img.decode(); x.drawImage(img, W / 2 - 170, 90, 340, 340); } catch {}
+  const d = new Date();
+  x.textAlign = 'center';
+  x.font = '44px Jua, sans-serif'; x.fillStyle = '#8a7a62';
+  x.fillText(`${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`, W / 2, 505);
+  x.font = '100px Jua, sans-serif'; x.fillStyle = '#4a3f31';
+  x.fillText('오늘의 학습', W / 2, 630);
+  x.fillText('다 했어요!', W / 2, 745);
+  x.font = '88px sans-serif';
+  x.fillText('⭐'.repeat(Math.max(1, stars)), W / 2, 870);
+  x.font = '46px Jua, sans-serif'; x.fillStyle = '#3f8a55';
+  x.fillText(`칭찬 스티커 ${stickers}개 모았어요`, W / 2, 950);
+  x.font = '34px Jua, sans-serif'; x.fillStyle = '#a0907a';
+  x.fillText('쑥쑥 생각놀이 · ssukssuknori.app', W / 2, 1035);
+  return new Promise((r) => cv.toBlob(r, 'image/png'));
+}
+
+async function shareBrag(stars) {
+  const url = `${SITE_URL}?qr=brag`;
+  const text = '오늘의 학습을 다 했어요! 🌱 칭찬해 주세요.';
+  try {
+    const blob = await bragImage(stars, stickerCount());
+    const file = new File([blob], 'ssukssuk-today.png', { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], text: `${text}\n${url}` });
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({ title: '쑥쑥 생각놀이', text, url });
+      return;
+    }
+    // 공유 창이 없는 컴퓨터: 그림을 내려받아 직접 보내게
+    const a = el('a', { href: URL.createObjectURL(blob), download: 'ssukssuk-today.png' });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    toast('그림을 저장했어요. 가족 단톡방에 보내 주세요 💌');
+  } catch {}
 }
 
 /* ---------- 쑥쑥 마을 (가상 마을에서 미리 연습하기) ---------- */
@@ -7787,7 +7854,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 125;
+const APP_VERSION = 126;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
@@ -7825,6 +7892,21 @@ showHome();
 logVisit();
 openFromLink();
 checkForUpdate();
+
+// 오프라인에서도 열리게 (sw.js): 화면 파일을 저장해 두고, 사진도 미리 받아 둠
+function allPhotoUrls() {
+  return [...new Set(Object.values(PHOTOS))].flatMap((name) =>
+    range(1, PHOTO_VARIANTS[name] ?? 1).map((k) => `photos/${k > 1 ? `${name}_${k}` : name}.jpg?v=${PHOTO_VER}`));
+}
+// 내 컴퓨터(localhost)에서 고치며 볼 때는 저장본이 헷갈리지 않게 끔 (?sw=1 을 붙이면 켜서 시험)
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`sw.js?v=${APP_VERSION}`)
+      .then(() => navigator.serviceWorker.ready)
+      .then((reg) => reg.active?.postMessage({ type: 'precache', urls: allPhotoUrls() }))
+      .catch(() => {});
+  });
+}
 // 휴대폰에서 다른 앱을 쓰다가 돌아왔을 때도 확인
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') checkForUpdate();

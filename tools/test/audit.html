@@ -1,0 +1,50 @@
+<!doctype html><meta charset="utf-8"><title>wait</title>
+<iframe id="f" src="../../index.html" style="width:375px;height:667px;border:0"></iframe>
+<pre id="out"></pre>
+<script>
+const f = document.getElementById('f');
+f.onload = () => setTimeout(async () => {
+  const w = f.contentWindow, d = f.contentDocument;
+  const errs = [];
+  w.addEventListener('error', (e) => errs.push(e.message));
+  w.localStorage.clear();
+  w.eval("settings.sound=false; Element.prototype.setPointerCapture = function(){}; window.fetch = async () => new Response(JSON.stringify({ posts: [] }), { status: 200 });");
+  const mk = (c) => { const cv = d.createElement('canvas'); cv.width = cv.height = 320; const x = cv.getContext('2d'); x.fillStyle = c; x.fillRect(0, 0, 320, 320); return cv.toDataURL('image/jpeg', 0.7); };
+  w.eval(`savePhotoList(FAMILY_KEY, [{ id: 'm', name: '엄마', img: '${mk('#f6c453')}' }, { id: 'd', name: '아빠', img: '${mk('#6fb3ea')}' }, { id: 's', name: '할머니', img: '${mk('#ef8a8a')}' }, { id: 'g', name: '선생님', img: '${mk('#8fd19e')}' }])`);
+  w.eval(`savePhotoList(TALK_CUSTOM_KEY, [{ id: 't', name: '딸기 주세요', img: '${mk('#ef4444')}' }])`);
+  const screens = [
+    ["today", "showHome('today')"], ["games", "showHome('games')"], ["talk", "showHome('talk')"], ["records", "showHome('records')"], ["settings", "showHome('settings')"],
+    ["stories", "showStories()"], ["story", "showStories(STORIES[13], 2)"], ["firstthen", "showFirstThen()"], ["breath", "showBreathing()"], ["reward", "showRewardPicker()"],
+    ["report", "showReport()"], ["feedback", "showFeedback()"], ["about", "showGuide('about')"], ["howto", "showGuide('howto')"], ["ltintro", "showLevelTestIntro()"],
+    ["ltresult", "showLevelTestResult({}, { records: [{ testLevel: 1, correct: true }] })"], ["family", "showFamilySetup()"], ["talkcards", "showTalkCardEditor()"],
+    ...w.eval("WORKSHEETS.map(x => x.id)").map(id => ['ws-' + id, `settings.level=2; showWorksheets('${id}')`]),
+    ...w.eval("GAMES.map(g => g.id)").flatMap(id => [0, 1, 2].map(lv => [`g-${id}-${lv}`, `settings.level=${lv}; playGame(GAMES.find(g => g.id === '${id}'))`])),
+  ];
+  const sizes = [[320, 568], [375, 667], [390, 844], [820, 1180], [1180, 820]];
+  const desc = (e) => `${e.tagName.toLowerCase()}.${[...e.classList].slice(0, 2).join('.')}`;
+  const out = {}; let n = 0, errors = 0;
+  for (const [W, H] of sizes) {
+    f.style.width = W + 'px'; f.style.height = H + 'px';
+    await new Promise(r => setTimeout(r, 120));
+    for (const [name, code] of screens) {
+      n++;
+      try { w.eval(code); } catch (e) { errors++; (out[name] ??= []).push(`${W}: ERR ${e.message}`); continue; }
+      await new Promise(r => setTimeout(r, 40));
+      const iw = w.innerWidth; const issues = new Set();
+      if (d.documentElement.scrollWidth > iw + 1) issues.add(`hscroll ${d.documentElement.scrollWidth}`);
+      for (const e of d.querySelectorAll('#app *')) {
+        if (e.closest('svg') && e.tagName !== 'svg') continue;
+        if (e.closest('.cat-tabs')) continue;
+        if (e.closest('.half-pic')) continue; // 반쪽 그림은 일부러 잘라 보여 줌
+        const r = e.getBoundingClientRect(); if (!r.width || !r.height) continue;
+        if (r.right > iw + 3 || r.left < -3) issues.add(`out ${desc(e)}`);
+        if (['BUTTON','B','SPAN','DIV','H1','H2','P'].includes(e.tagName) && e.children.length === 0 && e.scrollWidth > e.clientWidth + 3 && getComputedStyle(e).overflow !== 'visible') issues.add(`clip ${desc(e)}`);
+      }
+      if (issues.size) (out[name] ??= []).push(`${W}x${H}: ${[...issues].slice(0, 4).join(', ')}`);
+    }
+  }
+  w.localStorage.clear();
+  document.getElementById('out').textContent = JSON.stringify({ checks: n, errors, runtimeErrors: errs.slice(0, 5), games: w.eval('GAMES.length'), daily: w.eval('DAILY_GAMES.length'), issues: out });
+  document.title = 'done';
+}, 900);
+</script>

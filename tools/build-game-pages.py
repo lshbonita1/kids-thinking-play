@@ -1,4 +1,4 @@
-# 놀이별 소개 페이지(games/*.html)와 모아 보기(games/index.html), sitemap.xml 만들기
+# 놀이별 소개 페이지(games/*.html)와 모아 보기(games/index.html), 선생님 안내(teacher.html), sitemap.xml 만들기
 # 놀이 정보는 tools/gamedata.json (사이트의 GAMES · CATEGORIES에서 뽑은 것), 설명 글은 아래 GUIDE
 # 실행: python3 tools/build-game-pages.py
 import json, html, pathlib, datetime, re
@@ -151,7 +151,7 @@ def page(title, desc, path, body, og_title=None):
     </header>
 {body}
     <footer>
-      <a href="/">쑥쑥 생각놀이 홈</a> · <a href="/games/">놀이 모아 보기</a> · <a href="/faq.html">자주 묻는 질문</a> · <a href="/privacy.html">개인정보처리방침</a><br>
+      <a href="/">쑥쑥 생각놀이 홈</a> · <a href="/games/">놀이 모아 보기</a> · <a href="/faq.html">자주 묻는 질문</a> · <a href="/teacher.html">선생님 안내</a> · <a href="/privacy.html">개인정보처리방침</a><br>
       천천히 배우는 아이를 위한 무료 그림 놀이 · 회원가입 · 광고 없음
     </footer>
   </main>
@@ -196,8 +196,39 @@ index_body = f"""    <h1>쑥쑥 생각놀이 놀이 {len(games)}가지</h1>
 {chr(10).join(sections)}"""
 (out / 'index.html').write_text(page(f'놀이 {len(games)}가지 모아 보기 | 쑥쑥 생각놀이', f'짝 맞추기, 소리 듣고 찾기, 말하기 카드 등 천천히 배우는 아이를 위한 무료 그림 놀이 {len(games)}가지를 영역별로 모았어요.', 'games/', index_body))
 
+# 선생님 · 치료사 안내 (teacher.html): 기관에 보내는 메일 · 포스터 QR이 여기로 이어짐
+_dom = _app[_app.index('const DOMAINS = {'):]
+DOMAINS = dict(re.findall(r"(\w+): '([^']+)'", _dom[:_dom.index('};')]))
+TEACHER_URL = f'{SITE}/?qr=teacher'
+dom_sections = ''.join(f"""    <div class="cat"><h2>{c['icon']} {esc(DOMAINS.get(c['id'], c['name']))}</h2><p>{esc(c['name'])} · {esc(c['desc'])}</p></div>
+    <div class="grid">{''.join(card(games[x]) for x in c['games'])}</div>
+""" for c in DATA['cats'])
+ws_names = ' · '.join(w['title'] for w in DATA['worksheets'])
+teacher_body = f"""    <h1>선생님 · 치료사께</h1>
+    <p class="lead">센터 수업에서 한 연습을 집에서도 이어 가도록 만든 무료 그림 놀이예요. 보호자에게 주소 하나만 알려 주시면 돼요. 설치 · 회원가입 · 광고가 없어요.</p>
+    <a class="cta" href="{TEACHER_URL}">▶ 사이트 열어 보기</a>
+    <p class="free">ssukssuknori.app</p>
+    <section class="home"><h2>🏠 가정 연계 과제로 이렇게 써요</h2>
+      <p>수업 목표와 비슷한 놀이를 아래 영역별 목록에서 골라 보호자에게 알려 주세요. 놀이 이름을 누르면 나오는 소개 페이지 주소를 보내면, 보호자가 ‘지금 무료로 해 보기’를 눌러 그 놀이를 바로 열 수 있어요.</p>
+      <p class="note">모든 놀이에 쉬움 · 보통 · 어려움이 있고, 틀리면 정답이 반짝여 아이가 직접 눌러 끝내요. ‘오늘의 학습’은 하루 10문제로 놀이가 날마다 골고루 바뀌어요.</p></section>
+    <section><h2>📋 집에서 한 연습을 한 장으로</h2>
+      <p>기록 탭의 ‘선생님께 보여 드릴 기록 한 장’에서 최근 30일 동안 집에서 한 놀이의 정답률을 발달 영역별로 볼 수 있어요. 보호자가 화면을 캡처하거나 인쇄 · PDF로 저장해 가져올 수 있어요.</p>
+      <p class="note">진단이나 평가 결과가 아니라, 집에서 한 연습의 참고 자료예요.</p></section>
+    <section><h2>🖨️ 종이 학습지 {len(DATA['worksheets'])}가지</h2>
+      <p>{esc(ws_names)}. A4로 바로 인쇄하고, 누를 때마다 새 문제가 나와요. 수업 · 과제용으로 자유롭게 나눠 주셔도 돼요. (사이트 놀이 탭 맨 위 ‘종이 학습지’)</p></section>
+    <section><h2>🗣️ 생활 속에서 쓰는 도구</h2>
+      <p>말하기 카드(그림을 누르면 대신 말해 줌, 아이가 좋아하는 물건 사진으로 카드 만들기), 그림 이야기 18가지(병원 · 미용실 · 어린이집 미리 보기), 먼저 · 다음 보드, 숨 쉬기 도구가 있어요.</p></section>
+    <section class="tip"><h2>🔒 아이 기록과 사진</h2>
+      <p>아이의 놀이 기록, 가족 사진, 직접 만든 카드 사진은 보호자 기기 안에만 저장되고 서버로 보내지 않아요.</p></section>
+    <section><h2>✉️ 보호자께 보낼 안내 문구</h2>
+      <p>아래 글을 그대로 복사해 알림장 · 문자로 보내셔도 돼요.</p>
+      <p class="note" style="padding:12px 14px;border-radius:12px;background:#f6f3ee;color:var(--ink)">집에서 아이와 하루 10분, 그림 놀이로 연습해 보세요. ‘쑥쑥 생각놀이’는 설치 · 회원가입 없이 무료로 쓸 수 있어요. 👉 {TEACHER_URL}</p></section>
+    <h2 style="margin-top:30px">🧩 발달 영역별 놀이 {len(games)}가지</h2>
+{dom_sections}"""
+(ROOT / 'teacher.html').write_text(page('선생님 · 치료사 안내 - 가정 연계 무료 그림 놀이 | 쑥쑥 생각놀이', f'센터 수업을 집에서 이어 가는 무료 그림 놀이. 발달 영역별 놀이 {len(games)}가지, 기록 한 장, 종이 학습지, 말하기 카드. 설치 · 회원가입 · 광고 없음.', 'teacher.html', teacher_body))
+
 # 사이트맵
-urls = [('', '1.0', 'weekly'), ('games/', '0.8', 'weekly'), ('faq.html', '0.6', 'monthly')] + [(f'games/{g}.html', '0.7', 'monthly') for g in games] + [('privacy.html', '0.3', 'yearly')]
+urls = [('', '1.0', 'weekly'), ('games/', '0.8', 'weekly'), ('faq.html', '0.6', 'monthly'), ('teacher.html', '0.7', 'monthly')] + [(f'games/{g}.html', '0.7', 'monthly') for g in games] + [('privacy.html', '0.3', 'yearly')]
 (ROOT / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
   ''.join(f'  <url><loc>{SITE}/{u}</loc><lastmod>{TODAY}</lastmod><changefreq>{f}</changefreq><priority>{p}</priority></url>\n' for u, p, f in urls) + '</urlset>\n')
 print(f'놀이 페이지 {len(games)}개 · 모아 보기 · 사이트맵 {len(urls)}개 주소')

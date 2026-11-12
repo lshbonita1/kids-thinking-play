@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><title>wait</title>
+<iframe id="f" src="../../index.html" style="width:375px;height:667px;border:0"></iframe><pre id="out"></pre>
+<script>
+const f = document.getElementById('f');
+f.onload = () => setTimeout(() => {
+  const w = f.contentWindow;
+  const data = w.eval(`({
+    cats: CATEGORIES.map(c => ({ id: c.id, icon: c.icon, name: c.name, desc: c.desc, games: c.games.map(g => g.id) })),
+    games: GAMES.map(g => ({ id: g.id, title: g.title, desc: g.desc, skill: g.skill, icon: g.icon, color: g.color, optional: !!g.optional, tip: gameTip(g) })),
+    worksheets: WORKSHEETS.map(x => ({ id: x.id, title: x.title })),
+  })`);
+  document.getElementById('out').textContent = JSON.stringify(data);
+  document.title = 'done';
+}, 900);
+</script>

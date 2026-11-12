@@ -2598,3 +2598,18 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 .quick-btn:active { transform: scale(.96); }
 .quick-btn span { font-size: 26px; line-height: 1; }
 .quick-btn b { font-weight: 400; font-size: min(16px, 4vw); white-space: nowrap; }
+
+/* ---------- 말소리 안내 (한국어 목소리가 없을 때) ---------- */
+.voice-notice { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; margin: 0 0 16px; padding: 14px 16px; border: 2px solid #f1c7b8; border-radius: 20px; background: #fff3ee; }
+.vn-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #fff; font-size: 24px; }
+.vn-text { display: flex; flex-direction: column; gap: 2px; }
+.vn-text b { font-weight: 400; font-size: 17px; }
+.vn-text span { color: #8a6a5a; font-size: 14px; line-height: 1.45; }
+.vn-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+.vn-actions button { padding: 8px 16px; border-radius: 999px; font-size: 15px; }
+.vn-go { background: #e0705a; color: #fff; }
+.vn-close { background: #fff; color: #8a6a5a; border: 1.5px solid #ecd2c7; }
+
+/* ---------- 오늘의 학습 자랑 카드 버튼 ---------- */
+.brag-btn { display: inline-flex; align-items: center; gap: 6px; margin: 14px auto 0; padding: 12px 26px; border: 2px solid #f3c6d0; border-radius: 999px; background: #fff0f3; color: #b0475f; font-size: 18px; }
+.brag-btn:active { transform: scale(.97); }
