@@ -4643,7 +4643,7 @@ function stickerCount() {
   return n;
 }
 
-function stickerCard() {
+function stickerCard(compact = false) {
   const n = stickerCount();
   const stage = Math.min(Math.floor(n / STICKERS_PER_STAGE), GROW_STAGES.length - 1);
   const grownUp = n >= GROW_STAGES.length * STICKERS_PER_STAGE;
@@ -4652,7 +4652,7 @@ function stickerCard() {
   const note = grownUp ? '쑥쑥이가 다 자랐어요! 🎉'
     : stage > 0 && onBoard === 0 ? '쑥쑥이가 한 뼘 자랐어요! 🎉'
     : `${STICKERS_PER_STAGE - onBoard}개 더 모으면 쑥쑥이가 자라요`;
-  return el('section', { class: 'sticker-card' },
+  return el('section', { class: `sticker-card${compact ? ' compact' : ''}` },
     el('div', { class: 'sticker-head' },
       el('span', { class: 'sticker-grow', title: name }, icon),
       el('div', { class: 'sticker-text' },
@@ -4792,15 +4792,15 @@ function tabHeader(title, sub) {
 }
 
 // 오늘의 학습에 없는 놀이 중 8가지를 예시로 (날마다 바뀜)
-function gamePicks() {
+function gamePicks(count = 8) {
   const today = dateKey(new Date());
   const inDaily = new Set(dailyPlan(today).map((r) => r.game));
-  const picks = withRng(`picks:${today}`, () => sample(GAMES.filter((g) => !inDaily.has(g) && (!g.optional || !g.ready || g.ready())), 8));
+  const picks = withRng(`picks:${today}`, () => sample(GAMES.filter((g) => !inDaily.has(g) && (!g.optional || !g.ready || g.ready())), count));
   return el('section', { class: 'pick-section' },
     el('div', { class: 'pick-head' },
       el('h2', {}, '🧩 이런 놀이도 있어요'),
       el('button', { class: 'pick-all', onclick: () => showHome('games') }, `전체 ${GAMES.length}가지 ›`)),
-    el('div', { class: 'pick-grid' }, picks.map((g) => pickCard(g))));
+    el('div', { class: `pick-grid${count <= 4 ? ' simple' : ''}` }, picks.map((g) => pickCard(g))));
 }
 
 // 사이트 로고: 왼쪽에 쑥쑥이(새싹 친구), 오른쪽에 장난감 블록 글자 (쑥쑥 · 생각놀이)
@@ -4843,10 +4843,10 @@ function todayTab() {
     levelPicker('compact'),
     levelTestLink(),
     dailyCard(),
-    stickerCard(),
+    stickerCard(true),
     villageCard(),
     favSection(),
-    gamePicks(),
+    gamePicks(4),
     helperCard(),
     feedbackCard(),
     shareCard(),
@@ -7814,7 +7814,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 121;
+const APP_VERSION = 122;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
