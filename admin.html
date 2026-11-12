@@ -73,6 +73,7 @@
     .province:hover { opacity: .85; }
     .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; border-radius: 3px; border: 1px solid var(--line); vertical-align: -1px; }
     @media (max-width: 480px) { .chart small { display: none; } .chart .col:nth-child(odd) small { display: block; } }
+    .blog-done.on { background: #e3f3e6; border-color: #3f8a55; color: #2f6b40; }
     .blog-box { display: grid; gap: 6px; padding: 8px 0; }
     .blog-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .blog-head .btn { margin-left: auto; padding: 6px 12px; font-size: 15px; }
@@ -418,7 +419,9 @@
           ? '<p class="error">Supabase에 ssuk_insta_posts 표가 없어요. 003_ssuk_insta.sql을 실행해 주세요.</p>'
           : (d.user ? `<p>연결된 계정: <b>@${esc(d.user)}</b></p>` : `<p class="error">인스타 연결 안 됨: ${esc(d.tokenError || '')}</p>`)
             + (d.thUser ? `<p>스레드: <b>@${esc(d.thUser)}</b> (인스타에 올라간 게시물을 함께 올려요)</p>` : `<p class="muted">스레드 연결 안 됨: ${esc(d.thError || '')}</p>`);
-        $('ig-admin').innerHTML = head + `<table><tbody>${d.queue.map((q) => {
+        const withBlog = d.queue.filter((q) => q.blog);
+        const doneN = withBlog.filter((q) => (d.blogDone || {})[q.id]).length;
+        $('ig-admin').innerHTML = head + `<p>📝 블로그 올림: <b>${doneN}</b> / ${withBlog.length}</p><table><tbody>${d.queue.map((q) => {
           const r = rows[q.id];
           const st = r ? (IG_STATUS[r.status] || r.status) : (q.date <= d.today ? '🕗 오늘 저녁 차례' : '📅 예약');
           const link = r?.permalink ? ` <a href="${esc(r.permalink)}" target="_blank" rel="noopener">보기</a>` : '';
@@ -433,7 +436,9 @@
           }
           const thBtn = d.thUser && r?.status === 'published' && r.th_status !== 'published'
             ? `<button class="btn" data-ig="${r.th_status === 'error' ? 'th-reset' : 'threads'}" data-id="${esc(q.id)}">${r.th_status === 'error' ? '스레드 다시' : '스레드 올리기'}</button>` : '';
-          const blogBtn = q.blog ? `<button class="btn" data-blog="${esc(q.id)}">📝 블로그</button>` : '';
+          const bd = (d.blogDone || {})[q.id];
+          const blogBtn = q.blog ? `<button class="btn" data-blog="${esc(q.id)}">📝 블로그</button>`
+            + `<button class="btn blog-done${bd ? ' on' : ''}" data-blogdone="${esc(q.id)}" title="블로그에 올린 뒤 눌러 체크해요">${bd ? `✅ 블로그 올림 ${esc(bd.slice(5).replace('-', '/'))}` : '☐ 블로그 올림'}</button>` : '';
           const blog = q.blog ? `<tr class="blog-row" data-blog-row="${esc(q.id)}" hidden><td colspan="4">
             <div class="blog-box">
               <div class="blog-head"><b>제목</b><button class="btn" data-copy="title">복사</button></div>
@@ -454,6 +459,25 @@
       if (blogBtn) {
         const row = $('ig-admin').querySelector(`[data-blog-row="${CSS.escape(blogBtn.dataset.blog)}"]`);
         if (row) row.hidden = !row.hidden;
+        return;
+      }
+      const doneBtn = e.target.closest('[data-blogdone]');
+      if (doneBtn) {
+        const on = !doneBtn.classList.contains('on');
+        doneBtn.disabled = true;
+        try {
+          const res = await fetch(`${API}/admin-insta`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'blog', id: doneBtn.dataset.blogdone, done: on }),
+          });
+          const r = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(r.detail || r.error || res.status);
+          await loadInsta();
+        } catch (err) {
+          alert(`저장하지 못했어요. (${err.message})`);
+          doneBtn.disabled = false;
+        }
         return;
       }
       const copyBtn = e.target.closest('[data-copy]');
