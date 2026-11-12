@@ -409,6 +409,7 @@
     });
 
     const IG_STATUS = { published: '✅ 올림', processing: '⏳ 영상 처리 중', creating: '⏳ 올리는 중', error: '⚠️ 실패' };
+    let showBlogDone = false; // 블로그 올린 게시물 펼쳐 보기
     async function loadInsta() {
       try {
         const res = await fetch(`${API}/admin-insta`, { headers: { Authorization: `Bearer ${getToken()}` }, cache: 'no-store' });
@@ -421,7 +422,9 @@
             + (d.thUser ? `<p>스레드: <b>@${esc(d.thUser)}</b> (인스타에 올라간 게시물을 함께 올려요)</p>` : `<p class="muted">스레드 연결 안 됨: ${esc(d.thError || '')}</p>`);
         const withBlog = d.queue.filter((q) => q.blog);
         const doneN = withBlog.filter((q) => (d.blogDone || {})[q.id]).length;
-        $('ig-admin').innerHTML = head + `<p>📝 블로그 올림: <b>${doneN}</b> / ${withBlog.length}</p><table><tbody>${d.queue.map((q) => {
+        const foldBtn = doneN ? ` <button class="btn" data-blogfold>${showBlogDone ? '블로그 올린 것 접기' : `블로그 올린 것 ${doneN}개 펼치기`}</button>` : '';
+        $('ig-admin').innerHTML = head + `<p>📝 블로그 올림: <b>${doneN}</b> / ${withBlog.length}${foldBtn}</p><table><tbody>${d.queue.map((q) => {
+          if (!showBlogDone && (d.blogDone || {})[q.id]) return '';
           const r = rows[q.id];
           const st = r ? (IG_STATUS[r.status] || r.status) : (q.date <= d.today ? '🕗 오늘 저녁 차례' : '📅 예약');
           const link = r?.permalink ? ` <a href="${esc(r.permalink)}" target="_blank" rel="noopener">보기</a>` : '';
@@ -459,6 +462,11 @@
       if (blogBtn) {
         const row = $('ig-admin').querySelector(`[data-blog-row="${CSS.escape(blogBtn.dataset.blog)}"]`);
         if (row) row.hidden = !row.hidden;
+        return;
+      }
+      if (e.target.closest('[data-blogfold]')) {
+        showBlogDone = !showBlogDone;
+        await loadInsta();
         return;
       }
       const doneBtn = e.target.closest('[data-blogdone]');
