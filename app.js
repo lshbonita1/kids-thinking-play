@@ -4848,21 +4848,13 @@ function todayTab() {
     favSection(),
     gamePicks(4),
     helperCard(),
-    feedbackCard(),
-    shareCard(),
     el('footer', { class: 'home-foot' },
-      el('a', { class: 'faq-btn', href: 'faq.html' },
-        el('span', { class: 'faq-icon' }, '🙋'),
-        el('span', { class: 'faq-text' },
-          el('b', {}, '자주 묻는 질문'),
-          el('small', {}, '궁금한 점, 여기서 먼저 찾아보세요')),
-        el('span', { class: 'faq-go' }, '›')),
-      el('button', { class: 'about-banner', onclick: () => showGuide('about') },
-        el('span', { class: 'about-banner-icon' }, mascot('smile')),
-        el('span', { class: 'about-banner-text' },
-          el('b', {}, '쑥쑥 생각놀이 소개'),
-          el('small', {}, '만든 이유와 30초 소개 영상을 볼 수 있어요')),
-        el('span', { class: 'faq-go' }, '›')),
+      // 의견 · 공유 · 질문 · 소개를 한 줄 버튼으로
+      el('nav', { class: 'quick-row', 'aria-label': '더 보기' },
+        el('button', { class: 'quick-btn', style: '--c:#fdf3e1', onclick: showFeedback }, el('span', {}, '💬'), el('b', {}, '의견')),
+        el('button', { class: 'quick-btn', style: '--c:#e6f0fb', onclick: shareSite }, el('span', {}, '💌'), el('b', {}, '공유')),
+        el('a', { class: 'quick-btn', style: '--c:#f1ecfa', href: 'faq.html' }, el('span', {}, '🙋'), el('b', {}, '질문')),
+        el('button', { class: 'quick-btn', style: '--c:#e9f5ea', onclick: () => showGuide('about') }, el('span', {}, '🌱'), el('b', {}, '소개'))),
       el('div', { class: 'home-foot-links' },
         el('button', { class: 'link-btn', onclick: () => showGuide('howto') }, '사용 방법'), ' · ',
         el('a', { href: 'games/' }, '놀이 소개'), ' · ',
@@ -4927,19 +4919,6 @@ function shareTopButton() {
 const SITE_URL = 'https://ssukssuknori.app/';
 const SHARE_TEXT = '아이와 함께하는 그림 생각놀이, 쑥쑥 생각놀이예요. 하루 10문제, 설치 없이 바로 해요!';
 
-function shareCard() {
-  return el('section', { class: 'share-card' },
-    el('span', { class: 'share-icon', 'aria-hidden': 'true' }, '💌'),
-    el('div', { class: 'share-text' },
-      el('b', {}, '친구에게 알려 주세요'),
-      el('span', {}, '함께 하면 더 즐거워요')),
-    (() => {
-      // 위쪽 공유 버튼과 같은 공유 모양(점 세 개 연결)
-      const btn = el('button', { class: 'share-btn', onclick: shareSite });
-      btn.innerHTML = `${SHARE_ICON}<span>공유하기</span>`;
-      return btn;
-    })());
-}
 
 // 휴대폰은 공유 창(카카오톡 · 문자 등)을 열고, 안 되는 곳에서는 주소를 복사함
 async function shareSite() {
@@ -5814,12 +5793,6 @@ function showBreathing() {
 /* ---------- 의견 게시판 ('이런 놀이도 만들어 주세요') ---------- */
 const FEEDBACK_KINDS = [['idea', '💡 놀이 제안'], ['issue', '🛠️ 불편한 점'], ['etc', '💌 칭찬 · 기타']];
 
-function feedbackCard() {
-  return el('button', { class: 'feedback-card', onclick: showFeedback },
-    el('span', { class: 'feedback-card-icon' }, '💬'),
-    el('span', { class: 'feedback-card-text' }, el('b', {}, '이런 놀이도 만들어 주세요'), el('small', {}, '의견 게시판에 남겨 주시면 하나하나 읽어요')),
-    el('span', { class: 'feedback-card-go' }, '›'));
-}
 
 function showFeedback() {
   let kind = 'idea';
@@ -7814,7 +7787,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 123;
+const APP_VERSION = 124;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
