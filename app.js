@@ -4851,10 +4851,10 @@ function todayTab() {
     el('footer', { class: 'home-foot' },
       // 의견 · 공유 · 질문 · 소개를 한 줄 버튼으로
       el('nav', { class: 'quick-row', 'aria-label': '더 보기' },
-        el('button', { class: 'quick-btn', style: '--c:#fdf3e1', onclick: showFeedback }, el('span', {}, '💬'), el('b', {}, '의견')),
-        el('button', { class: 'quick-btn', style: '--c:#e6f0fb', onclick: shareSite }, el('span', {}, '💌'), el('b', {}, '공유')),
-        el('a', { class: 'quick-btn', style: '--c:#f1ecfa', href: 'faq.html' }, el('span', {}, '🙋'), el('b', {}, '질문')),
-        el('button', { class: 'quick-btn', style: '--c:#e9f5ea', onclick: () => showGuide('about') }, el('span', {}, '🌱'), el('b', {}, '소개'))),
+        el('button', { class: 'quick-btn', style: '--c:#fdf3e1', onclick: showFeedback }, el('span', {}, '💬'), el('b', {}, '의견 주세요')),
+        el('button', { class: 'quick-btn', style: '--c:#e6f0fb', onclick: shareSite }, el('span', {}, '💌'), el('b', {}, '공유하기')),
+        el('a', { class: 'quick-btn', style: '--c:#f1ecfa', href: 'faq.html' }, el('span', {}, '🙋'), el('b', {}, '질문하기')),
+        el('button', { class: 'quick-btn', style: '--c:#e9f5ea', onclick: () => showGuide('about') }, el('span', {}, '🌱'), el('b', {}, '소개해요'))),
       el('div', { class: 'home-foot-links' },
         el('button', { class: 'link-btn', onclick: () => showGuide('howto') }, '사용 방법'), ' · ',
         el('a', { href: 'games/' }, '놀이 소개'), ' · ',
@@ -7787,7 +7787,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 124;
+const APP_VERSION = 125;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
