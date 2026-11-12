@@ -7814,7 +7814,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 120;
+const APP_VERSION = 121;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

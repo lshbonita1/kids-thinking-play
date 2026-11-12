@@ -2563,12 +2563,12 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 
 /* 🔍 숨은 그림 찾기 */
 .hidden-goal { display: flex; align-items: center; gap: 10px; padding: 6px 16px; border-radius: 999px; background: #fff; border: 2px solid var(--line, #ebe4d6); }
-.hidden-goal b { font-size: 40px; line-height: 1; }
+.hidden-goal b { font-size: calc(54px * var(--k)); line-height: 1; }
 .hidden-goal span, .hidden-goal small { color: #8a7a62; font-size: 17px; }
-.hidden-field { display: grid; gap: 4px; width: 100%; max-width: calc(440px * var(--k)); margin: 8px auto; padding: 10px; border-radius: 24px; background: #fdf6e6; border: 3px solid #f3e6c8; }
+.hidden-field { display: grid; gap: 6px; width: 100%; max-width: calc(560px * var(--k)); margin: 8px auto; padding: 10px; border-radius: 24px; background: #fdf6e6; border: 3px solid #f3e6c8; }
 .hidden-field.lv2 { background: #fbf0d9; }
-.hidden-thing { display: grid; place-items: center; aspect-ratio: 1; padding: 0; border: 3px solid transparent; border-radius: 18px; background: none; font-size: clamp(36px, 11vw, 58px); line-height: 1; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(var(--s)); transition: background .2s; }
-.hidden-field.lv0 .hidden-thing { font-size: clamp(46px, 15vw, 72px); }
+.hidden-thing { display: grid; place-items: center; aspect-ratio: 1; padding: 0; border: 3px solid transparent; border-radius: 18px; background: none; font-size: clamp(50px, 15vw, calc(86px * var(--k))); line-height: 1; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(var(--s)); transition: background .2s; }
+.hidden-field.lv0 .hidden-thing { font-size: clamp(66px, 21vw, calc(112px * var(--k))); }
 .hidden-thing.found { background: var(--good-bg); border-color: var(--good); transform: none; }
 .hidden-thing.nope { animation: nope .3s; }
 .stage .hidden-thing.hint { border-color: var(--orange); }
