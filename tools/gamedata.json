@@ -9,7 +9,9 @@
     "copy",
     "shadow",
     "odd",
-    "imitate"
+    "imitate",
+    "real",
+    "hidden"
    ]
   },
   {
@@ -76,7 +78,8 @@
    "desc": "하나, 둘, 셋 세어 봐요",
    "games": [
     "count",
-    "number"
+    "number",
+    "share"
    ]
   },
   {
@@ -86,14 +89,20 @@
    "desc": "말을 듣고 뜻을 알아요",
    "games": [
     "family",
+    "gaze",
     "listen",
+    "yesno",
+    "two",
+    "wh",
+    "fill",
     "say",
     "sound",
     "verb",
     "match",
     "body",
     "use",
-    "steps"
+    "steps",
+    "letter"
    ]
   },
   {
@@ -104,6 +113,7 @@
    "games": [
     "feel",
     "why",
+    "calm",
     "social",
     "safety",
     "routine",
@@ -582,6 +592,106 @@
    "color": "#fff3d6",
    "optional": false,
    "tip": "정답보다 즐거움이 먼저예요. 잘 기다리고 따라 한 순간을 크게 칭찬해 주세요."
+  },
+  {
+   "id": "gaze",
+   "title": "쑥쑥이가 보는 것 찾기",
+   "desc": "쑥쑥이 눈을 따라가 찾아요",
+   "skill": "함께 보기(공동주의)",
+   "icon": "👀",
+   "color": "#e4f3dc",
+   "optional": false,
+   "tip": "아이가 쑥쑥이 눈을 먼저 보도록 화면 속 쑥쑥이 얼굴을 함께 짚어 주세요. 정답을 손가락으로 먼저 가리키지 않아요."
+  },
+  {
+   "id": "yesno",
+   "title": "네? 아니요?",
+   "desc": "\"이건 사과예요?\" 네, 아니요로 대답해요",
+   "skill": "예 · 아니요 대답하기",
+   "icon": "👍",
+   "color": "#e2f0fb",
+   "optional": false,
+   "tip": "아이가 고른 그림의 이름을 또박또박 한 번 더 말해 주세요. 따라 말하면 크게 칭찬해 주세요."
+  },
+  {
+   "id": "fill",
+   "title": "빈칸 말놀이",
+   "desc": "\"멍멍 ___\" 이어서 대답해요",
+   "skill": "주고받는 말 · 이어 말하기",
+   "icon": "🗨️",
+   "color": "#fdecc8",
+   "optional": false,
+   "tip": "보기를 누르기 전에 3~5초 기다려 아이가 말로 먼저 대답해 볼 기회를 주세요."
+  },
+  {
+   "id": "two",
+   "title": "두 가지 듣고 찾기",
+   "desc": "\"빨간 공\"처럼 색과 이름을 함께 들어요",
+   "skill": "듣고 이해하기 2단계",
+   "icon": "🔴",
+   "color": "#fde0dc",
+   "optional": false,
+   "tip": "아이가 고른 그림의 이름을 또박또박 한 번 더 말해 주세요. 따라 말하면 크게 칭찬해 주세요."
+  },
+  {
+   "id": "real",
+   "title": "진짜와 그림 짝짓기",
+   "desc": "사진과 같은 그림을 찾아요",
+   "skill": "사진 ↔ 그림 연결 (일반화)",
+   "icon": "📷",
+   "color": "#e6eefc",
+   "optional": false,
+   "tip": "고르기 전에 그림을 손가락으로 함께 가리키며 이름을 말해 주세요."
+  },
+  {
+   "id": "share",
+   "title": "하나씩 나눠 주기",
+   "desc": "접시마다 하나씩 놓아요",
+   "skill": "하나에 하나씩 (1:1 대응)",
+   "icon": "🍪",
+   "color": "#fbe7d3",
+   "optional": false,
+   "tip": "그림을 하나씩 손가락으로 짚으며 소리 내어 함께 세어 주세요."
+  },
+  {
+   "id": "calm",
+   "title": "마음 크기 · 진정하기",
+   "desc": "속상할 때 도움이 되는 방법을 골라요",
+   "skill": "감정 크기 알기 · 스스로 진정하기",
+   "icon": "🌡️",
+   "color": "#e9e3f8",
+   "optional": false,
+   "tip": "속상한 순간이 아닌, 편안할 때 연습해요. 고른 방법(숨 쉬기 · 쉬는 곳)을 실제로 함께 해 보세요."
+  },
+  {
+   "id": "hidden",
+   "title": "숨은 그림 찾기",
+   "desc": "여러 그림 사이에서 찾아요",
+   "skill": "찾아내기 (시지각)",
+   "icon": "🔍",
+   "color": "#fff1c9",
+   "optional": false,
+   "tip": "고르기 전에 그림을 손가락으로 함께 가리키며 이름을 말해 주세요."
+  },
+  {
+   "id": "wh",
+   "title": "어디서? 누가? 무엇?",
+   "desc": "질문을 듣고 그림으로 대답해요",
+   "skill": "질문 알아듣기",
+   "icon": "❓",
+   "color": "#dff3ef",
+   "optional": false,
+   "tip": "아이가 고른 그림의 이름을 또박또박 한 번 더 말해 주세요. 따라 말하면 크게 칭찬해 주세요."
+  },
+  {
+   "id": "letter",
+   "title": "글자 놀이",
+   "desc": "같은 글자, 첫 글자를 찾아요",
+   "skill": "한글 첫걸음",
+   "icon": "가",
+   "color": "#fff0d9",
+   "optional": false,
+   "tip": "글자를 읽을 때 손가락으로 짚으며 소리 내어 읽어 주세요. 아직 어려워하면 쉬움(똑같은 글자 찾기)에 머물러도 괜찮아요."
   }
  ],
  "worksheets": [

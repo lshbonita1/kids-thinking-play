@@ -3561,6 +3561,10 @@ const CATEGORY_TIPS = {
   life: '놀이 속 상황을 실제 생활에서도 같은 말로 다시 이야기해 주세요.',
 };
 const GAME_TIPS = {
+  gaze: '아이가 쑥쑥이 눈을 먼저 보도록 화면 속 쑥쑥이 얼굴을 함께 짚어 주세요. 정답을 손가락으로 먼저 가리키지 않아요.',
+  fill: '보기를 누르기 전에 3~5초 기다려 아이가 말로 먼저 대답해 볼 기회를 주세요.',
+  calm: '속상한 순간이 아닌, 편안할 때 연습해요. 고른 방법(숨 쉬기 · 쉬는 곳)을 실제로 함께 해 보세요.',
+  letter: '글자를 읽을 때 손가락으로 짚으며 소리 내어 읽어 주세요. 아직 어려워하면 쉬움(똑같은 글자 찾기)에 머물러도 괜찮아요.',
   say: '바로 답을 알려 주기보다 3~5초 기다려 주세요. 말이 어려운 아이는 말하기 카드를 눌러 대답해도 괜찮아요.',
   family: '사진 속 사람을 가리키며 "엄마 여기 있네!"처럼 함께 말해 주세요.',
   imitate: '보호자가 먼저 동작을 크게 해 보이면 아이가 더 쉽게 따라 해요.',
@@ -3571,6 +3575,16 @@ const GAME_TIPS = {
 };
 // 놀이가 끝난 뒤 '오늘 집에서 해 보기' (화면에서 한 것을 생활 속 실제 물건 · 상황으로 다시 해 보기 = 일반화)
 const HOME_TRY = {
+  gaze: '아이 앞에서 장난감 쪽으로 천천히 고개를 돌려 바라보며 "와, 저기!" 해 보세요. 아이가 같은 곳을 보면 크게 칭찬해 주세요.',
+  yesno: '간식을 보여 주며 "이거 우유야?" 하고 물어보세요. 고개 끄덕이기 · 젓기나 👍 👎 손짓으로 대답해도 좋아요.',
+  fill: '"멍멍…" 하고 멈춰 기다려 보세요. 아이가 "강아지!" 하고 이어 말하면 크게 칭찬해 주세요.',
+  two: '"빨간 컵 주세요", "큰 공 주세요"처럼 두 가지를 넣어 부탁해 보세요.',
+  real: '그림책 속 사과를 보고 냉장고의 진짜 사과를 찾아 나란히 놓아 보세요.',
+  share: '간식 시간에 가족 접시마다 하나씩 나눠 놓게 해 보세요. "엄마 하나, 아빠 하나" 함께 세어요.',
+  calm: '기분이 좋을 때 미리 "화나면 풍선 숨 쉬기" 연습을 해 두세요. 속상할 때 같은 그림 · 같은 말로 알려 주세요.',
+  hidden: '장난감 상자 속에서 "자동차 찾아볼까?" 하고 하나를 찾아보게 해 주세요.',
+  wh: '"어디서 자?", "뭐로 이 닦아?" 하고 물어보고, 대답이 어려우면 실제 물건을 보여 주세요.',
+  letter: '아이 이름 첫 글자를 크게 써 붙여 두고, 책이나 간판에서 같은 글자를 함께 찾아보세요.',
   fish: '목욕할 때 물에 뜨는 장난감을 띄우고 "빨간 것 잡아 볼까?" 하고 놀아 보세요.',
   tower: '종이컵이나 블록을 아이와 번갈아 한 개씩 높이 쌓아 보세요.',
   catch: '부드러운 공을 굴리거나 던져 주고 바구니나 상자로 받아 보게 해 주세요.',
@@ -3626,6 +3640,16 @@ function gameTip(game) {
 
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
+  gaze: (r) => `${r.spot}|${r.answer}|${r.items.length}`,
+  yesno: (r) => `${r.e}|${r.ask}`,
+  fill: (r) => `${r.e}|${r.choices.length}`,
+  two: (r) => r.key,
+  real: (r) => `${r.answer}|${r.flip}|${r.choices.length}`,
+  share: (r) => `${r.food}|${r.n}|${r.friends}`,
+  calm: (r) => `${r.text}|${r.answer[1]}|${r.choices.length}`,
+  hidden: (r) => `${r.target}|${r.find}`,
+  wh: (r) => `${r.q}|${r.choices.length}`,
+  letter: (r) => `${r.answer}|${r.choices.length}`,
   say: (r) => r.word,
   memory: (r) => r.original.join(),
   copy: (r) => r.original.join(),
@@ -3959,6 +3983,509 @@ const eggGame = {
   review: (rec) => el('div', { class: 'review-note' }, `${rec.e} ${rec.name}`),
 };
 
+/* ---------- 새 학습 놀이 10가지 (센터 평가 영역에서 비어 있던 것) ---------- */
+// 그림 + 이름을 함께 보여 주는 보기 (글자를 아직 못 읽어도 그림으로 고를 수 있게)
+const namedCard = ([e, w]) => el('span', { class: 'phrase-card named-card' }, el('span', { class: 'phrase-icon' }, e), el('b', {}, w));
+// 받침이 있으면 '이에요', 없으면 '예요'
+function copula(word) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return `${word}${code >= 0 && code % 28 ? '이에요' : '예요'}`;
+}
+// 단계별 [앞 5문제, 뒤 5문제] 보기 개수: 쉬움 2 · 보통 2→3 · 어려움 3→4
+const NEW_CHOICES = [[2, 2], [2, 3], [3, 4]];
+const newChoiceCount = (ctx, i) => NEW_CHOICES[ctx.level][i < 5 ? 0 : 1];
+// 그림 종류 (보기를 서로 다른 종류에서 골라 헷갈리지 않게)
+const KIND_OF = {};
+[['과일', '🍎🍌🍇🍓🍉🍊'], ['동물', '🐶🐱🐰🐷🐘🦒🐧🐸🐳🐄🐟'], ['곤충 · 새', '🦋🐝🐥'], ['탈것', '🚗🚌🚲✈️'], ['물건', '🎈⚽🧸☂️'], ['채소 · 꽃', '🥕🌸']]
+  .forEach(([kind, list]) => [...list.matchAll(/\p{Extended_Pictographic}️?/gu)].forEach(([e]) => { KIND_OF[e] = kind; }));
+// 정답과 다른 종류에서 먼저 고르고, 모자라면 같은 종류에서도
+function pickDistractors(answer, pool, n, sameKindOk = false) {
+  const others = shuffle(pool.filter((e) => e !== answer));
+  const far = others.filter((e) => KIND_OF[e] !== KIND_OF[answer]);
+  const near = others.filter((e) => KIND_OF[e] === KIND_OF[answer]);
+  const out = [];
+  for (const e of sameKindOk ? others : [...far, ...near]) {
+    if (out.length >= n) break;
+    if (!out.some((o) => KIND_OF[o] === KIND_OF[e]) || far.length < n) out.push(e);
+  }
+  for (const e of others) if (out.length < n && !out.includes(e)) out.push(e);
+  return out;
+}
+
+/* 👀 쑥쑥이가 보는 것 찾기: 쑥쑥이가 먼저 아이를 보고 → 물건 쪽으로 눈길을 돌림 (공동주의)
+   쉬움: 손가락 + 몸 + 눈 / 보통: 몸 + 눈 / 어려움: 눈만 */
+const GAZE_DIRS = { left: [-1, 0, '👈'], right: [1, 0, '👉'], bottom: [0, 1, '👇'], bl: [-1, 1, '👇'], br: [1, 1, '👇'] };
+const GAZE_LAYOUT = [['left', 'right'], ['left', 'right', 'bottom'], ['left', 'right', 'bl', 'br']];
+function gazeMascotSvg() {
+  const look = typeof currentLook === 'function' ? currentLook() : null;
+  const body = look?.color ?? '#a9dea1';
+  const top = MASCOT_TOPS[look?.top] ?? MASCOT_TOPS.leaf;
+  return `<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+    ${top}
+    <circle cx="50" cy="62" r="28" fill="${body}"/>
+    <circle cx="32" cy="70" r="4.5" fill="#f4a9a0" opacity=".8"/><circle cx="68" cy="70" r="4.5" fill="#f4a9a0" opacity=".8"/>
+    <circle cx="40" cy="56" r="8" fill="#fff" stroke="#3b3226" stroke-width="1.6"/><circle cx="60" cy="56" r="8" fill="#fff" stroke="#3b3226" stroke-width="1.6"/>
+    <g class="gaze-pupils"><circle cx="40" cy="56" r="4.4" fill="#3b3226"/><circle cx="60" cy="56" r="4.4" fill="#3b3226"/>
+      <circle cx="41.4" cy="54.6" r="1.4" fill="#fff"/><circle cx="61.4" cy="54.6" r="1.4" fill="#fff"/></g>
+    <path d="M44 72 Q50 77 56 72" stroke="#3b3226" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </svg>`;
+}
+const gazeGame = {
+  id: 'gaze',
+  title: '쑥쑥이가 보는 것 찾기',
+  desc: '쑥쑥이 눈을 따라가 찾아요',
+  skill: '함께 보기(공동주의)',
+  icon: '👀',
+  color: '#e4f3dc',
+
+  round(i, ctx) {
+    const spots = GAZE_LAYOUT[ctx.level];
+    const words = sample(LISTEN_WORDS, spots.length);
+    const at = rand(spots.length);
+    const spot = spots[at];
+    const answer = words[at][1];
+    const rec = { spot, answer, word: words[at][0], items: words.map(([, e]) => e), chosen: null };
+    const [dx, dy, hand] = GAZE_DIRS[spot];
+    const show = photoRenderer(rec.items);
+
+    const face = el('span', { class: 'gaze-face' });
+    face.innerHTML = gazeMascotSvg();
+    const finger = el('span', { class: 'gaze-hand' }, ctx.level === 0 ? hand : '');
+    const buddy = el('div', { class: `gaze-buddy lv${ctx.level}`, style: `--dx:${dx};--dy:${dy}` }, face, finger);
+    const buttons = words.map(([w, e], k) => el('button', {
+      class: 'tile choice gaze-item', style: `grid-area:${spots[k]}`, 'aria-label': w, onclick: () => choose(k),
+    }, show(e)));
+    const field = el('div', { class: `gaze-field n${spots.length}` }, buddy, ...buttons);
+
+    const lookAway = () => {
+      buddy.classList.remove('looking');
+      ctx.later(() => buddy.classList.add('looking'), 900);
+    };
+    ctx.stage.append(
+      prompt('쑥쑥이가 무엇을 보고 있을까요?'),
+      field,
+      el('button', { class: 'btn-main alt gaze-again', onclick: () => { speak('쑥쑥이를 봐요'); lookAway(); } }, '🔁 다시 보기'),
+    );
+    lookAway();
+    autoHint(ctx, buttons[at]);
+    function choose(k) {
+      if (k !== at) {
+        retryChoice(ctx, buttons[k], buttons[at]);
+        return;
+      }
+      rec.chosen = answer;
+      buttons[k].classList.add('good');
+      ctx.finish(true);
+    }
+    return rec;
+  },
+
+  review: (rec) => el('div', {},
+    el('div', { class: 'review-items' }, el('span', {}, pic(rec.answer))),
+    el('div', { class: 'review-note' }, `쑥쑥이가 본 것: ${rec.word}`)),
+};
+
+/* 👍 네? 아니요?: 사진을 보고 "이건 ○○예요?"에 네 / 아니요로 대답
+   쉬움: 이름(틀린 이름은 아주 다른 것) / 보통: 이름(비슷한 것도) / 어려움: 이름 + "동물이에요?" 같은 종류 질문 */
+const YESNO_KINDS = { 과일: ['🍎', '🍌', '🍓', '🍉'], 동물: ['🐶', '🐱', '🐰', '🐷', '🐘', '🦒', '🐟'], 탈것: ['🚗', '🚌', '🚲', '✈️'] };
+const YESNO_BTNS = { yes: ['👍', '네'], no: ['👎', '아니요'] };
+const yesnoGame = {
+  id: 'yesno',
+  title: '네? 아니요?',
+  desc: '"이건 사과예요?" 네, 아니요로 대답해요',
+  skill: '예 · 아니요 대답하기',
+  icon: '👍',
+  color: '#e2f0fb',
+
+  round(i, ctx) {
+    const [word, e] = pick(SAY_WORDS);
+    const yes = rand(2) === 0;
+    const kindQ = ctx.level === 2 && i % 2 === 1 && Object.values(YESNO_KINDS).some((l) => l.includes(e));
+    let ask;
+    if (kindQ) {
+      const myKind = Object.keys(YESNO_KINDS).find((k) => YESNO_KINDS[k].includes(e));
+      const kind = yes ? myKind : pick(Object.keys(YESNO_KINDS).filter((k) => k !== myKind));
+      ask = kind;
+    } else if (yes) {
+      ask = word;
+    } else {
+      const pool = SAY_WORDS.filter(([, x]) => x !== e && (ctx.level > 0 || KIND_OF[x] !== KIND_OF[e]));
+      ask = pick(pool)[0];
+    }
+    const say = `이건 ${copula(ask)}?`;
+    const rec = choiceRound(ctx, {
+      say,
+      choices: ['yes', 'no'],
+      answer: yes ? 'yes' : 'no',
+      render: (c) => el('span', { class: `phrase-card yesno-card ${c}` }, el('span', { class: 'phrase-icon' }, YESNO_BTNS[c][0]), el('b', {}, YESNO_BTNS[c][1])),
+      top: el('div', { class: 'say-pic' }, pic(e)),
+    });
+    Object.assign(rec, { e, word, ask });
+    return rec;
+  },
+
+  review: (rec) => el('div', {},
+    el('div', { class: 'review-items' }, el('span', {}, pic(rec.e))),
+    el('div', { class: 'review-note' }, `${rec.say} → ${rec.answer === 'yes' ? '네' : `아니요, ${copula(rec.word)}`}`)),
+};
+
+/* 🗨️ 빈칸 말놀이: "멍멍 ___" 하고 멈추면 이어서 대답 (주고받는 말 · 인트라버벌) */
+const FILL_ITEMS = [
+  // [앞말, 그림, 정답 낱말, 단계]
+  ['멍멍', '🐶', '강아지', 0], ['야옹', '🐱', '고양이', 0], ['꿀꿀', '🐷', '돼지', 0], ['음매', '🐄', '소', 0],
+  ['부릉부릉', '🚗', '자동차', 0], ['칙칙폭폭', '🚂', '기차', 0], ['꽥꽥', '🦆', '오리', 0], ['윙윙', '🐝', '벌', 0],
+  ['엄마, ', '👨', '아빠', 1], ['신발이랑', '🧦', '양말', 1], ['숟가락이랑', '🥢', '젓가락', 1], ['하나, 둘,', '3️⃣', '셋', 1],
+  ['가위, 바위,', '✋', '보', 1], ['해님이랑', '🌙', '달님', 1], ['토끼랑', '🐢', '거북이', 1],
+  ['하늘에서 반짝반짝 빛나는', '⭐', '별', 2], ['비가 오면 쓰는', '☂️', '우산', 2], ['졸리면 누워 자는', '🛏️', '침대', 2],
+  ['목이 마르면 마시는', '🥛', '우유', 2], ['밖에 나갈 때 신는', '👟', '신발', 2], ['손을 씻을 때 쓰는', '🧼', '비누', 2],
+];
+const fillGame = {
+  id: 'fill',
+  title: '빈칸 말놀이',
+  desc: '"멍멍 ___" 이어서 대답해요',
+  skill: '주고받는 말 · 이어 말하기',
+  icon: '🗨️',
+  color: '#fdecc8',
+
+  round(i, ctx) {
+    const pool = FILL_ITEMS.filter(([, , , lv]) => lv <= ctx.level);
+    const item = pick(pool.filter(([, , , lv]) => lv === ctx.level).length && rand(3) ? pool.filter(([, , , lv]) => lv === ctx.level) : pool);
+    const [front, e, word] = item;
+    const others = shuffle(FILL_ITEMS.filter(([, x]) => x !== e)).slice(0, newChoiceCount(ctx, i) - 1);
+    const choices = shuffle([[e, word], ...others.map(([, x, w]) => [x, w])]);
+    const answer = choices.find(([x]) => x === e);
+    const say = `${front} …?`;
+    const rec = choiceRound(ctx, {
+      say,
+      choices,
+      answer,
+      render: namedCard,
+    });
+    // 화면 글자는 빈칸으로, 읽어 줄 때는 '…'에서 잠깐 멈춤
+    ctx.stage.querySelector('.prompt > span').replaceChildren(`${front.trim()} `, el('span', { class: 'fill-blank' }, '?'));
+    Object.assign(rec, { front, e, word });
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, `${rec.front.trim()} ${rec.e} ${rec.word}`),
+};
+
+/* 🔴 두 가지 듣고 찾기: "빨간 공" 처럼 색과 이름을 함께 듣고 찾기 (보기는 색만 같거나 이름만 같은 것) */
+const TWO_COLORS = [['빨간', '#e8584c'], ['파란', '#4a86d9'], ['노란', '#f4c22b'], ['초록', '#46a865']];
+const TWO_THINGS = {
+  공: (c) => `<circle cx="50" cy="52" r="36" fill="${c}"/><path d="M16 46 Q50 70 84 46" stroke="#fff" stroke-width="6" fill="none" opacity=".75"/><ellipse cx="36" cy="32" rx="9" ry="5" fill="#fff" opacity=".45" transform="rotate(-30 36 32)"/>`,
+  자동차: (c) => `<path d="M14 58 Q14 46 26 46 L32 32 Q34 28 40 28 L62 28 Q67 28 70 33 L76 46 Q88 46 88 58 L88 66 L14 66 Z" fill="${c}"/><path d="M38 34 L62 34 L68 46 L33 46 Z" fill="#dff1ff"/><circle cx="32" cy="68" r="9" fill="#3b3226"/><circle cx="70" cy="68" r="9" fill="#3b3226"/><circle cx="32" cy="68" r="3.5" fill="#ddd"/><circle cx="70" cy="68" r="3.5" fill="#ddd"/>`,
+  컵: (c) => `<path d="M24 26 L70 26 L64 82 Q63 88 57 88 L37 88 Q31 88 30 82 Z" fill="${c}"/><path d="M68 40 Q88 40 86 56 Q84 70 64 68" stroke="${c}" stroke-width="7" fill="none"/><rect x="22" y="22" width="50" height="8" rx="4" fill="${c}"/><path d="M33 36 L37 76" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".45"/>`,
+  모자: (c) => `<path d="M22 62 Q22 28 50 28 Q78 28 78 62 Z" fill="${c}"/><path d="M14 62 L92 62 Q94 72 84 72 L22 72 Q12 72 14 62 Z" fill="${c}" opacity=".85"/><circle cx="50" cy="26" r="6" fill="${c}"/><path d="M34 44 Q40 36 48 34" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity=".45"/>`,
+};
+const twoThing = ([cName, col, thing]) => {
+  const s = el('span', { class: 'two-thing', 'aria-label': `${cName} ${thing}` });
+  s.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true">${TWO_THINGS[thing](col)}</svg>`;
+  return s;
+};
+const twoGame = {
+  id: 'two',
+  title: '두 가지 듣고 찾기',
+  desc: '"빨간 공"처럼 색과 이름을 함께 들어요',
+  skill: '듣고 이해하기 2단계',
+  icon: '🔴',
+  color: '#fde0dc',
+
+  round(i, ctx) {
+    const [c0, c1] = sample(TWO_COLORS, 2);
+    const [t0, t1] = sample(Object.keys(TWO_THINGS), 2);
+    const target = [...c0, t0];
+    const sameThing = [...c1, t0];
+    const sameColor = [...c0, t1];
+    const neither = [...c1, t1];
+    const n = newChoiceCount(ctx, i);
+    let others;
+    if (n === 2) others = [ctx.level === 0 ? (i < 5 ? sameThing : sameColor) : pick([sameThing, sameColor])];
+    else others = [sameThing, sameColor, neither].slice(0, n - 1);
+    const choices = shuffle([target, ...others]);
+    const rec = choiceRound(ctx, { say: `${c0[0]} ${t0}${objectParticle(t0)} 찾아요`, choices, answer: target, render: twoThing });
+    rec.key = `${c0[0]}${t0}|${others.map((o) => o[0] + o[2]).join()}`;
+    return rec;
+  },
+
+  review: (rec) => choiceReview(rec, twoThing),
+};
+
+/* 📷 진짜와 그림 짝짓기: 사진 ↔ 그림 (그림에서 배운 것을 실제 모습으로 넓히기 = 일반화) */
+const REAL_ITEMS = ['🍎', '🍌', '🍇', '🍓', '🍉', '🍊', '🥕', '🌸', '🐶', '🐱', '🐰', '🐷', '🐘', '🦒', '🐧', '🐸', '🐳', '🐄', '🐟',
+  '🦋', '🐝', '🐥', '🚗', '🚌', '🚲', '✈️', '🎈', '⚽', '🧸', '☂️'];
+const realGame = {
+  id: 'real',
+  title: '진짜와 그림 짝짓기',
+  desc: '사진과 같은 그림을 찾아요',
+  skill: '사진 ↔ 그림 연결 (일반화)',
+  icon: '📷',
+  color: '#e6eefc',
+
+  round(i, ctx) {
+    const answer = pick(REAL_ITEMS);
+    const n = newChoiceCount(ctx, i);
+    const choices = shuffle([answer, ...pickDistractors(answer, REAL_ITEMS, n - 1, ctx.level === 2)]);
+    const flip = ctx.level === 2 && i >= 5; // 어려움 뒤쪽: 그림을 보고 사진 찾기
+    const rec = choiceRound(ctx, {
+      say: flip ? '그림과 같은 것을 사진에서 찾아요' : '사진과 같은 것을 그림에서 찾아요',
+      choices,
+      answer,
+      render: flip ? pic : (e) => el('span', { class: 'real-emoji' }, e),
+      top: el('div', { class: `say-pic${flip ? ' real-emoji-top' : ''}` }, flip ? e2span(answer) : pic(answer)),
+    });
+    rec.flip = flip;
+    return rec;
+  },
+
+  review: (rec) => el('div', {},
+    el('div', { class: 'review-items' }, el('span', {}, pic(rec.answer)), el('span', {}, '='), el('span', {}, rec.answer))),
+};
+function e2span(e) { return el('span', { class: 'real-emoji' }, e); }
+
+/* 🍪 하나씩 나눠 주기: 접시마다 하나씩 (1:1 대응 · 셈의 기초) */
+const SHARE_FOODS = [['🍪', '쿠키'], ['🍎', '사과'], ['🍓', '딸기'], ['🍩', '도넛'], ['🍙', '주먹밥']];
+const SHARE_FRIENDS = ['🐶', '🐱', '🐰', '🐻'];
+const COUNT_WORDS = ['하나', '둘', '셋', '넷', '다섯'];
+const shareGame = {
+  id: 'share',
+  title: '하나씩 나눠 주기',
+  desc: '접시마다 하나씩 놓아요',
+  skill: '하나에 하나씩 (1:1 대응)',
+  icon: '🍪',
+  color: '#fbe7d3',
+
+  round(i, ctx) {
+    const n = [[2, 3], [3, 3], [3, 4]][ctx.level][i < 5 ? 0 : 1];
+    const [food, name] = pick(SHARE_FOODS);
+    const friends = ctx.level === 2 ? sample(SHARE_FRIENDS, n) : null;
+    const rec = { n, food, name, friends: friends?.join('') ?? '' };
+    let placed = 0;
+    const tray = el('div', { class: 'share-tray' }, range(1, n).map(() => el('span', { class: 'share-food' }, food)));
+    const plates = range(1, n).map((k) => el('button', { class: 'share-plate', 'aria-label': `${k}번 접시`, onclick: () => put(k - 1) },
+      friends ? el('span', { class: 'share-friend' }, friends[k - 1]) : null, el('span', { class: 'share-dish' }), el('span', { class: 'share-on' })));
+    ctx.stage.append(
+      prompt(friends ? `친구마다 ${name}${objectParticle(name)} 하나씩 줘요` : `접시마다 ${name}${objectParticle(name)} 하나씩 놓아요`),
+      tray,
+      el('div', { class: 'share-plates' }, plates),
+    );
+    autoHint(ctx, plates[0]);
+    function put(k) {
+      const p = plates[k];
+      if (p.classList.contains('full')) {
+        const empty = plates.find((x) => !x.classList.contains('full'));
+        plates.forEach((x) => x.classList.remove('hint'));
+        empty?.classList.add('hint');
+        ctx.miss(friends ? '이 친구는 벌써 받았어요. 아직 없는 친구에게 줘요' : '이 접시엔 벌써 있어요. 빈 접시에 놓아요');
+        return;
+      }
+      plates.forEach((x) => x.classList.remove('hint'));
+      p.classList.add('full');
+      p.querySelector('.share-on').textContent = food;
+      tray.children[n - 1 - placed]?.classList.add('gone');
+      speak(COUNT_WORDS[placed] ?? String(placed + 1));
+      tone([600 + placed * 110], 0.07);
+      if (++placed === n) ctx.later(() => ctx.finish(true), 500);
+    }
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, `${rec.friends || '접시 '.repeat(rec.n).trim()} → ${rec.food.repeat(rec.n)} (${rec.n}개)`),
+};
+
+/* 🌡️ 마음 크기 · 진정하기: 속상한 상황에서 마음 크기를 보고, 도움이 되는 방법 고르기 */
+const CALM_SIZES = ['조금', '많이', '아주 많이'];
+const CALM_SITUATIONS = [
+  // [그림, 상황, 기분, 크기 0~2]
+  ['⏳', '기다리는 시간이 길어요', '답답해요', 0],
+  ['🧩', '퍼즐이 잘 안 맞아요', '속상해요', 0],
+  ['🍦', '아이스크림을 떨어뜨렸어요', '속상해요', 1],
+  ['🧱', '블록 탑이 무너졌어요', '화가 나요', 1],
+  ['📺', '보던 영상을 그만 봐야 해요', '속상해요', 1],
+  ['🔊', '주변 소리가 너무 커요', '힘들어요', 2],
+  ['🧸', '친구가 내 장난감을 가져갔어요', '화가 나요', 2],
+];
+const CALM_GOOD = [['🎈', '숨을 크게 쉬어요'], ['🤗', '안아 달라고 해요'], ['🙏', '"도와주세요" 말해요'], ['🛋️', '조용한 곳에서 쉬어요'], ['🔢', '하나, 둘, 셋 세어요']];
+const CALM_GOOD_FOR = { '🔊': [['🎧', '귀마개를 해요'], ['🛋️', '조용한 곳에서 쉬어요']] };
+const CALM_BAD = [['💥', '물건을 던져요'], ['😫', '소리를 질러요'], ['🦶', '발로 차요']];
+const calmMeter = (size) => el('div', { class: 'calm-meter', 'aria-label': `마음 크기: ${CALM_SIZES[size]}` },
+  [0, 1, 2].map((k) => el('span', { class: `calm-bar b${k}${k <= size ? ' on' : ''}` })),
+  el('b', {}, CALM_SIZES[size]));
+const calmGame = {
+  id: 'calm',
+  title: '마음 크기 · 진정하기',
+  desc: '속상할 때 도움이 되는 방법을 골라요',
+  skill: '감정 크기 알기 · 스스로 진정하기',
+  icon: '🌡️',
+  color: '#e9e3f8',
+
+  round(i, ctx) {
+    const pool = CALM_SITUATIONS.filter(([, , , s]) => s <= ctx.level + 0);
+    const [icon, text, feel, size] = pick(pool);
+    const good = pick(CALM_GOOD_FOR[icon] ?? CALM_GOOD);
+    const n = [[2, 2], [2, 3], [3, 3]][ctx.level][i < 5 ? 0 : 1];
+    const choices = shuffle([good, ...sample(CALM_BAD, n - 1)]);
+    const say = `${text}. 마음이 ${CALM_SIZES[size]} ${feel}. 어떻게 하면 좋을까요?`;
+    const rec = choiceRound(ctx, {
+      say,
+      choices,
+      answer: good,
+      render: phraseCard,
+      wide: true,
+      top: el('div', { class: 'calm-top' }, el('span', { class: 'calm-icon' }, icon), el('div', {}, el('div', { class: 'calm-text' }, text), calmMeter(size))),
+    });
+    Object.assign(rec, { icon, text, size });
+    return rec;
+  },
+
+  review: (rec) => el('div', {},
+    el('div', { class: 'review-note' }, `${rec.icon} ${rec.text} (마음 크기: ${CALM_SIZES[rec.size]})`),
+    el('div', { class: 'review-note' }, `→ ${rec.answer[0]} ${rec.answer[1]}`)),
+};
+
+/* 🔍 숨은 그림 찾기: 여러 그림 사이에서 찾기 (전경-배경 구분)
+   쉬움: 5개 중 1개 / 보통: 9개 중 1개 / 어려움: 12개 중 2개 */
+const HIDDEN_SETUP = [{ cols: 3, rows: 2, find: 1 }, { cols: 3, rows: 3, find: 1 }, { cols: 4, rows: 3, find: 2 }];
+const hiddenGame = {
+  id: 'hidden',
+  title: '숨은 그림 찾기',
+  desc: '여러 그림 사이에서 찾아요',
+  skill: '찾아내기 (시지각)',
+  icon: '🔍',
+  color: '#fff1c9',
+
+  round(i, ctx) {
+    const { cols, rows, find } = HIDDEN_SETUP[ctx.level];
+    const [word, target] = pick(LISTEN_WORDS);
+    const others = LISTEN_WORDS.filter(([, e]) => e !== target && KIND_OF[e] !== KIND_OF[target]).map(([, e]) => e);
+    const total = cols * rows;
+    const items = shuffle([...Array(find).fill(target), ...range(1, total - find).map(() => pick(others))]);
+    const rec = { word, target, items: items.join(''), find };
+    let found = 0;
+    const cells = items.map((e, k) => {
+      const tilt = ctx.level === 2 ? rand(41) - 20 : rand(17) - 8;
+      const b = el('button', {
+        class: 'hidden-thing', 'aria-label': `${k + 1}번 그림`,
+        style: `--r:${tilt}deg;--x:${rand(31) - 15}%;--y:${rand(31) - 15}%;--s:${ctx.level === 0 ? 1 : 0.8 + rng() * 0.35}`,
+        onclick: () => tap(b, e),
+      }, e);
+      return b;
+    });
+    const field = el('div', { class: `hidden-field lv${ctx.level}`, style: `grid-template-columns:repeat(${cols},1fr)` }, cells);
+    ctx.stage.append(
+      prompt(find > 1 ? `${word}${objectParticle(word)} 두 개 찾아요` : `${word}${objectParticle(word)} 찾아요`),
+      el('div', { class: 'hidden-goal' }, el('span', {}, '찾을 그림'), el('b', {}, target), find > 1 ? el('small', { class: 'hidden-count' }, `0 / ${find}`) : null),
+      field,
+    );
+    const firstLeft = () => cells.find((b, k) => items[k] === target && !b.classList.contains('found'));
+    autoHint(ctx, firstLeft());
+    function tap(b, e) {
+      if (b.classList.contains('found')) return;
+      if (e !== target) {
+        b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope');
+        firstLeft()?.classList.add('hint');
+        ctx.miss(`그건 아니에요. ${word}${objectParticle(word)} 찾아요`);
+        return;
+      }
+      b.classList.remove('hint');
+      b.classList.add('found');
+      found += 1;
+      const cnt = ctx.stage.querySelector('.hidden-count');
+      if (cnt) cnt.textContent = `${found} / ${find}`;
+      tone([700 + found * 120], 0.08);
+      if (found === find) ctx.finish(true);
+      else autoHint(ctx, firstLeft());
+    }
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, `${rec.target} ${rec.word} ${rec.find}개 찾기`),
+};
+
+/* ❓ 어디서? 누가? 무엇?: 질문을 듣고 그림으로 대답 */
+const WH_QS = [
+  // [질문, 그림, 이름, 단계]
+  ['어디에서 자요?', '🛏️', '침대', 0], ['어디에서 목욕해요?', '🛁', '욕조', 0], ['무엇으로 이를 닦아요?', '🪥', '칫솔', 0],
+  ['무엇을 타고 하늘을 날아요?', '✈️', '비행기', 0], ['무엇으로 그림을 그려요?', '🖍️', '크레파스', 0], ['무엇으로 밥을 먹어요?', '🥄', '숟가락', 0],
+  ['물고기는 어디에 살아요?', '🌊', '물', 1], ['누가 꿀을 만들어요?', '🐝', '벌', 1], ['누가 우유를 줘요?', '🐄', '소', 1],
+  ['무엇을 신고 밖에 나가요?', '👟', '신발', 1], ['어디에 쓰레기를 버려요?', '🗑️', '쓰레기통', 1], ['무엇으로 머리를 감아요?', '🧴', '샴푸', 1],
+  ['누가 불을 꺼요?', '🧑‍🚒', '소방관', 2], ['누가 아픈 곳을 고쳐 줘요?', '🧑‍⚕️', '의사 선생님', 2], ['누가 맛있는 요리를 해요?', '🧑‍🍳', '요리사', 2],
+  ['누가 길을 지켜 줘요?', '👮', '경찰관', 2], ['언제 잠을 자요?', '🌙', '밤', 2], ['언제 해가 떠요?', '🌅', '아침', 2],
+];
+const WH_CLASH = [['🛏️', '🌙']];
+const whGame = {
+  id: 'wh',
+  title: '어디서? 누가? 무엇?',
+  desc: '질문을 듣고 그림으로 대답해요',
+  skill: '질문 알아듣기',
+  icon: '❓',
+  color: '#dff3ef',
+
+  round(i, ctx) {
+    const pool = WH_QS.filter(([, , , lv]) => lv <= ctx.level);
+    const fresh = pool.filter(([, , , lv]) => lv === ctx.level);
+    const [q, e, w] = pick(fresh.length && rand(3) ? fresh : pool);
+    const n = newChoiceCount(ctx, i);
+    // 함께 답이 될 수 있는 짝은 보기로 같이 내지 않음 (밤 ↔ 침대)
+    const clash = WH_CLASH.find((pair) => pair.includes(e)) ?? [];
+    const wrongs = shuffle(WH_QS.filter(([, x]) => x !== e && !clash.includes(x))).slice(0, n - 1).map(([, x, y]) => [x, y]);
+    const choices = shuffle([[e, w], ...wrongs]);
+    const rec = choiceRound(ctx, { say: q, choices, answer: choices.find(([x]) => x === e), render: namedCard });
+    rec.q = q;
+    return rec;
+  },
+
+  review: (rec) => el('div', { class: 'review-note' }, `${rec.q} → ${rec.answer[0]} ${rec.answer[1]}`),
+};
+
+/* 가 글자 놀이: 쉬움 똑같은 글자 찾기 → 보통 소리 듣고 글자 찾기 → 어려움 그림의 첫 글자 찾기
+   보기 글자는 첫소리가 서로 다른 것만 (가/거, 바/파처럼 비슷한 글자는 함께 내지 않음) */
+const LETTER_WORDS = SAY_WORDS.filter(([w], k, arr) => arr.findIndex(([x]) => x[0] === w[0]) === k);
+const choseong = (ch) => Math.floor((ch.charCodeAt(0) - 0xac00) / 588);
+const SIMILAR_CHO = [[0, 1, 15], [3, 4, 16], [7, 8, 17], [9, 10], [12, 13, 14]]; // ㄱㄲㅋ · ㄷㄸㅌ · ㅂㅃㅍ · ㅅㅆ · ㅈㅉㅊ
+const choGroup = (ch) => SIMILAR_CHO.findIndex((g) => g.includes(choseong(ch)));
+const sameChoGroup = (a, b) => choseong(a) === choseong(b) || (choGroup(a) >= 0 && choGroup(a) === choGroup(b));
+const letterTile = (ch) => el('span', { class: 'letter-glyph' }, ch);
+const letterGame = {
+  id: 'letter',
+  title: '글자 놀이',
+  desc: '같은 글자, 첫 글자를 찾아요',
+  skill: '한글 첫걸음',
+  icon: '가',
+  color: '#fff0d9',
+
+  round(i, ctx) {
+    const [word, e] = pick(LETTER_WORDS);
+    const ch = word[0];
+    const n = newChoiceCount(ctx, i);
+    const others = [];
+    for (const [w] of shuffle(LETTER_WORDS)) {
+      if (others.length >= n - 1) break;
+      if ([ch, ...others].some((o) => sameChoGroup(o, w[0]))) continue;
+      others.push(w[0]);
+    }
+    const choices = shuffle([ch, ...others]);
+    let say, top;
+    if (ctx.level === 0) {
+      say = '똑같은 글자를 찾아요';
+      top = el('div', { class: 'letter-goal' }, letterTile(ch));
+    } else if (ctx.level === 1) {
+      say = `${ch}! ${word}의 ${ch}. ${ch} 글자를 찾아요`;
+      top = el('div', { class: 'letter-goal small' }, el('span', { class: 'letter-pic' }, pic(e)), el('b', {}, word));
+    } else {
+      say = `${topicParticle(word)} 어떤 글자로 시작해요?`;
+      top = el('div', { class: 'say-pic' }, pic(e));
+    }
+    const rec = choiceRound(ctx, { say, choices, answer: ch, render: letterTile, top });
+    Object.assign(rec, { word, e });
+    return rec;
+  },
+
+  review: (rec) => el('div', {},
+    el('div', { class: 'review-items' }, el('span', {}, pic(rec.e)), el('span', { class: 'letter-glyph' }, rec.answer)),
+    el('div', { class: 'review-note' }, rec.word)),
+};
+
 const GAMES = [
   copyGame, linesGame, listenGame, feelGame, matchGame, routineGame, spaceGame, memoryGame, patternGame,
   countGame, oddGame, flipGame, shadowGame, orderGame, traceGame, sortGame, balloonGame, moleGame,
@@ -3968,6 +4495,7 @@ const GAMES = [
   socialGame, missingGame, halfGame, safetyGame, groupGame, weatherGame, rhythmGame, whyGame,
   familyGame, sayGame,
   fishGame, towerGame, catchGame, dotsGame, eggGame,
+  gazeGame, yesnoGame, fillGame, twoGame, realGame, shareGame, calmGame, hiddenGame, whGame, letterGame,
 ];
 // 오늘의 학습에 돌아가며 나오는 놀이 (보호자가 준비해야 하는 놀이는 뺌)
 const DAILY_GAMES = GAMES.filter((g) => !g.optional);
@@ -4159,14 +4687,14 @@ function playDaily() {
 /* ---------- 화면: 홈 ---------- */
 // 놀이를 영역별로 묶음 (보호자가 이해하기 쉬운 말로)
 const CATEGORIES = [
-  { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame, imitateGame] },
+  { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame, imitateGame, realGame, hiddenGame] },
   { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame, puzzleGame] },
   { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame, rhythmGame, fishGame, towerGame, catchGame, dotsGame, eggGame] },
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame, missingGame] },
   { id: 'think', icon: '🔍', name: '생각·규칙', desc: '규칙과 순서, 위치를 찾아요', games: [patternGame, orderGame, spaceGame, sizeGame, colorGame, oppositeGame, needGame, halfGame, groupGame, weatherGame] },
-  { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame, numberGame] },
-  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [familyGame, listenGame, sayGame, soundGame, verbGame, matchGame, bodyGame, useGame, stepsGame] },
-  { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, whyGame, socialGame, safetyGame, routineGame, turnGame, waitGame] },
+  { id: 'number', icon: '🔢', name: '수', desc: '하나, 둘, 셋 세어 봐요', games: [countGame, numberGame, shareGame] },
+  { id: 'talk', icon: '🗣️', name: '말·소통', desc: '말을 듣고 뜻을 알아요', games: [familyGame, gazeGame, listenGame, yesnoGame, twoGame, whGame, fillGame, sayGame, soundGame, verbGame, matchGame, bodyGame, useGame, stepsGame, letterGame] },
+  { id: 'life', icon: '💛', name: '마음·생활', desc: '기분과 생활 습관을 익혀요', games: [feelGame, whyGame, calmGame, socialGame, safetyGame, routineGame, turnGame, waitGame] },
 ];
 
 // 기록 한 장에 쓰는 발달 영역 이름 (선생님이 개별화 목표와 맞춰 보기 쉽게)
@@ -7286,7 +7814,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 119;
+const APP_VERSION = 120;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

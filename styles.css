@@ -2503,3 +2503,82 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
   .tblock.moving { animation-duration: 5s !important; }
   .egg.wobble, .hatched, .tblock.land { animation: none; }
 }
+
+/* ---------- 새 학습 놀이 10가지 ---------- */
+/* 👀 쑥쑥이가 보는 것 찾기 */
+.gaze-field { display: grid; gap: 14px 8px; margin-top: 18px !important; align-items: center; justify-items: center; width: 100%; max-width: calc(440px * var(--k)); margin: 4px auto; }
+.gaze-field.n2 { grid-template-columns: 1fr 1.2fr 1fr; grid-template-areas: "left buddy right"; }
+.gaze-field.n3 { grid-template-columns: 1fr 1.2fr 1fr; grid-template-areas: "left buddy right" ". bottom ."; }
+.gaze-field.n4 { grid-template-columns: 1fr 1.2fr 1fr; grid-template-areas: "left buddy right" "bl . br"; }
+.gaze-field .gaze-item { --t: clamp(84px, 27vw, calc(124px * var(--k))); }
+.gaze-buddy { grid-area: buddy; position: relative; width: clamp(110px, 36vw, calc(170px * var(--k))); aspect-ratio: 1; }
+.gaze-face { display: block; width: 100%; height: 100%; transition: transform .7s ease; }
+.gaze-face svg { width: 100%; height: 100%; display: block; }
+.gaze-pupils { transition: transform .7s ease; }
+.gaze-buddy.looking .gaze-pupils { transform: translate(calc(var(--dx) * 3.4px), calc(var(--dy) * 3px)); }
+.gaze-buddy.lv0.looking .gaze-face, .gaze-buddy.lv1.looking .gaze-face { transform: translate(calc(var(--dx) * 8%), calc(var(--dy) * 6%)) rotate(calc(var(--dx) * 12deg)); }
+.gaze-hand { position: absolute; left: 50%; top: 92%; font-size: clamp(30px, 9vw, 46px); line-height: 1; opacity: 0; transform: translate(-50%, -50%); transition: opacity .4s .3s, left .7s ease, top .7s ease; pointer-events: none; }
+.gaze-buddy.looking .gaze-hand { opacity: 1; left: calc(50% + var(--dx) * 52%); top: calc(88% + var(--dy) * 22%); }
+.gaze-again { width: auto !important; margin: 14px auto 0; padding: 10px 24px; font-size: 19px; }
+
+/* 👍 네? 아니요? */
+.yesno-card .phrase-icon { font-size: calc(var(--t, 90px) * .42); }
+.yesno-card.yes b { color: #2f7a46; }
+.yesno-card.no b { color: #b5453c; }
+
+/* 🗨️ 빈칸 말놀이 */
+.fill-line { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 4px 0 2px; font-family: 'Jua', sans-serif; font-size: clamp(26px, 7vw, 38px); color: var(--ink, #4a3f31); }
+.fill-blank { display: inline-grid; place-items: center; min-width: 2.4em; padding: 0 .3em; border-bottom: 4px dashed var(--orange); color: var(--orange); }
+.named-card .phrase-icon { font-size: calc(var(--t, 90px) * .42); }
+
+/* 🔴 두 가지 듣고 찾기 */
+.two-thing { display: grid; place-items: center; width: 82%; height: 82%; }
+.two-thing svg { width: 100%; height: 100%; }
+
+/* 📷 진짜와 그림 짝짓기 */
+.real-emoji { font-size: calc(var(--t, 90px) * .66); line-height: 1; }
+.say-pic.real-emoji-top .real-emoji { font-size: clamp(90px, 28vw, 130px); }
+
+/* 🍪 하나씩 나눠 주기 */
+.share-tray { display: flex; justify-content: center; gap: 8px; min-height: 64px; margin: 6px auto 4px; padding: 8px 14px; border-radius: 18px; background: #f6ead6; font-size: clamp(34px, 9vw, 48px); }
+.share-food { transition: opacity .3s, transform .3s; }
+.share-food.gone { opacity: 0; transform: translateY(30px) scale(.5); }
+.share-plates { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 10px; }
+.share-plate { position: relative; display: grid; place-items: end center; width: clamp(80px, 22vw, calc(110px * var(--k))); height: clamp(100px, 28vw, calc(140px * var(--k))); padding: 0 0 6px; border: 0; background: none; }
+.share-friend { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: clamp(36px, 10vw, 52px); line-height: 1; }
+.share-dish { width: 100%; aspect-ratio: 2.2; border-radius: 50%; background: radial-gradient(ellipse at 50% 40%, #fff 55%, #e6ddd0 56%, #fff 70%); border: 3px solid #e2d6c3; box-shadow: 0 4px 0 rgba(60, 45, 30, .1); }
+.share-on { position: absolute; bottom: 18%; left: 50%; transform: translateX(-50%); font-size: clamp(34px, 9vw, 48px); line-height: 1; }
+.share-plate.full .share-on { animation: pop .35s; }
+.stage .share-plate.hint .share-dish { border-color: var(--orange); box-shadow: 0 0 0 4px #fde9cf; }
+
+/* 🌡️ 마음 크기 · 진정하기 */
+.calm-top { display: flex; align-items: center; gap: 14px; width: 100%; max-width: calc(440px * var(--k)); margin: 4px auto; padding: 12px 16px; border-radius: 20px; background: #f4effc; }
+.calm-icon { font-size: clamp(44px, 12vw, 60px); line-height: 1; }
+.calm-text { font-size: 19px; margin-bottom: 6px; }
+.calm-meter { display: flex; align-items: flex-end; gap: 5px; }
+.calm-bar { width: 22px; border-radius: 6px; background: #e4ddd0; }
+.calm-bar.b0 { height: 14px; } .calm-bar.b1 { height: 24px; } .calm-bar.b2 { height: 34px; }
+.calm-bar.b0.on { background: #8fd19e; } .calm-bar.b1.on { background: #ffc94d; } .calm-bar.b2.on { background: #ef8a7a; }
+.calm-meter b { margin-left: 8px; font-weight: 400; font-family: 'Jua', sans-serif; font-size: 20px; }
+
+/* 🔍 숨은 그림 찾기 */
+.hidden-goal { display: flex; align-items: center; gap: 10px; padding: 6px 16px; border-radius: 999px; background: #fff; border: 2px solid var(--line, #ebe4d6); }
+.hidden-goal b { font-size: 40px; line-height: 1; }
+.hidden-goal span, .hidden-goal small { color: #8a7a62; font-size: 17px; }
+.hidden-field { display: grid; gap: 4px; width: 100%; max-width: calc(440px * var(--k)); margin: 8px auto; padding: 10px; border-radius: 24px; background: #fdf6e6; border: 3px solid #f3e6c8; }
+.hidden-field.lv2 { background: #fbf0d9; }
+.hidden-thing { display: grid; place-items: center; aspect-ratio: 1; padding: 0; border: 3px solid transparent; border-radius: 18px; background: none; font-size: clamp(36px, 11vw, 58px); line-height: 1; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(var(--s)); transition: background .2s; }
+.hidden-field.lv0 .hidden-thing { font-size: clamp(46px, 15vw, 72px); }
+.hidden-thing.found { background: var(--good-bg); border-color: var(--good); transform: none; }
+.hidden-thing.nope { animation: nope .3s; }
+.stage .hidden-thing.hint { border-color: var(--orange); }
+
+/* 가 글자 놀이 */
+.letter-glyph { font-family: 'Jua', sans-serif; font-size: calc(var(--t, 90px) * .6); line-height: 1; color: #4a3f31; }
+.letter-goal { display: grid; place-items: center; width: clamp(110px, 32vw, 150px); aspect-ratio: 1; margin: 4px auto; border-radius: 28px; background: #fff; border: 3px solid #f0d7a8; }
+.letter-goal .letter-glyph { font-size: clamp(70px, 22vw, 100px); }
+.letter-goal.small { display: flex; flex-direction: column; gap: 4px; width: clamp(120px, 34vw, 160px); aspect-ratio: auto; padding: 10px; }
+.letter-pic { display: block; width: 100%; aspect-ratio: 1; border-radius: 18px; overflow: hidden; font-size: 70px; text-align: center; }
+.letter-pic .photo { width: 100%; height: 100%; object-fit: cover; }
+.letter-goal.small b { font-weight: 400; font-family: 'Jua', sans-serif; font-size: 24px; }
+.review-items .letter-glyph { --t: 64px; }
