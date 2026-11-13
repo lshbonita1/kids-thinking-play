@@ -1,4 +1,4 @@
-// Vercel Cron이 매일 저녁(한국 8시쯤) 부름: 예약표에서 날짜가 된 릴스를 하나 올림
+// Vercel Cron이 하루 두 번(한국 낮 12시 · 저녁 8시쯤) 부름: 부를 때마다 예약표에서 날짜가 된 릴스를 하나씩 올림 (하루 2개)
 // Vercel이 Authorization: Bearer <CRON_SECRET> 를 붙여 보냄
 import { runOnce } from '../lib/insta.js';
 import { runThreadsOnce, threadsOn } from '../lib/threads.js';
