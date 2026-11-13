@@ -4794,10 +4794,10 @@ function gamePicks(count = 8) {
 const LOGO_SVG = `
 <svg viewBox="0 0 410 72" aria-hidden="true" focusable="false">
   <g transform="translate(-4 -6) scale(.8)">
-    <path d="M50 36 V22" stroke="#4fa86f" stroke-width="5" stroke-linecap="round"/>
-    <ellipse cx="37" cy="20" rx="14" ry="7.5" fill="#6cc08a" transform="rotate(-28 37 20)"/>
-    <ellipse cx="63" cy="20" rx="14" ry="7.5" fill="#4fa86f" transform="rotate(28 63 20)"/>
-    <circle cx="50" cy="62" r="28" fill="#a9dea1"/>
+    <path d="M50 36 V22" stroke="#3d9160" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="37" cy="20" rx="14" ry="7.5" fill="#55b07a" transform="rotate(-28 37 20)"/>
+    <ellipse cx="63" cy="20" rx="14" ry="7.5" fill="#3d9160" transform="rotate(28 63 20)"/>
+    <circle cx="50" cy="62" r="28" fill="#8fcf88"/>
     <circle cx="40" cy="58" r="4.2" fill="#3b3226"/><circle cx="60" cy="58" r="4.2" fill="#3b3226"/>
     <circle cx="41.4" cy="56.6" r="1.3" fill="#fff"/><circle cx="61.4" cy="56.6" r="1.3" fill="#fff"/>
     <circle cx="32" cy="68" r="4.5" fill="#f4a9a0" opacity=".8"/><circle cx="68" cy="68" r="4.5" fill="#f4a9a0" opacity=".8"/>
@@ -4816,9 +4816,16 @@ const LOGO_SVG = `
   </g>
 </svg>`;
 
+// 로고를 누르면 홈을 처음 상태로 새로 불러옴 (새 버전이 있으면 그것도 받음)
 function logoTitle() {
-  const h1 = el('h1', { class: 'logo', 'aria-label': '쑥쑥 생각놀이' });
-  h1.innerHTML = LOGO_SVG;
+  const h1 = el('h1', { class: 'logo' });
+  const btn = el('a', { class: 'logo-link', href: './', 'aria-label': '쑥쑥 생각놀이 처음 화면으로', onclick: (e) => {
+    e.preventDefault();
+    store.set('homeTab', 'today');
+    location.replace(location.pathname);
+  } });
+  btn.innerHTML = LOGO_SVG;
+  h1.append(btn);
   return h1;
 }
 
@@ -7854,7 +7861,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 126;
+const APP_VERSION = 127;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
