@@ -4364,9 +4364,12 @@ const hiddenGame = {
     let found = 0;
     const cells = items.map((e, k) => {
       const tilt = ctx.level === 2 ? rand(41) - 20 : rand(17) - 8;
+      // 흩뜨리기: 가장자리 칸은 안쪽으로만 밀어서 그림이 화면 밖으로 나가지 않게
+      const col = k % cols, row = Math.floor(k / cols);
+      const nudge = (pos, last) => { const v = rand(31) - 15; return pos === 0 ? Math.abs(v) : pos === last ? -Math.abs(v) : v; };
       const b = el('button', {
         class: 'hidden-thing', 'aria-label': `${k + 1}번 그림`,
-        style: `--r:${tilt}deg;--x:${rand(31) - 15}%;--y:${rand(31) - 15}%;--s:${ctx.level === 0 ? 1 : 0.8 + rng() * 0.35}`,
+        style: `--r:${tilt}deg;--x:${nudge(col, cols - 1)}%;--y:${nudge(row, rows - 1)}%;--s:${ctx.level === 0 ? 1 : 0.8 + rng() * 0.35}`,
         onclick: () => tap(b, e),
       }, e);
       return b;
@@ -7861,7 +7864,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 127;
+const APP_VERSION = 128;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

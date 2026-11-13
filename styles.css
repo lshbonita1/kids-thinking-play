@@ -2617,3 +2617,6 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 /* ---------- 로고 누르면 홈 새로고침 ---------- */
 .logo-link { display: block; line-height: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .logo-link:active { transform: scale(.98); }
+
+/* ---------- 한국어 낱말이 중간에서 줄바뀜 되지 않게 (놀이 카드 이름 · 결과 문구) ---------- */
+.pick-card b, .result-title { word-break: keep-all; overflow-wrap: anywhere; }
