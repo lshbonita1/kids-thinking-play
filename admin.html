@@ -422,9 +422,12 @@
             + (d.thUser ? `<p>스레드: <b>@${esc(d.thUser)}</b> (인스타에 올라간 게시물을 함께 올려요)</p>` : `<p class="muted">스레드 연결 안 됨: ${esc(d.thError || '')}</p>`);
         const withBlog = d.queue.filter((q) => q.blog);
         const doneN = withBlog.filter((q) => (d.blogDone || {})[q.id]).length;
-        const foldBtn = doneN ? ` <button class="btn" data-blogfold>${showBlogDone ? '블로그 올린 것 접기' : `블로그 올린 것 ${doneN}개 펼치기`}</button>` : '';
+        // 접는 것: 블로그도 올리고 인스타에도 올라간 게시물만 (아직 예약 중인 것은 늘 보이게)
+        const folded = (q) => (d.blogDone || {})[q.id] && rows[q.id]?.status === 'published';
+        const foldN = d.queue.filter(folded).length;
+        const foldBtn = foldN ? ` <button class="btn" data-blogfold>${showBlogDone ? '다 올린 것 접기' : `블로그 · 인스타 다 올린 것 ${foldN}개 펼치기`}</button>` : '';
         $('ig-admin').innerHTML = head + `<p>📝 블로그 올림: <b>${doneN}</b> / ${withBlog.length}${foldBtn}</p><table><tbody>${d.queue.map((q) => {
-          if (!showBlogDone && (d.blogDone || {})[q.id]) return '';
+          if (!showBlogDone && folded(q)) return '';
           const r = rows[q.id];
           const st = r ? (IG_STATUS[r.status] || r.status) : (q.date <= d.today ? '🕗 곧 올라가요 (낮 12시 · 저녁 8시)' : '📅 예약');
           const link = r?.permalink ? ` <a href="${esc(r.permalink)}" target="_blank" rel="noopener">보기</a>` : '';
