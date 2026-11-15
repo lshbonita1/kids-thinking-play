@@ -101,6 +101,9 @@ const settings = {
   missSound: store.get('missSound', false), // 틀렸을 때 효과음 (소리에 예민한 아이가 많아 기본은 끔)
   autoHint: store.get('autoHint', true), // 한동안 누르지 않으면 정답을 반짝여 도와주기
   showScore: store.get('showScore', false), // 놀이 중 점수 보이기 (기본은 진행 막대만)
+  praise: store.get('praise', 'full'), // 맞혔을 때: full 효과음+말 · voice 말만 · quiet 소리 없이 쑥쑥이만
+  praiseVary: store.get('praiseVary', false), // 칭찬 말을 여러 가지로 (기본은 늘 같은 말 = 예측 가능)
+  breakEvery: store.get('breakEvery', 0), // 몇 문제마다 쉬는 시간(방울 터뜨리기) — 0이면 끔
 };
 
 // 목소리 높이 · 빠르기 선택지
@@ -213,7 +216,7 @@ const PHOTOS = {
 // 파일: 이름.jpg, 이름_2.jpg, 이름_3.jpg … 한 문제 안에서는 같은 사진, 문제가 바뀌면 다시 고름
 // 사진을 바꾸면 올림 (사진은 하루 동안 저장해 두고 써서, 이름이 같으면 예전 사진이 보일 수 있음)
 const PHOTO_VER = 2;
-const PHOTO_VARIANTS = { apple: 3, banana: 3, dog: 3, car: 3, butterfly: 3, flower: 3, balloon: 2, elephant: 2, airplane: 2, chick: 2 };
+const PHOTO_VARIANTS = { apple: 3, banana: 3, dog: 3, car: 3, butterfly: 3, flower: 3, balloon: 2, elephant: 2, airplane: 2, chick: 2, ball: 3, bee: 2, bicycle: 2, bus: 3, carrot: 3, cat: 3, cookie: 2, cow: 3, frog: 3, giraffe: 3, grapes: 2, orange: 3, penguin: 3, rabbit: 3, strawberry: 2, teddy: 2, whale: 3 };
 let photoPicks = {};
 const resetPhotoPicks = () => { photoPicks = {}; };
 function photoSrc(name) {
@@ -303,11 +306,14 @@ const FEEDBACK = {
   done: ['happy', '다 찾았어요!'],
 };
 
+const PRAISE_WORDS = ['잘했어요!', '멋져요!', '맞았어요!', '최고예요!', '해냈어요!'];
 function feedback(kind, done) {
-  const [mood, text] = FEEDBACK[kind];
-  if (kind === 'good' || kind === 'done') tone([660, 880, 1320]);
+  const [mood, base] = FEEDBACK[kind];
+  const happy = kind === 'good' || kind === 'done';
+  const text = happy && settings.praiseVary ? pick(PRAISE_WORDS) : base;
+  if (happy && settings.praise === 'full') tone([660, 880, 1320]);
   else if (kind === 'bad' && settings.missSound) tone([392, 294], 0.18);
-  speak(text);
+  if (!(happy && settings.praise === 'quiet')) speak(text);
   const overlay = el('div', { class: `feedback ${kind}` },
     el('div', { class: 'fb-icon' }, mascot(mood, 'bounce')),
     el('div', { class: 'fb-text' }, text),
@@ -3089,7 +3095,7 @@ const waitGame = {
   },
 };
 
-/* ---------- 내 사진 (우리 가족 찾기 · 우리 집 말하기 카드) ---------- */
+/* ---------- 내 사진 (우리 사진 찾기 · 우리 집 말하기 카드) ---------- */
 // 사진은 서버로 보내지 않고 이 기기(브라우저)에만 저장. 320px 정사각형으로 줄여 저장 공간을 아낌
 const FAMILY_KEY = 'familyPhotos';
 const TALK_CUSTOM_KEY = 'talkCustom';
@@ -3157,23 +3163,24 @@ const familyList = () => store.get(FAMILY_KEY, []);
 function showFamilySetup(after = null) {
   const list = familyList();
   const redraw = () => showFamilySetup(after);
-  toolScreen('우리 가족 사진',
-    el('p', { class: 'sub' }, '엄마, 아빠, 형제, 선생님 사진을 넣으면 "엄마는 어디 있어요?" 놀이를 할 수 있어요. 2명 이상 넣어 주세요.'),
+  toolScreen('우리 사진',
+    el('p', { class: 'sub' }, '가족, 선생님, 친구 얼굴이나 아이 컵 · 가방 · 좋아하는 장난감 사진을 넣으면 "엄마는 어디 있어요?", "컵은 어디 있어요?" 놀이를 할 수 있어요. 2장 이상 넣어 주세요.'),
+    el('p', { class: 'sub' }, '🏫 센터 · 어린이집에서는 교실 물건과 선생님 사진을 넣어 보세요. 아이가 매일 보는 진짜 사진이라 그림보다 쉽게 알아봐요.'),
     photoAdder({
-      placeholder: '이름 (예: 엄마, 아빠, 할머니, 김 선생님)',
+      placeholder: '이름 (예: 엄마, 김 선생님, 내 컵, 우리 교실)',
       button: '📷 사진 골라서 넣기',
       onAdd: (name, img) => { if (savePhotoList(FAMILY_KEY, [...familyList(), { id: photoId(), name, img }])) redraw(); },
     }),
-    el('h2', { class: 'fb-title' }, `넣은 사진 (${list.length}명)`),
+    el('h2', { class: 'fb-title' }, `넣은 사진 (${list.length}장)`),
     photoList(list, (id) => { savePhotoList(FAMILY_KEY, familyList().filter((p) => p.id !== id)); redraw(); }),
-    list.length >= 2 ? el('button', { class: 'btn-main', onclick: () => playGame(familyGame) }, '▶ 우리 가족 찾기 놀이 시작') : null);
+    list.length >= 2 ? el('button', { class: 'btn-main', onclick: () => playGame(familyGame) }, '▶ 우리 사진 찾기 놀이 시작') : null);
 }
 
 const familyGame = {
   id: 'family',
-  title: '우리 가족 찾기',
-  desc: '엄마는 어디 있을까? 사진으로 찾아요',
-  skill: '이름 알기 · 사회성',
+  title: '우리 사진 찾기',
+  desc: '엄마, 선생님, 내 컵… 진짜 사진으로 찾아요',
+  skill: '이름 알기 · 사진 일반화',
   icon: '👨‍👩‍👧',
   color: '#fde7ef',
   // 보호자가 사진을 넣어야 하는 놀이라 오늘의 학습에는 넣지 않음
@@ -3182,12 +3189,29 @@ const familyGame = {
 
   round(i, ctx) {
     const people = familyList();
-    const picks = sample(people, Math.min(people.length, [2, 3, 4][ctx.level]));
-    const answer = picks[0];
     const face = (id) => {
       const p = people.find((x) => x.id === id);
       return p ? el('img', { class: 'family-face', src: p.img, alt: '' }) : '?';
     };
+    // 보통 · 어려움의 뒤쪽 문제: 사진을 보고 이름을 말해 보기 (찾기 → 말하기로 넓힘)
+    if (ctx.level > 0 && i >= 5 && i % 2 === 1) {
+      const p = pick(people);
+      const rec = { answer: p.id, choices: [p.id], speakName: true };
+      const label = el('div', { class: 'say-word' }, p.name);
+      label.hidden = true;
+      ctx.stage.append(
+        prompt('이름을 말해 볼까요?'),
+        el('div', { class: 'say-pic' }, face(p.id)),
+        label,
+        el('button', { class: 'btn-main say-done', onclick: () => ctx.finish(true) }, '✅ 말했어요!'),
+        el('div', { class: 'btn-row say-actions' },
+          el('button', { class: 'btn-main alt', onclick: () => { label.hidden = false; ctx.nudge(`${p.name}! 따라 말해 볼까요?`); } }, '🔊 같이 말해요')),
+        el('div', { class: 'imitate-tip' }, '👪 아이가 말하면 [말했어요]를 눌러 주세요. 손짓이나 비슷한 소리도 좋아요.'),
+      );
+      return rec;
+    }
+    const picks = sample(people, Math.min(people.length, [2, 3, 4][ctx.level]));
+    const answer = picks[0];
     const rec = choiceRound(ctx, {
       say: `${topicParticle(answer.name)} 어디 있어요?`,
       choices: shuffle(picks.map((p) => p.id)),
@@ -3198,10 +3222,15 @@ const familyGame = {
     return rec;
   },
 
-  review: (rec) => choiceReview(rec, (id) => {
-    const p = familyList().find((x) => x.id === id);
-    return p ? el('img', { class: 'family-face mini', src: p.img, alt: '' }) : '?';
-  }),
+  review: (rec) => {
+    const mini = (id) => {
+      const p = familyList().find((x) => x.id === id);
+      return p ? el('img', { class: 'family-face mini', src: p.img, alt: '' }) : '?';
+    };
+    if (!rec.speakName) return choiceReview(rec, mini);
+    const p = familyList().find((x) => x.id === rec.answer);
+    return el('div', {}, el('div', { class: 'review-items' }, el('span', {}, mini(rec.answer))), el('div', { class: 'review-note' }, `이름 말하기${p ? `: ${p.name}` : ''}`));
+  },
 };
 
 const talkCustomList = () => store.get(TALK_CUSTOM_KEY, []);
@@ -5235,6 +5264,19 @@ function voiceSettings() {
   );
 }
 
+// 여러 개 중 하나 고르기 한 줄 (settings[key]를 바꾸고 저장)
+function segRow(key, name, desc, options) {
+  return el('div', { class: 'setting-row seg-row' },
+    el('div', {}, el('div', { class: 'setting-name' }, name), el('div', { class: 'setting-desc' }, desc)),
+    el('div', { class: 'level-seg voice-seg', role: 'radiogroup', 'aria-label': name },
+      options.map((o) => el('button', {
+        class: `seg${o.v === settings[key] ? ' on' : ''}`,
+        role: 'radio',
+        'aria-checked': String(o.v === settings[key]),
+        onclick: () => { settings[key] = o.v; store.set(key, o.v); showHome('settings'); },
+      }, el('span', { class: 'seg-name' }, o.name)))));
+}
+
 // 켬 · 끔 한 줄 (settings[key]를 바꾸고 저장)
 function switchRow(key, name, desc) {
   const on = settings[key];
@@ -5288,6 +5330,13 @@ function settingsTab() {
       switchRow('autoHint', '💡 기다리면 힌트', '8초 동안 누르지 않으면 정답이 반짝여요'),
       switchRow('missSound', '🔔 틀렸을 때 소리', '소리에 예민하면 꺼 두세요 (말 안내는 그대로)'),
       switchRow('showScore', '💯 놀이 중 점수 보이기', '끄면 진행 막대만 보여요 (점수는 기록에 남아요)'),
+      el('h3', { class: 'setting-group' }, '🌟 칭찬 · 쉬는 시간'),
+      segRow('praise', '🎉 맞혔을 때', '소리에 예민하면 "말만"이나 "조용히"를 골라 주세요',
+        [{ v: 'full', name: '소리+말' }, { v: 'voice', name: '말만' }, { v: 'quiet', name: '조용히' }]),
+      segRow('praiseVary', '💬 칭찬하는 말', '"늘 같게"는 예측하기 쉬워 편안해요. 익숙해지면 "여러 가지"로',
+        [{ v: false, name: '늘 같게' }, { v: true, name: '여러 가지' }]),
+      segRow('breakEvery', '🫧 쉬는 시간', '정한 문제 수마다 10초 동안 방울을 터뜨리며 쉬어요',
+        [{ v: 0, name: '끔' }, { v: 3, name: '3문제마다' }, { v: 5, name: '5문제마다' }]),
       el('button', {
         class: 'more-games sound-test',
         disabled: !settings.sound,
@@ -5308,7 +5357,7 @@ function settingsTab() {
       el('a', { class: 'more-games', href: 'faq.html' },
         el('span', {}, '❓ 자주 묻는 질문'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: () => showFamilySetup() },
-        el('span', {}, '👨‍👩‍👧 우리 가족 사진 넣기'), el('span', {}, '›')),
+        el('span', {}, '📸 우리 사진 넣기 (가족 · 선생님 · 물건)'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: () => showWorksheets() },
         el('span', {}, '🖨️ 종이 학습지 인쇄'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: showFeedback },
@@ -5454,7 +5503,67 @@ const TALK_GROUPS = [
 // 어디서나 자주 쓰는 핵심 낱말: 손이 위치를 기억하도록 늘 같은 자리 · 같은 순서에 둠 (보완대체의사소통 원칙)
 const TALK_CORE = [['➕', '더'], ['✋', '그만'], ['🙏', '도와줘요'], ['🙅', '싫어요'], ['👉', '이거요'], ['🏁', '다 했어요']];
 
+// 문장 만들기 낱말 카드: 누구 · 무엇 · 어떻게 (동작 낱말은 누른 순서와 상관없이 문장 끝으로)
+const BUILD_GROUPS = [
+  { id: 'who', name: '🙋 누구', color: '#fde2e2', cards: [['🙋', '나'], ['👩', '엄마'], ['👨', '아빠'], ['🧑‍🏫', '선생님'], ['🧒', '친구']] },
+  { id: 'what', name: '🍪 무엇', color: '#dbeefd', cards: [['💧', '물'], ['🍚', '밥'], ['🍪', '과자'], ['🍌', '바나나'], ['🥛', '우유'], ['⚽', '공'], ['📚', '책'], ['🧸', '인형'], ['🛝', '놀이터'], ['🚽', '화장실']] },
+  { id: 'more', name: '➕ 더하기', color: '#fff1c9', cards: [['➕', '더'], ['🔁', '또'], ['🤝', '같이']] },
+  { id: 'act', name: '🏃 어떻게', color: '#e3f3e6', cards: [['🙏', '주세요'], ['🍽️', '먹고 싶어요'], ['🎈', '놀고 싶어요'], ['🚶', '가고 싶어요'], ['👀', '보고 싶어요'], ['🙅', '싫어요'], ['✋', '그만해요'], ['🤗', '안아 주세요']] },
+];
+const BUILD_MAX = 4;
+
+function sentenceBuilder() {
+  const picked = [];
+  const strip = el('div', { class: 'build-strip', 'aria-live': 'polite' });
+  const sentence = () => {
+    // 누른 차례를 지키되 '주세요 · 싫어요' 같은 동작 낱말은 끝으로 (과자 + 주세요 → "과자 주세요")
+    const acts = picked.filter((w) => w.act);
+    return [...picked.filter((w) => !w.act), ...acts].map((w) => w.text).join(' ');
+  };
+  const draw = () => {
+    strip.replaceChildren(...(picked.length
+      ? picked.map((w) => el('span', { class: 'build-chip' }, el('span', { class: 'build-chip-icon' }, w.icon), el('b', {}, w.text)))
+      : [el('span', { class: 'talk-said-hint' }, '카드를 차례로 눌러 문장을 만들어요')]));
+    playBtn.disabled = !picked.length;
+  };
+  const playBtn = el('button', { class: 'btn-main build-play', onclick: () => { if (picked.length) speak(sentence(), true); } }, '▶ 말하기');
+  const add = (icon, text, act, node) => {
+    if (picked.length >= BUILD_MAX) picked.shift();
+    picked.push({ icon, text, act });
+    speak(text, true);
+    node.classList.remove('pop');
+    void node.offsetWidth;
+    node.classList.add('pop');
+    draw();
+  };
+  const card = ([icon, text], color, act) => {
+    const node = el('button', { class: 'talk-card', style: `--c:${color}`, onclick: () => add(icon, text, act, node) },
+      el('span', { class: 'talk-icon' }, icon), el('span', { class: 'talk-text' }, text));
+    return node;
+  };
+  draw();
+  return [
+    el('div', { class: 'build-box' },
+      strip,
+      el('div', { class: 'build-actions' },
+        el('button', { class: 'btn-main alt', onclick: () => { picked.pop(); draw(); } }, '⌫ 하나 지우기'),
+        el('button', { class: 'btn-main alt', onclick: () => { picked.length = 0; draw(); } }, '🗑️ 처음부터'),
+        playBtn)),
+    settings.tips ? el('p', { class: 'talk-tip' }, '👪 처음엔 [과자]+[주세요]처럼 두 장부터 해요. 아이가 한 장만 눌러도 "과자 주세요" 하고 이어서 말해 주세요.') : null,
+    ...BUILD_GROUPS.map((g) => el('section', { class: 'talk-group' },
+      el('h2', {}, g.name),
+      el('div', { class: 'talk-grid' }, g.cards.map((c) => card(c, g.color, g.id === 'act'))))),
+  ];
+}
+
 function talkTab() {
+  const mode = store.get('talkMode', 'one');
+  const modeSeg = el('div', { class: 'level-seg talk-mode', role: 'radiogroup', 'aria-label': '말하기 방식' },
+    [['one', '💬 한 장씩'], ['build', '🧩 문장 만들기']].map(([v, name]) => el('button', {
+      class: `seg${v === mode ? ' on' : ''}`, role: 'radio', 'aria-checked': String(v === mode),
+      onclick: () => { store.set('talkMode', v); showHome('talk'); },
+    }, el('span', { class: 'seg-name' }, name))));
+  if (mode === 'build') return [...tabHeader('말하기', '낱말 카드를 이어 문장으로 말해요'), modeSeg, ...sentenceBuilder().filter(Boolean), helperCard()];
   const said = el('div', { class: 'talk-said', 'aria-live': 'polite' }, el('span', { class: 'talk-said-hint' }, '그림을 누르면 말해 줘요'));
   const say = (icon, text, node) => {
     speak(text, true);
@@ -5470,6 +5579,7 @@ function talkTab() {
   };
   return [
     ...tabHeader('말하기', '하고 싶은 말을 그림으로 눌러요'),
+    modeSeg,
     said,
     el('div', { class: 'talk-yesno' }, card(['👍', '네'], '#d5f0dc', 'big'), card(['👎', '아니요'], '#fbdcdc', 'big')),
     el('section', { class: 'talk-group talk-core' },
@@ -6293,7 +6403,10 @@ function playSession(session) {
     },
   };
 
+  const breaks = new Set();
   function next() {
+    timers.forEach(clearTimeout);
+    timers = [];
     if (state.index >= total) {
       session.save(state);
       // 난이도 알아보기는 문제마다 단계가 달라서 숙달 기록에서 뺌
@@ -6302,6 +6415,14 @@ function playSession(session) {
       state.newlyMastered = before ? GAMES.filter((g) => !before.includes(g) && masteredAt(g.id, state.level)) : [];
       sendLog({ t: 'play', game: session.logId ?? (session.schedule ? 'daily' : rounds[0].game.id), level, score: state.score });
       (session.showResult ?? showResult)(session, state);
+      return;
+    }
+    // 정해 둔 문제 수마다 쉬는 시간 (강화: 방울 터뜨리기 10초)
+    const every = settings.breakEvery;
+    if (every && !session.logId && state.index > 0 && state.index % every === 0 && !breaks.has(state.index)) {
+      breaks.add(state.index);
+      rec = null;
+      stage.replaceChildren(breakTime(ctx, next));
       return;
     }
     const { game, index } = rounds[state.index];
@@ -6379,6 +6500,39 @@ function playSession(session) {
   }
 
   next();
+}
+
+/* 쉬는 시간: 방울이 떠오르면 톡톡 터뜨림. 10초 뒤나 [계속하기]를 누르면 다음 문제 */
+function breakTime(ctx, go) {
+  let left = 10;
+  let popped = 0;
+  const arena = el('div', { class: 'arena break-arena' });
+  const count = el('div', { class: 'break-count' }, '🫧 0');
+  const btn = el('button', { class: 'btn-main', onclick: () => { left = -1; go(); } }, '▶ 계속하기');
+  const bubble = () => {
+    if (left < 0) return;
+    const b = el('button', { class: 'break-bubble', 'aria-label': '방울', style: `left:${8 + rand(76)}%;--d:${4 + rand(3)}s;--h:${rand(360)}` });
+    b.onclick = () => {
+      if (b.classList.contains('pop')) return;
+      b.classList.add('pop');
+      popped++;
+      count.textContent = `🫧 ${popped}`;
+      tone([520 + rand(6) * 80], 0.08);
+      setTimeout(() => b.remove(), 300);
+    };
+    b.addEventListener('animationend', () => b.remove());
+    arena.append(b);
+    ctx.later(bubble, 650);
+  };
+  const tick = () => {
+    if (left < 0) return;
+    if (--left <= 0) { left = -1; go(); return; }
+    ctx.later(tick, 1000);
+  };
+  speak('쉬는 시간! 방울을 톡톡 터뜨려요');
+  ctx.later(bubble, 300);
+  ctx.later(tick, 1000);
+  return el('div', { class: 'break-wrap' }, prompt('쉬는 시간! 방울을 톡톡', false), count, arena, btn);
 }
 
 /* ---------- 우리 아이 난이도 알아보기 ---------- */
@@ -7883,7 +8037,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 129;
+const APP_VERSION = 130;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

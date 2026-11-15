@@ -72,3 +72,31 @@
 | `elephant_2.jpg` | 코끼리 (다른 사진) | [African elephant (Loxodonta africana) 2.jpg](https://commons.wikimedia.org/wiki/File:African_elephant_(Loxodonta_africana)_2.jpg) | Charles J. Sharp | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | `airplane_2.jpg` | 비행기 (다른 사진) | [Thai Airways International Boeing 747-4D7 HS-TGP MUC 2015 04](https://commons.wikimedia.org/wiki/File:Thai_Airways_International_Boeing_747-4D7_HS-TGP_MUC_2015_04.jpg) | Julian Herzog (Website) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 | `chick_2.jpg` | 병아리 (다른 사진) | [Baby chicken (মুরগির বাচ্চা).jpg](https://commons.wikimedia.org/wiki/File:Baby_chicken_(%E0%A6%AE%E0%A7%81%E0%A6%B0%E0%A6%97%E0%A6%BF%E0%A6%B0_%E0%A6%AC%E0%A6%BE%E0%A6%9A%E0%A7%8D%E0%A6%9A%E0%A6%BE).jpg) | This work was made by Tushar Hossain and released under the license(s) stat | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| `ball_2.jpg` | 공 (다른 사진) | [Soccer Ball Blue](https://www.flickr.com/photos/75927009@N05/20952200446) | HolgerLi | PDM 1.0 |
+| `ball_3.jpg` | 공 (다른 사진) | [Soccer Ball](https://stocksnap.io/photo/soccer-ball-1Q2U0J72YG) | Michal Jarmoluk | CC0 1.0 |
+| `bee_2.jpg` | 벌 (다른 사진) | [Honey bee](https://www.flickr.com/photos/73080909@N03/16363664269) | spongebabyalwaysfull | CC0 1.0 |
+| `bicycle_2.jpg` | 자전거 (다른 사진) | [Demolished bicycle on the bridge at the ](https://www.flickr.com/photos/104736837@N03/10903156366) | Amsterdam free photos & pictures of the Dutch city | CC0 1.0 |
+| `bus_2.jpg` | 버스 (다른 사진) | [London bus](https://www.flickr.com/photos/31810462@N07/18903033980) | Carlos ZGZ | CC0 1.0 |
+| `bus_3.jpg` | 버스 (다른 사진) | [N319VMS powells bus in rotherham](https://www.flickr.com/photos/37938224@N03/7188323806) | martin 65 | PDM 1.0 |
+| `carrot_2.jpg` | 당근 (다른 사진) | [Carrots](https://www.flickr.com/photos/29155878@N03/18221642986) | Open Grid Scheduler / Grid Engine | CC0 1.0 |
+| `carrot_3.jpg` | 당근 (다른 사진) | [Marzipan carrots (marchpane / almond pas](https://www.flickr.com/photos/100088253@N05/17020281571) | Eisbäärchen | CC0 1.0 |
+| `cat_2.jpg` | 고양이 (다른 사진) | [Cat](https://www.flickr.com/photos/51686021@N07/42700002412) | Burnt Pineapple Productions | CC0 1.0 |
+| `cat_3.jpg` | 고양이 (다른 사진) | [Feral cat](https://www.flickr.com/photos/40632439@N00/38960943252) | Thad Zajdowicz | CC0 1.0 |
+| `cookie_2.jpg` | 과자 (다른 사진) | [Milk and chocolate chip cookies](https://www.flickr.com/photos/65798313@N06/6858180551) | Picdrome Public Domain Pictures | CC0 1.0 |
+| `cow_2.jpg` | 소 (다른 사진) | [Cows](https://www.flickr.com/photos/85825630@N00/4813130909) | boklm | CC0 1.0 |
+| `cow_3.jpg` | 소 (다른 사진) | [Cows and calf](https://www.flickr.com/photos/126064386@N03/20361737424) | swallowedtail | CC0 1.0 |
+| `frog_2.jpg` | 개구리 (다른 사진) | [Green Frog IMG_0541A](https://www.flickr.com/photos/10511576@N00/7611999932) | popo.uw23 | PDM 1.0 |
+| `frog_3.jpg` | 개구리 (다른 사진) | [Green Frog](https://www.flickr.com/photos/43322816@N08/4679006874) | U. S. Fish and Wildlife Service - Northeast Region | PDM 1.0 |
+| `giraffe_2.jpg` | 기린 (다른 사진) | [Giraffe](https://www.flickr.com/photos/55958070@N08/5756127053) | earthisthering | CC0 1.0 |
+| `giraffe_3.jpg` | 기린 (다른 사진) | [Giraffe portrait.](https://www.flickr.com/photos/88123769@N02/10622766983) | Bernard Spragg | CC0 1.0 |
+| `grapes_2.jpg` | 포도 (다른 사진) | [grape](https://www.flickr.com/photos/138570099@N03/23755694315) | （Ashley Field） | CC0 1.0 |
+| `orange_2.jpg` | 귤 (다른 사진) | [Oranges Fruits](https://stocksnap.io/photo/oranges-fruits-WY1RMUVYDA) | Agnieszka Bladzik | CC0 1.0 |
+| `orange_3.jpg` | 귤 (다른 사진) | [Oranges Fruits](https://stocksnap.io/photo/oranges-fruits-SVKP65LN31) | Daria Nepriakhina | CC0 1.0 |
+| `penguin_2.jpg` | 펭귄 (다른 사진) | [Yellow eyed penguin.](https://www.flickr.com/photos/88123769@N02/15238441601) | Bernard Spragg | CC0 1.0 |
+| `penguin_3.jpg` | 펭귄 (다른 사진) | [King Penguins. Sea World Australia.](https://www.flickr.com/photos/88123769@N02/8670574389) | Bernard Spragg | CC0 1.0 |
+| `rabbit_2.jpg` | 토끼 (다른 사진) | [Wild Rabbit](https://www.flickr.com/photos/8398907@N02/5251390861) | moonjazz | PDM 1.0 |
+| `rabbit_3.jpg` | 토끼 (다른 사진) | [European rabbit](https://www.flickr.com/photos/91501748@N07/19618671433) | Mathias Appel | CC0 1.0 |
+| `strawberry_2.jpg` | 딸기 (다른 사진) | [strawberries](https://www.flickr.com/photos/42787780@N04/6984507532) | Fried Dough | PDM 1.0 |
+| `teddy_2.jpg` | 곰인형 (다른 사진) | [Teddy bear family](https://www.flickr.com/photos/151415985@N06/37388489996) | Wallboat | CC0 1.0 |
+| `whale_2.jpg` | 고래 (다른 사진) | [Humpback Whale Breaching by Official Pho](https://www.flickr.com/photos/39735679@N00/454154733) | pingnews.com | PDM 1.0 |
+| `whale_3.jpg` | 고래 (다른 사진) | [Humpback Whale](https://www.flickr.com/photos/89251484@N06/9161453150) | Kenai Fjords National Park | PDM 1.0 |
