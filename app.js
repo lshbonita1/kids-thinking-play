@@ -216,7 +216,7 @@ const PHOTOS = {
 // 파일: 이름.jpg, 이름_2.jpg, 이름_3.jpg … 한 문제 안에서는 같은 사진, 문제가 바뀌면 다시 고름
 // 사진을 바꾸면 올림 (사진은 하루 동안 저장해 두고 써서, 이름이 같으면 예전 사진이 보일 수 있음)
 const PHOTO_VER = 2;
-const PHOTO_VARIANTS = { apple: 3, banana: 3, dog: 3, car: 3, butterfly: 3, flower: 3, balloon: 2, elephant: 2, airplane: 2, chick: 2, ball: 3, bee: 2, bicycle: 2, bus: 3, carrot: 3, cat: 3, cookie: 2, cow: 3, frog: 3, giraffe: 3, grapes: 2, orange: 3, penguin: 3, rabbit: 3, strawberry: 2, teddy: 2, whale: 3 };
+const PHOTO_VARIANTS = { apple: 3, banana: 3, dog: 3, car: 3, butterfly: 3, flower: 3, balloon: 2, elephant: 2, airplane: 2, chick: 2, ball: 3, bee: 2, bicycle: 2, bus: 3, carrot: 3, cat: 3, cookie: 2, frog: 3, giraffe: 3, grapes: 2, orange: 3, penguin: 3, rabbit: 3, strawberry: 2, teddy: 2, whale: 3 };
 let photoPicks = {};
 const resetPhotoPicks = () => { photoPicks = {}; };
 function photoSrc(name) {
@@ -8037,7 +8037,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 130;
+const APP_VERSION = 131;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

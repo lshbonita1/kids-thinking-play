@@ -83,8 +83,6 @@
 | `cat_2.jpg` | 고양이 (다른 사진) | [Cat](https://www.flickr.com/photos/51686021@N07/42700002412) | Burnt Pineapple Productions | CC0 1.0 |
 | `cat_3.jpg` | 고양이 (다른 사진) | [Feral cat](https://www.flickr.com/photos/40632439@N00/38960943252) | Thad Zajdowicz | CC0 1.0 |
 | `cookie_2.jpg` | 과자 (다른 사진) | [Milk and chocolate chip cookies](https://www.flickr.com/photos/65798313@N06/6858180551) | Picdrome Public Domain Pictures | CC0 1.0 |
-| `cow_2.jpg` | 소 (다른 사진) | [Cows](https://www.flickr.com/photos/85825630@N00/4813130909) | boklm | CC0 1.0 |
-| `cow_3.jpg` | 소 (다른 사진) | [Cows and calf](https://www.flickr.com/photos/126064386@N03/20361737424) | swallowedtail | CC0 1.0 |
 | `frog_2.jpg` | 개구리 (다른 사진) | [Green Frog IMG_0541A](https://www.flickr.com/photos/10511576@N00/7611999932) | popo.uw23 | PDM 1.0 |
 | `frog_3.jpg` | 개구리 (다른 사진) | [Green Frog](https://www.flickr.com/photos/43322816@N08/4679006874) | U. S. Fish and Wildlife Service - Northeast Region | PDM 1.0 |
 | `giraffe_2.jpg` | 기린 (다른 사진) | [Giraffe](https://www.flickr.com/photos/55958070@N08/5756127053) | earthisthering | CC0 1.0 |
