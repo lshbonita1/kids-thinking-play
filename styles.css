@@ -2620,3 +2620,18 @@ a.more-games { color: inherit; text-decoration: none; box-sizing: border-box; }
 
 /* ---------- 한국어 낱말이 중간에서 줄바뀜 되지 않게 (놀이 카드 이름 · 결과 문구) ---------- */
 .pick-card b, .result-title { word-break: keep-all; overflow-wrap: anywhere; }
+
+/* ---------- 놀이 품질 다듬기 (v129) ---------- */
+/* 문제 문장이 낱말 중간에서 끊기지 않게 */
+.prompt { word-break: keep-all; }
+/* 글로 된 보기(진정하기 · 왜 그럴까): 그림과 글자를 크게, 누르기 쉽게 */
+.choices.wide-choices { gap: 12px; }
+.choices .choice.wide-choice { min-height: 80px; padding: 10px 18px; }
+.wide-choice .phrase-card { gap: 16px; }
+.wide-choice .phrase-icon { font-size: 48px; }
+.wide-choice .phrase-card b { font-size: 21px; }
+/* 번갈아 쌓기: 쌓을 자리를 점선 칸으로 미리 보여 줌 */
+.turn-slot { width: min(46vw, 180px); height: min(6vh, 40px); border-radius: 10px; border: 3px dashed #e2d3b8; box-sizing: border-box; }
+/* 몇 개일까: 그림이 칸보다 커서 서로 겹치던 것 → 판 크기에 맞춰 (겹치면 세기 어려움) */
+.count-board { container-type: inline-size; }
+.count-item { font-size: min(clamp(calc(56px * var(--k)), 17vw, calc(80px * var(--k))), 14.5cqw); }

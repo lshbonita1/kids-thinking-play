@@ -749,7 +749,7 @@ const linesGame = {
 // 아이가 한눈에 구분하도록 색과 모양이 모두 확실히 다른 그림만 씀
 // (빨강 사과 · 노랑 바나나 · 초록 개구리 · 파랑 고래 · 보라 포도 · 분홍 꽃 · 회색 코끼리 · 주황 당근, 모두 실사 사진)
 const PATTERN_SETS = [
-  ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🐘', '🥕'],
+  ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🐘', '🥕', '🐶', '🐧', '⚽', '🚌'],
 ];
 // 숫자가 같으면 같은 그림
 const AB = [0, 1];
@@ -843,7 +843,7 @@ const patternGame = {
 };
 
 /* ---------- 놀이 3: 몇 개일까? ---------- */
-const COUNT_ITEMS = ['🍎', '🐥', '⭐', '🎈', '🐳', '🌸', '🚗', '🦋'];
+const COUNT_ITEMS = ['🍎', '🐥', '⭐', '🎈', '🐳', '🌸', '🚗', '🦋', '⚽', '🐧', '🍓', '🐟'];
 // 단계별 [앞 5문제, 뒤 5문제] 개수 범위
 const COUNT_RANGES = [
   [[1, 3], [1, 4]],
@@ -871,8 +871,9 @@ const countGame = {
     const slots = sample([...Array(12).keys()], n);
     const board = el('div', { class: 'count-board' },
       slots.map((s, k) => {
-        const left = ((s % 4) + 0.5) / 4 * 100 + (Math.random() * 8 - 4);
-        const top = (Math.floor(s / 4) + 0.5) / 3 * 100 + (Math.random() * 10 - 5);
+        // 조금만 흔들어서 자연스럽게 (그림끼리 겹치면 세기 어려워서 칸 안에서만)
+        const left = ((s % 4) + 0.5) / 4 * 100 + (Math.random() * 4 - 2);
+        const top = (Math.floor(s / 4) + 0.5) / 3 * 100 + (Math.random() * 6 - 3);
         return el('div', { class: 'count-item', style: `left:${left}%;top:${top}%` },
           el('span', { style: `animation-delay:${k * 0.06}s` }, pic(emoji)));
       }));
@@ -974,7 +975,7 @@ const oddGame = {
 
 /* ---------- 놀이 5: 짝 맞추기 ---------- */
 // 동물 얼굴끼리는 헷갈리므로 색과 모양이 다른 그림으로 섞음
-const FLIP_ITEMS = ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🚗', '🥕'];
+const FLIP_ITEMS = ['🍎', '🍌', '🐸', '🐳', '🍇', '🌸', '🚗', '🥕', '🐶', '🐧', '⚽', '🧸', '🦒', '🚌'];
 // 단계별 · 판별 짝 개수
 const FLIP_PAIRS = [[2, 2, 2, 3, 3], [2, 3, 3, 3, 4], [3, 3, 4, 4, 5]];
 // 시작할 때 카드를 미리 보여주는 시간
@@ -1398,6 +1399,9 @@ const ROUTINES = [
   { say: '밖에 나가는 순서대로 놓아요', steps: [['🧦', '양말 신기'], ['👟', '신발 신기'], ['🚪', '나가기']] },
   { say: '밥 먹는 순서대로 놓아요', steps: [['🧼', '손 씻기'], ['🍚', '밥 먹기'], ['🪥', '이 닦기']] },
   { say: '잠자는 순서대로 놓아요', steps: [['🛁', '목욕'], ['👕', '잠옷 입기'], ['🛏️', '잠자기']] },
+  { say: '이 닦는 순서대로 놓아요', steps: [['🪥', '치약 짜기'], ['😁', '이 닦기'], ['🚰', '물로 헹구기']] },
+  { say: '아침 순서대로 놓아요', steps: [['⏰', '일어나기'], ['🍚', '아침 먹기'], ['🎒', '유치원 가기']] },
+  { say: '화장실 순서대로 놓아요', steps: [['🚽', '변기 쓰기'], ['🧻', '닦기'], ['🧼', '손 씻기']] },
   { say: '그림 그리는 순서대로 놓아요', steps: [['📄', '종이 꺼내기'], ['🖍️', '그리기'], ['🖼️', '완성']] },
 ];
 
@@ -1777,7 +1781,7 @@ const traceGame = {
 
 /* ---------- 놀이: 바구니에 쏙 (소근육 · 분류) ---------- */
 // 색과 모양이 서로 확실히 다른 사진만
-const SORT_ITEMS = ['🍎', '🍌', '🐸', '🐳', '🍇', '🥕', '🚗', '🎈'];
+const SORT_ITEMS = ['🍎', '🍌', '🐸', '🐳', '🍇', '🥕', '🚗', '🎈', '🐶', '🐧', '⚽', '🦒'];
 // 단계별 바구니 수
 const SORT_BASKETS = [2, 2, 3];
 // 단계별 [앞 5문제, 뒤 5문제] 옮길 그림 수
@@ -2749,6 +2753,8 @@ const verbGame = {
 
 /* ---------- 놀이: 색깔 · 모양 이름 ---------- */
 const COLOR_NAMES = [['빨간', '#ef4444'], ['노란', '#facc15'], ['파란', '#3b82f6'], ['초록', '#22c55e'], ['보라', '#a855f7'], ['주황', '#f97316']];
+// 나란히 놓으면 헷갈리는 색
+const COLOR_LOOKALIKE = { 주황: ['빨간', '노란'], 보라: ['파란'] };
 const SHAPE_NAMES = { circle: '동그라미', triangle: '세모', square: '네모', star: '별', heart: '하트' };
 const SHAPE_PATHS = {
   circle: '<circle cx="50" cy="50" r="40"/>',
@@ -2776,7 +2782,15 @@ const colorGame = {
 
   round(i, ctx) {
     const n = basicChoiceCount(ctx, i);
-    const colors = shuffle(COLOR_NAMES.map(([c]) => c));
+    let colors = shuffle(COLOR_NAMES.map(([c]) => c));
+    // 쉬움 · 보통: 빨강 · 노랑 · 파랑 · 초록처럼 한눈에 다른 색끼리만 (주황 · 보라는 어려움에서)
+    if (ctx.level < 2) colors = colors.filter((c) => !COLOR_LOOKALIKE[c]);
+    else {
+      // 어려움: 주황 · 보라도 나오지만 헷갈리는 색과는 같이 안 나옴 (보기 4개가 안 되면 기본 4색으로)
+      const clash = (c, d) => COLOR_LOOKALIKE[c]?.includes(d) || COLOR_LOOKALIKE[d]?.includes(c);
+      const ok = colors.reduce((acc, c) => (acc.some((d) => clash(c, d)) ? acc : [...acc, c]), []);
+      colors = ok.length >= 4 ? ok : colors.filter((c) => !COLOR_LOOKALIKE[c]);
+    }
     const shapes = shuffle(Object.keys(SHAPE_NAMES));
     // 쉬움: 색깔만(모두 동그라미) / 보통: 앞은 색깔, 뒤는 모양(모두 회색) / 어려움: 뒤는 '빨간 세모'처럼 둘 다
     const mode = ctx.level === 0 ? 'color' : ctx.level === 1 ? (i < 5 ? 'color' : 'shape') : (i < 5 ? 'shape' : 'both');
@@ -2885,6 +2899,7 @@ const oppositeGame = {
 };
 
 /* ---------- 놀이: 이럴 땐 어떻게 해요? (원인과 결과) ---------- */
+const NEED_CLASH = [['☂️', '🧥'], ['🍚', '🥛'], ['🧻', '🧼']];
 const NEEDS = [
   { icon: '🌧️', say: '비가 와요', need: '☂️', level: 0 },
   { icon: '🥶', say: '추워요', need: '🧥', level: 0 },
@@ -2895,7 +2910,7 @@ const NEEDS = [
   { icon: '🤧', say: '콧물이 나요', need: '🧻', level: 1 },
   { icon: '🌑', say: '깜깜해요', need: '🔦', level: 2 },
   { icon: '🦷', say: '이에 음식이 끼었어요', need: '🪥', level: 2 },
-  { icon: '🩹', say: '무릎이 까졌어요', need: '🩹', level: 2 },
+  { icon: '🦵', say: '무릎이 까졌어요', need: '🩹', level: 2 },
 ];
 
 const needGame = {
@@ -2909,7 +2924,9 @@ const needGame = {
   round(i, ctx) {
     const pool = NEEDS.filter((x) => x.level <= ctx.level);
     const q = pick(pool);
-    const wrongs = sample(NEEDS.filter((x) => x !== q && x.need !== q.need), basicChoiceCount(ctx, i) - 1).map((x) => x.need);
+    // 이것도 맞다고 할 수 있는 보기는 빼기 (비 올 때 외투, 배고플 때 우유, 손이 더러울 때 휴지)
+    const clash = NEED_CLASH.filter((pair) => pair.includes(q.need)).flat();
+    const wrongs = sample(NEEDS.filter((x) => x !== q && x.need !== q.need && !clash.includes(x.need)), basicChoiceCount(ctx, i) - 1).map((x) => x.need);
     const rec = choiceRound(ctx, {
       say: `${q.say}. 무엇이 필요할까요?`,
       choices: shuffle([q.need, ...wrongs]),
@@ -2945,13 +2962,14 @@ const turnGame = {
     let placed = 0;
     let myTurn = true;
 
-    const tower = el('div', { class: 'turn-tower' });
+    const slots = range(1, total).map(() => el('div', { class: 'turn-slot' }));
+    const tower = el('div', { class: 'turn-tower' }, slots.slice().reverse());
     const who = el('div', { class: 'turn-who' });
     const btn = el('button', { class: 'turn-btn', onclick: tap }, '🧱 내 블록 쌓기');
     ctx.stage.append(prompt('쑥쑥이랑 번갈아 쌓아요'), tower, who, btn);
 
     function addBlock(mine) {
-      tower.prepend(el('div', { class: `turn-block pop${mine ? ' mine' : ''}`, style: `--c:${BLOCK_COLORS[placed % BLOCK_COLORS.length]}` }, mine ? '🙂' : '🌱'));
+      slots[placed].replaceWith(slots[placed] = el('div', { class: `turn-block pop${mine ? ' mine' : ''}`, style: `--c:${BLOCK_COLORS[placed % BLOCK_COLORS.length]}` }, mine ? '🙂' : '🌱'));
       placed++;
       tone([440 + placed * 60], 0.07);
     }
@@ -4176,7 +4194,7 @@ const TWO_THINGS = {
   공: (c) => `<circle cx="50" cy="52" r="36" fill="${c}"/><path d="M16 46 Q50 70 84 46" stroke="#fff" stroke-width="6" fill="none" opacity=".75"/><ellipse cx="36" cy="32" rx="9" ry="5" fill="#fff" opacity=".45" transform="rotate(-30 36 32)"/>`,
   자동차: (c) => `<path d="M14 58 Q14 46 26 46 L32 32 Q34 28 40 28 L62 28 Q67 28 70 33 L76 46 Q88 46 88 58 L88 66 L14 66 Z" fill="${c}"/><path d="M38 34 L62 34 L68 46 L33 46 Z" fill="#dff1ff"/><circle cx="32" cy="68" r="9" fill="#3b3226"/><circle cx="70" cy="68" r="9" fill="#3b3226"/><circle cx="32" cy="68" r="3.5" fill="#ddd"/><circle cx="70" cy="68" r="3.5" fill="#ddd"/>`,
   컵: (c) => `<path d="M24 26 L70 26 L64 82 Q63 88 57 88 L37 88 Q31 88 30 82 Z" fill="${c}"/><path d="M68 40 Q88 40 86 56 Q84 70 64 68" stroke="${c}" stroke-width="7" fill="none"/><rect x="22" y="22" width="50" height="8" rx="4" fill="${c}"/><path d="M33 36 L37 76" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".45"/>`,
-  모자: (c) => `<path d="M22 62 Q22 28 50 28 Q78 28 78 62 Z" fill="${c}"/><path d="M14 62 L92 62 Q94 72 84 72 L22 72 Q12 72 14 62 Z" fill="${c}" opacity=".85"/><circle cx="50" cy="26" r="6" fill="${c}"/><path d="M34 44 Q40 36 48 34" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity=".45"/>`,
+  모자: (c) => `<path d="M16 66 Q14 30 48 28 Q78 28 80 60 L80 66 Z" fill="${c}"/><path d="M74 58 Q96 58 98 68 Q97 74 88 74 L60 74 Q66 64 74 58 Z" fill="${c}" opacity=".85"/><circle cx="48" cy="28" r="5" fill="${c}"/><path d="M28 46 Q34 36 44 34" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity=".45"/>`,
 };
 const twoThing = ([cName, col, thing]) => {
   const s = el('span', { class: 'two-thing', 'aria-label': `${cName} ${thing}` });
@@ -4415,7 +4433,8 @@ const WH_QS = [
   ['누가 불을 꺼요?', '🧑‍🚒', '소방관', 2], ['누가 아픈 곳을 고쳐 줘요?', '🧑‍⚕️', '의사 선생님', 2], ['누가 맛있는 요리를 해요?', '🧑‍🍳', '요리사', 2],
   ['누가 길을 지켜 줘요?', '👮', '경찰관', 2], ['언제 잠을 자요?', '🌙', '밤', 2], ['언제 해가 떠요?', '🌅', '아침', 2],
 ];
-const WH_CLASH = [['🛏️', '🌙']];
+// 둘 다 답이 될 수 있는 짝 (밤에 침대, 벌도 하늘을 날고, 목욕할 때 샴푸 · 물도 씀)
+const WH_CLASH = [['🛏️', '🌙'], ['✈️', '🐝'], ['🛁', '🧴'], ['🛁', '🌊']];
 const whGame = {
   id: 'wh',
   title: '어디서? 누가? 무엇?',
@@ -4430,7 +4449,7 @@ const whGame = {
     const [q, e, w] = pick(fresh.length && rand(3) ? fresh : pool);
     const n = newChoiceCount(ctx, i);
     // 함께 답이 될 수 있는 짝은 보기로 같이 내지 않음 (밤 ↔ 침대)
-    const clash = WH_CLASH.find((pair) => pair.includes(e)) ?? [];
+    const clash = WH_CLASH.filter((pair) => pair.includes(e)).flat();
     const wrongs = shuffle(WH_QS.filter(([, x]) => x !== e && !clash.includes(x))).slice(0, n - 1).map(([, x, y]) => [x, y]);
     const choices = shuffle([[e, w], ...wrongs]);
     const rec = choiceRound(ctx, { say: q, choices, answer: choices.find(([x]) => x === e), render: namedCard });
@@ -7864,7 +7883,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 128;
+const APP_VERSION = 129;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
