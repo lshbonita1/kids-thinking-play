@@ -3155,7 +3155,7 @@ function photoList(list, onDelete) {
       el('img', { src: p.img, alt: '' }),
       el('b', {}, p.name),
       el('button', { class: 'chip', onclick: () => onDelete(p.id) }, '지우기')))
-    : el('p', { class: 'muted' }, '아직 사진이 없어요.'));
+    : el('p', { class: 'muted my-photos-empty' }, '아직 사진이 없어요.'));
 }
 
 const familyList = () => store.get(FAMILY_KEY, []);
@@ -5201,7 +5201,9 @@ function recordsTab() {
         ]
         : el('p', { class: 'empty' }, '아직 기록이 없어요. 놀이를 해 보세요!'),
       notPlayed.length && played.length
-        ? el('p', { class: 'not-played' }, `아직 안 한 놀이: ${notPlayed.map((g) => g.title).join(', ')}`)
+        ? el('details', { class: 'not-played' },
+          el('summary', {}, `🌱 아직 안 한 놀이 ${notPlayed.length}가지 보기`),
+          el('div', { class: 'np-list' }, notPlayed.map((g) => el('button', { class: 'chip', onclick: () => playGame(g) }, `${g.icon} ${g.title}`))))
         : null),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '📅 최근 4주'),
@@ -8037,7 +8039,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 131;
+const APP_VERSION = 132;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
