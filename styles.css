@@ -1816,7 +1816,7 @@ img.photo { display: block; object-fit: cover; user-select: none; -webkit-user-d
 
 /* ---------- 점검 후 다듬기 ---------- */
 /* 놀이 영역이 8개라 옆으로 숨지 않게 두 줄로 */
-@media (min-width: 700px) { .cat-tabs { flex-wrap: wrap; overflow: visible; } }
+.cat-tabs { flex-wrap: wrap; overflow: visible; }
 /* 번갈아 쌓기: 블록 쌓을 자리가 눈에 보이게 */
 .turn-tower { border-radius: 20px 20px 6px 6px; background: linear-gradient(#fffaf0, #fdf3e3); }
 /* 학습지 '세어 보기': 좁은 화면에서 숫자가 넘치지 않게 */
@@ -2679,3 +2679,14 @@ details.not-played summary { cursor: pointer; color: var(--muted); font-size: 15
 /* 기록 놀이별 결과: 좁은 화면에서는 숫자를 이름 아래로 */
 .obar-head { flex-wrap: wrap; align-items: baseline; }
 .obar-head > span:first-child { flex: 1 1 auto; }
+/* 놀이 탭 영역 버튼: 휴대폰에서도 옆으로 숨지 않게 여러 줄로 모두 보이게 */
+.cat-tabs { gap: 6px; }
+@media (max-width: 699px) { .cat-tab { padding: 7px 11px; font-size: min(16px, 4.2vw); } }
+/* 설정: 묶음 사이 구분선 · 접어 둔 목소리 */
+.setting-sep { margin: 16px 0 6px; border: 0; border-top: 2px dashed var(--line); }
+details.voice-panel > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; margin: 0; }
+details.voice-panel > summary::-webkit-details-marker { display: none; }
+details.voice-panel > summary::after { content: '›'; color: var(--muted); transition: transform .2s; }
+details.voice-panel[open] > summary { margin-bottom: 12px; }
+details.voice-panel[open] > summary::after { transform: rotate(90deg); }
+.voice-panel .voice-box > .setting-name:first-child { display: none; }

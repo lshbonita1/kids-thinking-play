@@ -5322,23 +5322,17 @@ function settingsTab() {
   return [
     ...tabHeader('설정'),
     el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '⭐ 자주 바꾸는 것'),
+      el('div', { class: 'setting-name' }, '난이도'),
+      levelPicker(),
+      levelTestLink(),
+      el('hr', { class: 'setting-sep' }),
       el('div', { class: 'setting-row' },
         el('div', {}, el('div', { class: 'setting-name' }, '🔊 소리'), el('div', { class: 'setting-desc' }, '문제 읽어주기와 효과음')),
         soundBtn),
       el('div', { class: 'setting-row' },
         el('div', {}, el('div', { class: 'setting-name' }, '👪 보호자 도움말'), el('div', { class: 'setting-desc' }, '놀이를 시작할 때 맨 위에 한 줄 도움말')),
         tipsBtn),
-      el('h3', { class: 'setting-group' }, '🧩 우리 아이에게 맞추기'),
-      switchRow('autoHint', '💡 기다리면 힌트', '8초 동안 누르지 않으면 정답이 반짝여요'),
-      switchRow('missSound', '🔔 틀렸을 때 소리', '소리에 예민하면 꺼 두세요 (말 안내는 그대로)'),
-      switchRow('showScore', '💯 놀이 중 점수 보이기', '끄면 진행 막대만 보여요 (점수는 기록에 남아요)'),
-      el('h3', { class: 'setting-group' }, '🌟 칭찬 · 쉬는 시간'),
-      segRow('praise', '🎉 맞혔을 때', '소리에 예민하면 "말만"이나 "조용히"를 골라 주세요',
-        [{ v: 'full', name: '소리+말' }, { v: 'voice', name: '말만' }, { v: 'quiet', name: '조용히' }]),
-      segRow('praiseVary', '💬 칭찬하는 말', '"늘 같게"는 예측하기 쉬워 편안해요. 익숙해지면 "여러 가지"로',
-        [{ v: false, name: '늘 같게' }, { v: true, name: '여러 가지' }]),
-      segRow('breakEvery', '🫧 쉬는 시간', '정한 문제 수마다 10초 동안 방울을 터뜨리며 쉬어요',
-        [{ v: 0, name: '끔' }, { v: 3, name: '3문제마다' }, { v: 5, name: '5문제마다' }]),
       el('button', {
         class: 'more-games sound-test',
         disabled: !settings.sound,
@@ -5349,17 +5343,29 @@ function settingsTab() {
         },
       }, el('span', {}, '🔈 소리 시험하기'), el('span', {}, '▶')),
       el('p', { class: 'setting-desc sound-help' },
-        '소리가 안 나면: 무음 모드를 끄고 볼륨을 올려 주세요. 효과음만 나고 말소리가 안 나면 기기 설정의 ‘텍스트 음성 변환’에서 한국어 음성을 받아 주세요.'),
-      voiceSettings(),
-      el('div', { class: 'setting-name' }, '난이도'),
-      levelPicker(),
-      levelTestLink()),
+        '소리가 안 나면: 무음 모드를 끄고 볼륨을 올려 주세요. 효과음만 나고 말소리가 안 나면 기기 설정의 ‘텍스트 음성 변환’에서 한국어 음성을 받아 주세요.')),
+    el('section', { class: 'panel' },
+      el('h2', { class: 'panel-title' }, '🧩 우리 아이에게 맞추기'),
+      switchRow('autoHint', '💡 기다리면 힌트', '8초 동안 누르지 않으면 정답이 반짝여요'),
+      switchRow('missSound', '🔔 틀렸을 때 소리', '소리에 예민하면 꺼 두세요 (말 안내는 그대로)'),
+      switchRow('showScore', '💯 놀이 중 점수 보이기', '끄면 진행 막대만 보여요 (점수는 기록에 남아요)'),
+      el('h3', { class: 'setting-group' }, '🌟 칭찬 · 쉬는 시간'),
+      segRow('praise', '🎉 맞혔을 때', '소리에 예민하면 "말만"이나 "조용히"를 골라 주세요',
+        [{ v: 'full', name: '소리+말' }, { v: 'voice', name: '말만' }, { v: 'quiet', name: '조용히' }]),
+      segRow('praiseVary', '💬 칭찬하는 말', '"늘 같게"는 예측하기 쉬워 편안해요. 익숙해지면 "여러 가지"로',
+        [{ v: false, name: '늘 같게' }, { v: true, name: '여러 가지' }]),
+      segRow('breakEvery', '🫧 쉬는 시간', '정한 문제 수마다 10초 동안 방울을 터뜨리며 쉬어요',
+        [{ v: 0, name: '끔' }, { v: 3, name: '3문제마다' }, { v: 5, name: '5문제마다' }])),
+    // 목소리는 한 번 정하면 잘 안 바꾸고 설명이 길어서 접어 둠
+    el('details', { class: 'panel voice-panel', open: sessionStorage.getItem('voiceOpen') === '1', ontoggle: (e) => { try { sessionStorage.setItem('voiceOpen', e.target.open ? '1' : ''); } catch {} } },
+      el('summary', { class: 'panel-title' }, '🗣️ 목소리 바꾸기 (높이 · 빠르기)'),
+      voiceSettings()),
     el('section', { class: 'panel' },
       el('h2', { class: 'panel-title' }, '👪 보호자 안내'),
       el('a', { class: 'more-games', href: 'faq.html' },
         el('span', {}, '❓ 자주 묻는 질문'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: () => showFamilySetup() },
-        el('span', {}, '📸 우리 사진 넣기 (가족 · 선생님 · 물건)'), el('span', {}, '›')),
+        el('span', {}, '📸 우리 사진 넣기'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: () => showWorksheets() },
         el('span', {}, '🖨️ 종이 학습지 인쇄'), el('span', {}, '›')),
       el('button', { class: 'more-games', onclick: showFeedback },
@@ -8039,7 +8045,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 132;
+const APP_VERSION = 133;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
