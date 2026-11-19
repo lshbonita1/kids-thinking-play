@@ -109,6 +109,11 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Gowun 
 h1 { margin: 0; font-family: 'Jua', sans-serif; font-weight: 400; font-size: 30px; line-height: 1.3; }
 .lead { margin: 4px 0 0; color: var(--muted); font-size: 17px; }
 .answer { margin: 12px 0 0; font-size: 16px; }
+.qa { margin: 0 0 12px; }
+.qa b { display: block; }
+section ol, section ul { margin: 6px 0 0; padding-left: 20px; }
+section a { color: var(--green); }
+.answer-box { margin: 14px 0 18px; padding: 16px 18px; border-radius: 20px; background: #fff7dc; border: 2px solid #f3dfa0; font-size: 17px; }
 .cta { display: block; margin: 18px 0 8px; padding: 16px; border-radius: 20px; background: #ffd76e; box-shadow: 0 5px 0 #e9b44c; color: #5b4320; font-family: 'Jua', sans-serif; font-size: 22px; text-align: center; text-decoration: none; }
 .free { margin: 0 0 22px; color: var(--muted); font-size: 14px; text-align: center; }
 section { margin: 0 0 14px; padding: 16px 18px; border: 2px solid var(--line); border-radius: 20px; background: var(--card); }
@@ -175,7 +180,7 @@ def page(title, desc, path, body, og_title=None, schema=''):
     </header>
 {body}
     <footer>
-      <a href="/">쑥쑥 생각놀이 홈</a> · <a href="/games/">놀이 모아 보기</a> · <a href="/faq.html">자주 묻는 질문</a> · <a href="/teacher.html">선생님 안내</a> · <a href="/privacy.html">개인정보처리방침</a><br>
+      <a href="/">쑥쑥 생각놀이 홈</a> · <a href="/games/">놀이 모아 보기</a> · <a href="/faq.html">자주 묻는 질문</a> · <a href="/teacher.html">선생님 안내</a> · <a href="/guide/">안내 글</a> · <a href="/privacy.html">개인정보처리방침</a><br>
       천천히 배우는 아이를 위한 무료 그림 놀이 · 회원가입 · 광고 없음<br>
       <small>고친 날 <time datetime="{TODAY}">{TODAY}</time></small>
     </footer>
@@ -327,7 +332,7 @@ intro = f'''<main class="seo-intro">
         <li>쉬움 · 보통 · 어려움 중에서 고르거나 ‘난이도 알아보기’를 해요</li>
         <li>‘오늘의 학습’에서 [시작하기]를 누르면 하루 10문제가 골고루 나와요</li>
       </ol>
-      <p>아이의 학습 기록과 사진은 서버로 보내지 않고 사용하는 기기 안에만 저장돼요. 더 궁금한 점은 <a href="/faq.html">자주 묻는 질문</a>, 선생님 · 치료사께는 <a href="/teacher.html">선생님 안내</a>를 봐 주세요.</p>
+      <p>아이의 학습 기록과 사진은 서버로 보내지 않고 사용하는 기기 안에만 저장돼요. 더 궁금한 점은 <a href="/faq.html">자주 묻는 질문</a>, 선생님 · 치료사께는 <a href="/teacher.html">선생님 안내</a>를 봐 주세요. 자주 찾는 질문별 <a href="/guide/">안내 글</a>도 있어요.</p>
     </main>'''
 home = (ROOT / 'index.html').read_text(encoding='utf-8')
 home = re.sub(r'<main class="seo-intro">.*?</main>', lambda m: intro, home, count=1, flags=re.S)
@@ -362,8 +367,43 @@ for c in DATA['cats']:
     llms += [f'### {c["name"]}', ''] + [f'- [{games[x]["title"]}]({SITE}/games/{x}.html): {games[x]["desc"]}' for x in c['games']] + ['']
 (ROOT / 'llms.txt').write_text('\n'.join(llms), encoding='utf-8')
 
+# 질문형 안내 글 (tools/guides.json) → guide/*.html, guide/index.html
+GUIDES = json.loads((ROOT / 'tools' / 'guides.json').read_text())
+gdir = ROOT / 'guide'
+gdir.mkdir(exist_ok=True)
+def strip_tags(x):
+    return re.sub(r'\s+', ' ', html.unescape(re.sub(r'<[^>]+>', '', x))).strip()
+for gd in GUIDES:
+    url = f"{SITE}/guide/{gd['slug']}.html"
+    secs = ''.join(f'    <section><h2>{esc(h)}</h2>{b}</section>\n' for h, b in gd['sections'])
+    faqs = ''.join(f'<p class="qa"><b>Q. {esc(q)}</b>{esc(a)}</p>' for q, a in gd['faq'])
+    others = ''.join(f'<a class="g" href="/guide/{o["slug"]}.html"><span class="i" style="background:{o["color"]}">{o["icon"]}</span><span><b>{esc(o["title"])}</b></span></a>' for o in GUIDES if o is not gd)
+    body = f"""    <div class="hero"><span class="icon" style="background:{gd['color']}">{gd['icon']}</span>
+      <div><h1>{esc(gd['title'])}</h1></div></div>
+    <p class="answer-box">{gd['answer']}</p>
+    <a class="cta" href="/?qr=guide-{gd['slug']}">▶ 쑥쑥 생각놀이 무료로 열기</a>
+    <p class="free">설치 · 회원가입 · 광고 없이 바로 시작해요</p>
+{secs}    <section><h2>🙋 자주 묻는 질문</h2>{faqs}</section>
+    <div class="cat"><h2>다른 안내 글</h2></div><div class="grid">{others}</div>"""
+    schema = ld({'@type': 'Article', '@id': url + '#article', 'url': url, 'headline': gd['title'], 'description': gd['desc'], 'inLanguage': 'ko',
+                 'abstract': strip_tags(gd['answer']), 'about': {'@id': f'{SITE}/#app'}, 'isPartOf': SITE_REF, 'author': ORG_REF, 'publisher': ORG_REF,
+                 'image': f'{SITE}/icons/og-image.png', 'datePublished': '2026-11-19', 'dateModified': TODAY, 'mainEntityOfPage': url},
+                {'@type': 'FAQPage', 'url': url, 'mainEntity': [{'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': a}} for q, a in gd['faq']]},
+                crumbs(('쑥쑥 생각놀이', ''), ('안내 글', 'guide/'), (gd['short'], f"guide/{gd['slug']}.html")))
+    (gdir / f"{gd['slug']}.html").write_text(page(f"{gd['title']} | 쑥쑥 생각놀이", gd['desc'], f"guide/{gd['slug']}.html", body, gd['title'], schema))
+guide_cards = ''.join(f'<a class="g" href="/guide/{o["slug"]}.html"><span class="i" style="background:{o["color"]}">{o["icon"]}</span><span><b>{esc(o["title"])}</b><small>{esc(o["desc"][:60])}…</small></span></a>' for o in GUIDES)
+(gdir / 'index.html').write_text(page('안내 글 모음 | 쑥쑥 생각놀이', '말이 느린 아이 집 놀이, 선생님용 가정 연계 자료, 회원가입 없는 무료 학습 사이트, 병원 · 미용실 그림 이야기 안내 글.', 'guide/',
+    f"""    <h1>안내 글</h1>
+    <p class="lead">보호자 · 선생님이 자주 찾는 질문에 맞춰 쑥쑥 생각놀이 쓰는 법을 정리했어요.</p>
+    <div class="grid" style="margin-top:16px">{guide_cards}</div>""",
+    schema=ld({'@type': 'CollectionPage', 'url': f'{SITE}/guide/', 'name': '안내 글 모음', 'inLanguage': 'ko', 'isPartOf': SITE_REF, 'dateModified': TODAY,
+               'mainEntity': {'@type': 'ItemList', 'itemListElement': [{'@type': 'ListItem', 'position': i + 1, 'name': o['title'], 'url': f"{SITE}/guide/{o['slug']}.html"} for i, o in enumerate(GUIDES)]}},
+              crumbs(('쑥쑥 생각놀이', ''), ('안내 글', 'guide/')))))
+llms_guides = ['## 안내 글', ''] + [f"- [{o['title']}]({SITE}/guide/{o['slug']}.html): {strip_tags(o['answer'])}" for o in GUIDES] + ['']
+(ROOT / 'llms.txt').write_text((ROOT / 'llms.txt').read_text(encoding='utf-8').replace('## 주요 페이지', '\n'.join(llms_guides) + '\n## 주요 페이지', 1), encoding='utf-8')
+
 # 사이트맵
-urls = [('', '1.0', 'weekly'), ('games/', '0.8', 'weekly'), ('faq.html', '0.6', 'monthly'), ('teacher.html', '0.7', 'monthly')] + [(f'games/{g}.html', '0.7', 'monthly') for g in games] + [('privacy.html', '0.3', 'yearly')]
+urls = [('', '1.0', 'weekly'), ('games/', '0.8', 'weekly'), ('faq.html', '0.6', 'monthly'), ('teacher.html', '0.7', 'monthly'), ('guide/', '0.7', 'weekly')] + [(f"guide/{o['slug']}.html", '0.8', 'monthly') for o in GUIDES] + [(f'games/{g}.html', '0.7', 'monthly') for g in games] + [('privacy.html', '0.3', 'yearly')]
 (ROOT / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
   ''.join(f'  <url><loc>{SITE}/{u}</loc><lastmod>{TODAY}</lastmod><changefreq>{f}</changefreq><priority>{p}</priority></url>\n' for u, p, f in urls) + '</urlset>\n')
 print(f'놀이 페이지 {len(games)}개 · 모아 보기 · 사이트맵 {len(urls)}개 주소')
