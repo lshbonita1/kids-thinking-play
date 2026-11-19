@@ -83,6 +83,16 @@ cat_of = {gid: c for c in DATA['cats'] for gid in c['games']}
 ws_title = {w['id']: w['title'] for w in DATA['worksheets']}
 missing = [g for g in games if g not in GUIDE or g not in HOME_TRY]
 assert not missing, f'GUIDE에 설명이 없는 놀이: {missing}'
+# 놀이마다 '이럴 때 좋아요' (tools/when.json)
+WHEN = json.loads((ROOT / 'tools' / 'when.json').read_text())
+assert not [g for g in games if g not in WHEN], 'when.json에 없는 놀이가 있어요'
+
+def josa(word, a, b):
+    # 마지막 한글 글자에 받침이 있으면 a(은/이), 없으면 b(는/가)
+    for ch in reversed(word):
+        if '가' <= ch <= '힣':
+            return a if (ord(ch) - 0xAC00) % 28 else b
+    return b
 
 STYLE = """
 :root { --bg: #fbf8f2; --card: #fff; --line: #ebe4d6; --ink: #4a3f31; --muted: #8a7a62; --green: #3f8a55; }
@@ -98,6 +108,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Gowun 
 .hero .icon { display: grid; place-items: center; flex: none; width: 76px; height: 76px; border-radius: 22px; font-size: 44px; }
 h1 { margin: 0; font-family: 'Jua', sans-serif; font-weight: 400; font-size: 30px; line-height: 1.3; }
 .lead { margin: 4px 0 0; color: var(--muted); font-size: 17px; }
+.answer { margin: 12px 0 0; font-size: 16px; }
 .cta { display: block; margin: 18px 0 8px; padding: 16px; border-radius: 20px; background: #ffd76e; box-shadow: 0 5px 0 #e9b44c; color: #5b4320; font-family: 'Jua', sans-serif; font-size: 22px; text-align: center; text-decoration: none; }
 .free { margin: 0 0 22px; color: var(--muted); font-size: 14px; text-align: center; }
 section { margin: 0 0 14px; padding: 16px 18px; border: 2px solid var(--line); border-radius: 20px; background: var(--card); }
@@ -185,8 +196,10 @@ for gid, g in games.items():
     ws = WORKSHEET_FOR.get(gid)
     body = f"""    <div class="hero"><span class="icon" style="background:{g['color']}">{g['icon']}</span>
       <div><h1>{esc(g['title'])}</h1><p class="lead">{esc(g['desc'])}</p></div></div>
+    <p class="answer">‘{esc(g['title'])}’{josa(g['title'], '은', '는')} {esc(c['name'] if c else '')} 영역의 무료 그림 놀이예요. {esc(g['skill'])}{josa(g['skill'], '을', '를')} 길러요. 쉬움 · 보통 · 어려움 세 단계가 있고, 문제를 소리로 읽어 줘서 글을 몰라도 할 수 있어요.</p>
     <a class="cta" href="/?play={gid}">▶ 지금 무료로 해 보기</a>
     <p class="free">설치 · 회원가입 없이 바로 시작해요</p>
+    <section><h2>🙋 이럴 때 좋아요</h2><p>{esc(WHEN[gid])}</p></section>
     <section><h2>🧩 이렇게 놀아요</h2><p>{esc(how)}</p></section>
     <section><h2>🌱 이런 힘을 키워요</h2><p>{esc(c['name'] if c else '')} 영역 놀이예요. {esc(c['desc'] if c else '')}.</p>
       <div class="tags">{''.join(f'<span>{esc(s.strip())}</span>' for s in g['skill'].split('·'))}</div></section>
@@ -282,6 +295,43 @@ put_ld('index.html', ld(
                      '그림 이야기 18가지 (병원 · 미용실 · 어린이집 미리 보기)', f'종이 학습지 {len(DATA["worksheets"])}가지 A4 인쇄', '쉬움 · 보통 · 어려움 단계와 난이도 알아보기',
                      '집에서 한 연습을 한 장으로 보는 기록', '회원가입 · 광고 없음, 기록은 기기 안에만 저장'],
      'screenshot': f'{SITE}/icons/og-image.png', 'publisher': ORG_REF, 'dateModified': TODAY}))
+
+def cat_line(c):
+    links = ', '.join('<a href="/games/%s.html">%s</a>' % (x, esc(games[x]['title'])) for x in c['games'])
+    return '        <li><b>%s</b> (%s): %s</li>\n' % (esc(c['name']), esc(c['desc']), links)
+cat_lines = ''.join(cat_line(c) for c in DATA['cats'])
+intro = f'''<main class="seo-intro">
+      <h1>쑥쑥 생각놀이</h1>
+      <p>말이 늦거나 천천히 배우는 아이를 위한 무료 그림 놀이 사이트예요. 크고 또렷한 그림과 소리로 하루 10문제씩, 아이 속도에 맞춰 놀이하듯 연습해요. 휴대폰 · 태블릿 · 컴퓨터에서 주소만 열면 바로 시작하고, 회원가입 · 광고 · 결제가 없어요.</p>
+      <h2>이런 아이와 어른께 맞아요</h2>
+      <ul>
+        <li>그림을 보고 고르기, 듣고 찾기를 연습하는 아이 (문제를 소리로 읽어 줘서 글을 몰라도 돼요)</li>
+        <li>틀리면 속상해하는 아이 (틀려도 정답이 반짝이고, 아이가 직접 눌러 끝내요)</li>
+        <li>센터 · 치료실 수업을 집에서 이어 가고 싶은 보호자와 선생님</li>
+      </ul>
+      <h2>놀이 {len(games)}가지</h2>
+      <p>모든 놀이에 쉬움 · 보통 · 어려움 세 단계가 있고, ‘우리 아이 난이도 알아보기’로 알맞은 단계를 찾을 수 있어요.</p>
+      <ul>
+{cat_lines}      </ul>
+      <h2>함께 쓰는 도구</h2>
+      <ul>
+        <li>말하기 카드: 그림을 누르면 "물 주세요", "도와주세요"를 대신 말해 주고, 낱말을 이어 문장도 만들어요</li>
+        <li>그림 이야기 18가지: 병원 · 치과 · 미용실 · 어린이집 같은 상황을 미리 보여 줘요</li>
+        <li>생활 도우미: 먼저 · 다음 보드, 숨 쉬기, 칭찬 스티커, 쉬는 시간</li>
+        <li>종이 학습지 {len(DATA['worksheets'])}가지: {esc(ws_names)}. A4로 인쇄해서 연필로 해요</li>
+        <li>기록 한 장: 집에서 한 연습(정답률 · 잘하는 놀이)을 한 장으로 모아 선생님께 보여 줄 수 있어요</li>
+      </ul>
+      <h2>이렇게 시작해요</h2>
+      <ol>
+        <li>ssukssuknori.app 을 열어요 (홈 화면에 추가하면 앱처럼 쓸 수 있어요)</li>
+        <li>쉬움 · 보통 · 어려움 중에서 고르거나 ‘난이도 알아보기’를 해요</li>
+        <li>‘오늘의 학습’에서 [시작하기]를 누르면 하루 10문제가 골고루 나와요</li>
+      </ol>
+      <p>아이의 학습 기록과 사진은 서버로 보내지 않고 사용하는 기기 안에만 저장돼요. 더 궁금한 점은 <a href="/faq.html">자주 묻는 질문</a>, 선생님 · 치료사께는 <a href="/teacher.html">선생님 안내</a>를 봐 주세요.</p>
+    </main>'''
+home = (ROOT / 'index.html').read_text(encoding='utf-8')
+home = re.sub(r'<main class="seo-intro">.*?</main>', lambda m: intro, home, count=1, flags=re.S)
+(ROOT / 'index.html').write_text(home, encoding='utf-8')
 
 faq = (ROOT / 'faq.html').read_text(encoding='utf-8')
 def plain(x):
