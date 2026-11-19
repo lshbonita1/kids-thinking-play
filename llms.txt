@@ -1,0 +1,101 @@
+# 쑥쑥 생각놀이
+
+> 천천히 배우는 아이를 위한 무료 그림 놀이 사이트. 놀이 57가지, 말하기 카드, 그림 이야기, 종이 학습지. 회원가입 · 광고 · 설치 없이 바로 쓸 수 있어요.
+
+말이 늦거나 또래보다 천천히 배우는 아이가 집에서 놀이하듯 기초 인지 · 의사소통 · 생활 기술을 연습하는 무료 웹사이트입니다. 휴대폰 · 태블릿 · 컴퓨터 브라우저에서 https://ssukssuknori.app 을 열면 바로 시작하며, 앱 설치 · 회원가입 · 결제 · 광고가 없습니다. 아이의 학습 기록과 사진은 서버로 보내지 않고 사용하는 기기 안에만 저장됩니다.
+
+- 대상: 말이 늦거나 천천히 배우는 아이, 보호자, 특수교사 · 언어치료사 · 놀이치료사 등 선생님
+- 문제를 소리로 읽어 주어 글을 몰라도 할 수 있고, 틀리면 정답이 반짝여 아이가 직접 눌러 끝냅니다
+- 모든 놀이에 쉬움 · 보통 · 어려움 단계가 있고, 하루 10문제 '오늘의 학습'이 놀이를 골고루 바꿔 줍니다
+- 종이 학습지 10가지(길 따라 그리기 · 선 따라 긋기 · 똑같이 칠하기 · 같은 그림 잇기 · 그림자 잇기 · 다른 하나 찾기 · 세어 보기 · 규칙 찾기 · 큰 것 · 작은 것 · 숫자와 개수 잇기)를 A4로 인쇄할 수 있습니다
+- 선생님은 가정 연계 과제로 쓰고, 보호자는 '기록 한 장'으로 집에서 한 연습을 보여 줄 수 있습니다
+
+## 주요 페이지
+
+- [놀이 57가지 모아 보기](https://ssukssuknori.app/games/): 영역별 놀이 목록과 설명
+- [선생님 · 치료사 안내](https://ssukssuknori.app/teacher.html): 가정 연계 과제, 기록 한 장, 학습지, 보호자 안내 문구
+- [자주 묻는 질문](https://ssukssuknori.app/faq.html): 비용, 나이, 기록 저장, 사용 방법
+- [개인정보처리방침](https://ssukssuknori.app/privacy.html)
+
+## 놀이 57가지
+
+### 보고 따라하기
+
+- [똑같이 칠하기](https://ssukssuknori.app/games/copy.html): 보면서 똑같이 칠해요
+- [그림자 찾기](https://ssukssuknori.app/games/shadow.html): 꼭 맞는 그림자를 골라요
+- [다른 하나 찾기](https://ssukssuknori.app/games/odd.html): 모양이 다른 친구를 찾아요
+- [쑥쑥이 따라 하기](https://ssukssuknori.app/games/imitate.html): 쑥쑥이처럼 몸으로 따라 해요
+- [진짜와 그림 짝짓기](https://ssukssuknori.app/games/real.html): 사진과 같은 그림을 찾아요
+- [숨은 그림 찾기](https://ssukssuknori.app/games/hidden.html): 여러 그림 사이에서 찾아요
+
+### 손 놀이
+
+- [선 따라 긋기](https://ssukssuknori.app/games/lines.html): 점을 이어 똑같이 그려요
+- [길 따라 그리기](https://ssukssuknori.app/games/trace.html): 친구를 끌어서 길을 따라가요
+- [바구니에 쏙](https://ssukssuknori.app/games/sort.html): 같은 그림 바구니에 옮겨요
+- [조각 퍼즐](https://ssukssuknori.app/games/puzzle.html): 조각을 옮겨 그림을 완성해요
+
+### 게임 놀이
+
+- [풍선 터뜨리기](https://ssukssuknori.app/games/balloon.html): 풍선을 톡톡 눌러 터뜨려요
+- [숨은 친구 잡기](https://ssukssuknori.app/games/mole.html): 쏙 나온 친구를 톡 잡아요
+- [리듬 따라 치기](https://ssukssuknori.app/games/rhythm.html): 쑥쑥이처럼 북을 쿵쿵 쳐요
+- [물고기 잡기](https://ssukssuknori.app/games/fish.html): 헤엄치는 물고기를 톡 잡아요
+- [블록 탑 쌓기](https://ssukssuknori.app/games/tower.html): 톡! 블록을 떨어뜨려 높이 쌓아요
+- [과일 받기](https://ssukssuknori.app/games/catch.html): 떨어지는 과일을 바구니로 받아요
+- [점 잇기 그림](https://ssukssuknori.app/games/dots.html): 1, 2, 3… 이으면 그림이 나와요
+- [알 깨기](https://ssukssuknori.app/games/egg.html): 톡톡! 알에서 누가 나올까요?
+
+### 기억·집중
+
+- [모양 기억하기](https://ssukssuknori.app/games/memory.html): 칠해진 모양을 기억해요
+- [짝 맞추기](https://ssukssuknori.app/games/flip.html): 같은 그림 두 장을 찾아요
+- [무엇이 없어졌을까?](https://ssukssuknori.app/games/missing.html): 잘 보고, 사라진 것을 찾아요
+
+### 생각·규칙
+
+- [규칙 찾기](https://ssukssuknori.app/games/pattern.html): 빈칸에 들어갈 것은?
+- [순서 맞추기](https://ssukssuknori.app/games/order.html): 차례대로 줄을 세워요
+- [어디에 있을까?](https://ssukssuknori.app/games/space.html): 위, 아래, 옆을 알아요
+- [큰 것, 작은 것](https://ssukssuknori.app/games/size.html): 큰 것과 작은 것을 골라요
+- [색깔 · 모양 이름](https://ssukssuknori.app/games/color.html): 빨간색은? 동그라미는?
+- [반대 개념](https://ssukssuknori.app/games/opposite.html): 많다 · 적다, 길다 · 짧다
+- [이럴 땐 어떻게 해요?](https://ssukssuknori.app/games/need.html): 비가 오면 무엇이 필요할까요?
+- [반쪽 그림 찾기](https://ssukssuknori.app/games/half.html): 반쪽만 보고 무엇인지 맞혀요
+- [같은 무리끼리 모으기](https://ssukssuknori.app/games/group.html): 과일은 과일끼리, 동물은 동물끼리
+- [날씨와 하루](https://ssukssuknori.app/games/weather.html): 추운 날, 더운 날 무엇을 입을까?
+
+### 수
+
+- [몇 개일까?](https://ssukssuknori.app/games/count.html): 하나, 둘, 셋… 세어 봐요
+- [숫자와 개수 짝짓기](https://ssukssuknori.app/games/number.html): 숫자만큼 있는 것을 찾아요
+- [하나씩 나눠 주기](https://ssukssuknori.app/games/share.html): 접시마다 하나씩 놓아요
+
+### 말·소통
+
+- [우리 사진 찾기](https://ssukssuknori.app/games/family.html): 엄마, 선생님, 내 컵… 진짜 사진으로 찾아요
+- [쑥쑥이가 보는 것 찾기](https://ssukssuknori.app/games/gaze.html): 쑥쑥이 눈을 따라가 찾아요
+- [이름 듣고 찾기](https://ssukssuknori.app/games/listen.html): 말을 듣고 그림을 골라요
+- [네? 아니요?](https://ssukssuknori.app/games/yesno.html): "이건 사과예요?" 네, 아니요로 대답해요
+- [두 가지 듣고 찾기](https://ssukssuknori.app/games/two.html): "빨간 공"처럼 색과 이름을 함께 들어요
+- [어디서? 누가? 무엇?](https://ssukssuknori.app/games/wh.html): 질문을 듣고 그림으로 대답해요
+- [빈칸 말놀이](https://ssukssuknori.app/games/fill.html): "멍멍 ___" 이어서 대답해요
+- [이게 뭐예요? (말해 보기)](https://ssukssuknori.app/games/say.html): 그림을 보고 이름을 말해요
+- [소리 듣고 찾기](https://ssukssuknori.app/games/sound.html): 멍멍! 누구 소리일까요?
+- [무엇을 하고 있나요?](https://ssukssuknori.app/games/verb.html): 자는 친구, 달리는 친구를 찾아요
+- [어울리는 짝 찾기](https://ssukssuknori.app/games/match.html): 함께 쓰이는 것을 찾아요
+- [몸 어디 있지?](https://ssukssuknori.app/games/body.html): 눈, 코, 입은 어디 있을까요?
+- [무엇에 쓰는 걸까?](https://ssukssuknori.app/games/use.html): 먹는 것, 타는 것을 골라요
+- [차례대로 눌러요](https://ssukssuknori.app/games/steps.html): 말을 듣고 순서대로 눌러요
+- [글자 놀이](https://ssukssuknori.app/games/letter.html): 같은 글자, 첫 글자를 찾아요
+
+### 마음·생활
+
+- [기분 알기](https://ssukssuknori.app/games/feel.html): 얼굴 표정을 보고 기분을 알아요
+- [왜 그런 기분일까?](https://ssukssuknori.app/games/why.html): 슬픈 얼굴, 왜 슬플까요?
+- [마음 크기 · 진정하기](https://ssukssuknori.app/games/calm.html): 속상할 때 도움이 되는 방법을 골라요
+- [이럴 땐 뭐라고 해요?](https://ssukssuknori.app/games/social.html): 고마워요, 미안해요를 골라요
+- [안전한 것 · 위험한 것](https://ssukssuknori.app/games/safety.html): 만지면 위험한 것을 알아요
+- [생활 순서](https://ssukssuknori.app/games/routine.html): 손 씻기, 밥 먹기 순서를 알아요
+- [번갈아 쌓기](https://ssukssuknori.app/games/turn.html): 쑥쑥이랑 차례차례 쌓아요
+- [기다리기 연습](https://ssukssuknori.app/games/wait.html): 모래시계가 끝날 때까지 기다려요

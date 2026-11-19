@@ -121,7 +121,19 @@ footer a { color: var(--muted); }
 @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } h1 { font-size: 26px; } }
 """
 
-def page(title, desc, path, body, og_title=None):
+def ld(*items):
+    # AI · 검색엔진이 읽는 구조화 데이터 (schema.org)
+    data = {'@context': 'https://schema.org', '@graph': list(items)}
+    return '<script type="application/ld+json">' + json.dumps(data, ensure_ascii=False).replace('</', '<\\/') + '</script>'
+
+def crumbs(*pairs):
+    return {'@type': 'BreadcrumbList', 'itemListElement': [
+        {'@type': 'ListItem', 'position': i + 1, 'name': n, 'item': f'{SITE}/{u}'} for i, (n, u) in enumerate(pairs)]}
+
+SITE_REF = {'@id': f'{SITE}/#website'}
+ORG_REF = {'@id': f'{SITE}/#org'}
+
+def page(title, desc, path, body, og_title=None, schema=''):
     url = f'{SITE}/{path}'
     return f"""<!doctype html>
 <html lang="ko">
@@ -142,6 +154,7 @@ def page(title, desc, path, body, og_title=None):
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
   <style>{STYLE}</style>
+  {schema}
 </head>
 <body>
   <main class="wrap">
@@ -152,7 +165,8 @@ def page(title, desc, path, body, og_title=None):
 {body}
     <footer>
       <a href="/">쑥쑥 생각놀이 홈</a> · <a href="/games/">놀이 모아 보기</a> · <a href="/faq.html">자주 묻는 질문</a> · <a href="/teacher.html">선생님 안내</a> · <a href="/privacy.html">개인정보처리방침</a><br>
-      천천히 배우는 아이를 위한 무료 그림 놀이 · 회원가입 · 광고 없음
+      천천히 배우는 아이를 위한 무료 그림 놀이 · 회원가입 · 광고 없음<br>
+      <small>고친 날 <time datetime="{TODAY}">{TODAY}</time></small>
     </footer>
   </main>
 </body>
@@ -182,7 +196,15 @@ for gid, g in games.items():
     {f'<section><h2>🖨️ 종이 학습지로도 해요</h2><p>‘{esc(ws_title[ws])}’ 학습지를 A4로 인쇄해서 연필로 할 수 있어요. 사이트의 놀이 탭 맨 위 ‘종이 학습지’에서 인쇄해요.</p></section>' if ws else ''}
     {f'<div class="cat"><h2>함께 하면 좋은 놀이</h2></div><div class="grid">{"".join(card(f) for f in friends)}</div>' if friends else ''}"""
     desc = f"{g['title']}: {g['desc']}. {how} 천천히 배우는 아이를 위한 무료 그림 놀이, 쑥쑥 생각놀이."
-    (out / f'{gid}.html').write_text(page(f"{g['title']} - 천천히 배우는 아이를 위한 무료 놀이 | 쑥쑥 생각놀이", desc[:150], f'games/{gid}.html', body, g['title']))
+    gurl = f'{SITE}/games/{gid}.html'
+    schema = ld({'@type': 'LearningResource', '@id': gurl + '#game', 'url': gurl, 'name': g['title'], 'description': f"{g['desc']}. {how}",
+                 'learningResourceType': '교육용 그림 놀이', 'educationalLevel': '쉬움 · 보통 · 어려움', 'teaches': [x.strip() for x in g['skill'].split('·')],
+                 'about': c['name'] if c else None, 'inLanguage': 'ko', 'isAccessibleForFree': True, 'interactivityType': 'active',
+                 'audience': {'@type': 'EducationalAudience', 'educationalRole': '보호자 · 선생님 · 천천히 배우는 아이'},
+                 'potentialAction': {'@type': 'PlayAction', 'target': f'{SITE}/?play={gid}'},
+                 'isPartOf': SITE_REF, 'publisher': ORG_REF, 'dateModified': TODAY},
+                crumbs(('쑥쑥 생각놀이', ''), ('놀이 모아 보기', 'games/'), (g['title'], f'games/{gid}.html')))
+    (out / f'{gid}.html').write_text(page(f"{g['title']} - 천천히 배우는 아이를 위한 무료 놀이 | 쑥쑥 생각놀이", desc[:150], f'games/{gid}.html', body, g['title'], schema))
 
 # 모아 보기
 sections = []
@@ -194,7 +216,12 @@ index_body = f"""    <h1>쑥쑥 생각놀이 놀이 {len(games)}가지</h1>
     <a class="cta" href="/">▶ 오늘의 학습 바로 시작하기</a>
     <p class="free">설치 · 회원가입 · 광고 없이 무료</p>
 {chr(10).join(sections)}"""
-(out / 'index.html').write_text(page(f'놀이 {len(games)}가지 모아 보기 | 쑥쑥 생각놀이', f'짝 맞추기, 소리 듣고 찾기, 말하기 카드 등 천천히 배우는 아이를 위한 무료 그림 놀이 {len(games)}가지를 영역별로 모았어요.', 'games/', index_body))
+index_schema = ld({'@type': 'CollectionPage', 'url': f'{SITE}/games/', 'name': f'놀이 {len(games)}가지 모아 보기', 'inLanguage': 'ko', 'isPartOf': SITE_REF, 'dateModified': TODAY,
+                    'mainEntity': {'@type': 'ItemList', 'numberOfItems': len(games), 'itemListElement': [
+                        {'@type': 'ListItem', 'position': i + 1, 'name': games[x]['title'], 'url': f'{SITE}/games/{x}.html'}
+                        for i, x in enumerate(x for c in DATA['cats'] for x in c['games'])]}},
+                   crumbs(('쑥쑥 생각놀이', ''), ('놀이 모아 보기', 'games/')))
+(out / 'index.html').write_text(page(f'놀이 {len(games)}가지 모아 보기 | 쑥쑥 생각놀이', f'짝 맞추기, 소리 듣고 찾기, 말하기 카드 등 천천히 배우는 아이를 위한 무료 그림 놀이 {len(games)}가지를 영역별로 모았어요.', 'games/', index_body, schema=index_schema))
 
 # 선생님 · 치료사 안내 (teacher.html): 기관에 보내는 메일 · 포스터 QR이 여기로 이어짐
 _dom = _app[_app.index('const DOMAINS = {'):]
@@ -225,7 +252,65 @@ teacher_body = f"""    <h1>선생님 · 치료사께</h1>
       <p class="note" style="padding:12px 14px;border-radius:12px;background:#f6f3ee;color:var(--ink)">집에서 아이와 하루 10분, 그림 놀이로 연습해 보세요. ‘쑥쑥 생각놀이’는 설치 · 회원가입 없이 무료로 쓸 수 있어요. 👉 {TEACHER_URL}</p></section>
     <h2 style="margin-top:30px">🧩 발달 영역별 놀이 {len(games)}가지</h2>
 {dom_sections}"""
-(ROOT / 'teacher.html').write_text(page('선생님 · 치료사 안내 - 가정 연계 무료 그림 놀이 | 쑥쑥 생각놀이', f'센터 수업을 집에서 이어 가는 무료 그림 놀이. 발달 영역별 놀이 {len(games)}가지, 기록 한 장, 종이 학습지, 말하기 카드. 설치 · 회원가입 · 광고 없음.', 'teacher.html', teacher_body))
+(ROOT / 'teacher.html').write_text(page('선생님 · 치료사 안내 - 가정 연계 무료 그림 놀이 | 쑥쑥 생각놀이', f'센터 수업을 집에서 이어 가는 무료 그림 놀이. 발달 영역별 놀이 {len(games)}가지, 기록 한 장, 종이 학습지, 말하기 카드. 설치 · 회원가입 · 광고 없음.', 'teacher.html', teacher_body, schema=ld(
+    {'@type': 'WebPage', 'url': f'{SITE}/teacher.html', 'name': '선생님 · 치료사 안내 - 가정 연계 무료 그림 놀이', 'inLanguage': 'ko', 'isPartOf': SITE_REF, 'dateModified': TODAY,
+     'audience': {'@type': 'EducationalAudience', 'educationalRole': '특수교사 · 언어치료사 · 놀이치료사 · 작업치료사'},
+     'about': {'@id': f'{SITE}/#app'}},
+    crumbs(('쑥쑥 생각놀이', ''), ('선생님 안내', 'teacher.html')))))
+
+# 홈(index.html)과 자주 묻는 질문(faq.html)의 구조화 데이터: <!-- ld:start --> ~ <!-- ld:end --> 사이를 매번 새로 씀
+def put_ld(file, tag):
+    f = ROOT / file
+    t = f.read_text(encoding='utf-8')
+    block = f'<!-- ld:start (tools/build-game-pages.py가 만듦) -->\n  {tag}\n  <!-- ld:end -->'
+    if '<!-- ld:start' in t:
+        t = re.sub(r'<!-- ld:start.*?<!-- ld:end -->', lambda m: block, t, flags=re.S)
+    else:
+        t = t.replace('</head>', f'  {block}\n</head>', 1)
+    f.write_text(t, encoding='utf-8')
+
+DESC_HOME = f'천천히 배우는 아이를 위한 무료 그림 놀이 사이트. 놀이 {len(games)}가지, 말하기 카드, 그림 이야기, 종이 학습지. 회원가입 · 광고 · 설치 없이 바로 쓸 수 있어요.'
+put_ld('index.html', ld(
+    {'@type': 'WebSite', '@id': f'{SITE}/#website', 'url': f'{SITE}/', 'name': '쑥쑥 생각놀이', 'alternateName': ['ssukssuknori', '쑥쑥생각놀이'],
+     'description': DESC_HOME, 'inLanguage': 'ko', 'publisher': ORG_REF},
+    {'@type': 'Organization', '@id': f'{SITE}/#org', 'name': '쑥쑥 생각놀이', 'url': f'{SITE}/', 'logo': f'{SITE}/icons/apple-touch-icon.png'},
+    {'@type': 'WebApplication', '@id': f'{SITE}/#app', 'name': '쑥쑥 생각놀이', 'url': f'{SITE}/', 'description': DESC_HOME,
+     'applicationCategory': 'EducationalApplication', 'operatingSystem': '웹 브라우저 (휴대폰 · 태블릿 · 컴퓨터)', 'inLanguage': 'ko',
+     'isAccessibleForFree': True, 'offers': {'@type': 'Offer', 'price': 0, 'priceCurrency': 'KRW'},
+     'audience': {'@type': 'EducationalAudience', 'educationalRole': '말이 늦거나 천천히 배우는 아이와 보호자 · 특수교사 · 치료사'},
+     'featureList': [f'학습 놀이 {len(games)}가지 (짝 맞추기 · 소리 듣고 찾기 · 규칙 · 수 · 소근육 · 말 · 소통)', '말하기 카드 (그림을 누르면 대신 말해 줌, 문장 만들기)',
+                     '그림 이야기 18가지 (병원 · 미용실 · 어린이집 미리 보기)', f'종이 학습지 {len(DATA["worksheets"])}가지 A4 인쇄', '쉬움 · 보통 · 어려움 단계와 난이도 알아보기',
+                     '집에서 한 연습을 한 장으로 보는 기록', '회원가입 · 광고 없음, 기록은 기기 안에만 저장'],
+     'screenshot': f'{SITE}/icons/og-image.png', 'publisher': ORG_REF, 'dateModified': TODAY}))
+
+faq = (ROOT / 'faq.html').read_text(encoding='utf-8')
+def plain(x):
+    x = re.sub(r'<li>', '· ', x); x = re.sub(r'<[^>]+>', ' ', x)
+    return re.sub(r'\s+', ' ', html.unescape(x)).strip()
+qa = [(plain(q), plain(a)) for q, a in re.findall(r'<summary>(.*?)</summary>\s*<div class="a">(.*?)</div>\s*</details>', faq, re.S)]
+assert len(qa) >= 10, f'자주 묻는 질문을 {len(qa)}개밖에 못 읽음'
+put_ld('faq.html', ld({'@type': 'FAQPage', 'url': f'{SITE}/faq.html', 'inLanguage': 'ko', 'isPartOf': SITE_REF, 'dateModified': TODAY,
+                        'mainEntity': [{'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': a}} for q, a in qa]},
+                       crumbs(('쑥쑥 생각놀이', ''), ('자주 묻는 질문', 'faq.html'))))
+
+# AI용 사이트 안내 (llms.txt)
+llms = [f'# 쑥쑥 생각놀이', '', f'> {DESC_HOME}', '',
+        '말이 늦거나 또래보다 천천히 배우는 아이가 집에서 놀이하듯 기초 인지 · 의사소통 · 생활 기술을 연습하는 무료 웹사이트입니다. '
+        '휴대폰 · 태블릿 · 컴퓨터 브라우저에서 https://ssukssuknori.app 을 열면 바로 시작하며, 앱 설치 · 회원가입 · 결제 · 광고가 없습니다. '
+        '아이의 학습 기록과 사진은 서버로 보내지 않고 사용하는 기기 안에만 저장됩니다.', '',
+        '- 대상: 말이 늦거나 천천히 배우는 아이, 보호자, 특수교사 · 언어치료사 · 놀이치료사 등 선생님',
+        '- 문제를 소리로 읽어 주어 글을 몰라도 할 수 있고, 틀리면 정답이 반짝여 아이가 직접 눌러 끝냅니다',
+        '- 모든 놀이에 쉬움 · 보통 · 어려움 단계가 있고, 하루 10문제 \'오늘의 학습\'이 놀이를 골고루 바꿔 줍니다',
+        f'- 종이 학습지 {len(DATA["worksheets"])}가지({ws_names})를 A4로 인쇄할 수 있습니다',
+        '- 선생님은 가정 연계 과제로 쓰고, 보호자는 \'기록 한 장\'으로 집에서 한 연습을 보여 줄 수 있습니다', '',
+        '## 주요 페이지', '',
+        f'- [놀이 {len(games)}가지 모아 보기]({SITE}/games/): 영역별 놀이 목록과 설명',
+        f'- [선생님 · 치료사 안내]({SITE}/teacher.html): 가정 연계 과제, 기록 한 장, 학습지, 보호자 안내 문구',
+        f'- [자주 묻는 질문]({SITE}/faq.html): 비용, 나이, 기록 저장, 사용 방법',
+        f'- [개인정보처리방침]({SITE}/privacy.html)', '', f'## 놀이 {len(games)}가지', '']
+for c in DATA['cats']:
+    llms += [f'### {c["name"]}', ''] + [f'- [{games[x]["title"]}]({SITE}/games/{x}.html): {games[x]["desc"]}' for x in c['games']] + ['']
+(ROOT / 'llms.txt').write_text('\n'.join(llms), encoding='utf-8')
 
 # 사이트맵
 urls = [('', '1.0', 'weekly'), ('games/', '0.8', 'weekly'), ('faq.html', '0.6', 'monthly'), ('teacher.html', '0.7', 'monthly')] + [(f'games/{g}.html', '0.7', 'monthly') for g in games] + [('privacy.html', '0.3', 'yearly')]
