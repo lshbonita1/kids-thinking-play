@@ -4885,13 +4885,11 @@ function todayTab() {
     el('header', { class: 'home-top' },
       logoTitle(),
       el('div', { class: 'head-actions' }, installTopButton(), shareTopButton())),
-    levelPicker('compact'),
-    levelTestLink(),
-    voiceNotice(),
-    dailyCard(),
-    stickerCard(true),
-    villageCard(),
-    favSection(),
+    inAppBanner(),
+    // 처음 온 사람: '첫 놀이 해 보기' 하나만 크게. 스티커 · 마을 · 오늘의 학습은 첫 놀이를 마친 뒤에
+    ...(isNewcomer()
+      ? [firstVisitCard(), levelTestLink(), voiceNotice()]
+      : [levelPicker('compact'), levelTestLink(), voiceNotice(), dailyCard(), stickerCard(true), villageCard(), favSection()]),
     gamePicks(4),
     helperCard(),
     el('footer', { class: 'home-foot' },
@@ -4907,6 +4905,77 @@ function todayTab() {
         el('a', { href: 'teacher.html' }, '선생님 안내'), ' · ',
         el('a', { href: 'privacy.html' }, '개인정보처리방침'), ' · ', el('span', {}, 'ssukssuknori.app'))),
   ];
+}
+
+/* ---------- 처음 온 사람 ---------- */
+// 놀이를 한 번도 끝까지 하지 않았고, 서로 다른 날 세 번 넘게 오지 않은 기기
+// (말하기 카드 · 그림 이야기만 쓰는 사람이 계속 '처음 오셨나요?'를 보지 않게)
+const isNewcomer = () => !store.get(SESSIONS_KEY, []).length && store.get('visitDays', []).length < 3;
+function countVisitDay() {
+  const days = store.get('visitDays', []);
+  const today = dateKey(new Date());
+  if (days.length < 3 && !days.includes(today)) store.set('visitDays', [...days, today]);
+}
+const FIRST_PLAY = { game: () => listenGame, total: 5, level: 0 };
+
+function firstVisitCard() {
+  const game = FIRST_PLAY.game();
+  return el('section', { class: 'first-card' },
+    el('div', { class: 'first-head' },
+      mascot('happy', 'bounce'),
+      el('div', {},
+        el('h2', {}, '처음 오셨나요?'),
+        el('p', {}, '그림을 보고 고르는 놀이예요. 문제를 소리로 읽어 줘서 글을 몰라도 할 수 있어요.'))),
+    el('button', { class: 'btn-main first-go', onclick: () => playGame(game, { total: FIRST_PLAY.total, level: FIRST_PLAY.level, via: 'first' }) },
+      el('b', {}, '▶ 첫 놀이 해 보기'),
+      el('small', {}, `${game.icon} ${game.title} · ${LEVELS[FIRST_PLAY.level].name} · ${FIRST_PLAY.total}문제`)),
+    el('p', { class: 'first-note' }, '첫 놀이를 마치면 오늘의 학습 · 칭찬 스티커 · 우리 마을이 열려요.'));
+}
+
+/* ---------- 앱 안 브라우저 안내 ---------- */
+// 카톡 · 네이버 · 인스타 · 밴드 안에서 열면 말소리가 안 나거나, 기록이 그 앱 안에만 남아 나중에 못 찾을 수 있음
+const IN_APP = (() => {
+  const ua = navigator.userAgent;
+  return /KAKAOTALK/i.test(ua) ? '카카오톡'
+    : /NAVER/.test(ua) ? '네이버 앱'
+    : /BAND\//.test(ua) ? '밴드'
+    : /Barcelona/.test(ua) ? '스레드'
+    : /Instagram/.test(ua) ? '인스타그램'
+    : /FBAN|FBAV/.test(ua) ? '페이스북'
+    : /DaumApps/.test(ua) ? '다음 앱'
+    : /Line\//.test(ua) ? '라인'
+    : null;
+})();
+
+function openInBrowser() {
+  const url = `${location.origin}${location.pathname}`;
+  const android = /Android/.test(navigator.userAgent);
+  // 카카오톡은 바깥 브라우저로 여는 주소를 따로 지원함 (아이폰 · 안드로이드 모두)
+  if (IN_APP === '카카오톡') location.href = `kakaotalk://web/openExternal?url=${encodeURIComponent(url)}`;
+  // 안드로이드는 기본 브라우저(크롬 · 삼성 인터넷)로 넘김
+  else if (android) location.href = `intent://${location.host}${location.pathname}#Intent;scheme=https;end`;
+}
+
+function inAppBanner() {
+  if (!IN_APP || store.get('inAppOff', '') === dateKey(new Date())) return null;
+  const direct = IN_APP === '카카오톡' || /Android/.test(navigator.userAgent);
+  const steps = el('ol', { class: 'ib-steps' },
+    el('li', {}, '오른쪽 위나 아래의 ··· 또는 ⋮ 버튼을 눌러요'),
+    el('li', {}, '‘다른 브라우저로 열기’ 또는 ‘Safari로 열기’를 눌러요'));
+  steps.hidden = true;
+  const box = el('section', { class: 'inapp-banner', role: 'note' },
+    el('span', { class: 'ib-icon', 'aria-hidden': 'true' }, '🌐'),
+    el('div', { class: 'ib-text' },
+      el('b', {}, `지금 ${IN_APP} 안에서 열려 있어요`),
+      el('span', {}, '크롬이나 사파리로 열면 문제를 읽어 주는 말소리가 잘 나고, 놀이 기록도 한곳에 잘 모여요.')),
+    steps,
+    el('div', { class: 'ib-actions' },
+      el('button', { class: 'ib-close', onclick: () => { store.set('inAppOff', dateKey(new Date())); box.remove(); } }, '오늘은 그냥 볼게요'),
+      el('button', { class: 'ib-go', onclick: () => {
+        steps.hidden = false;
+        if (direct) openInBrowser();
+      } }, direct ? '크롬 · 사파리로 열기' : '여는 방법 보기')));
+  return box;
 }
 
 /* ---------- 말소리 안내 ---------- */
@@ -6284,17 +6353,19 @@ function printWorksheet() {
 }
 
 /* ---------- 화면: 놀이 ---------- */
-function playGame(game) {
+// opts: { total, level, via } — 첫 놀이는 쉬움 · 5문제, via는 어디서 시작했는지 기록 (first | link | next)
+function playGame(game, opts = {}) {
   if (game.ready && !game.ready()) {
     showFamilySetup();
     return;
   }
-  const total = game.total ?? TOTAL;
+  const total = opts.total ?? game.total ?? TOTAL;
   playSession({
     title: game.title,
-    level: settings.level,
+    level: opts.level ?? settings.level,
+    via: opts.via,
     rounds: range(0, total - 1).map((index) => ({ game, index })),
-    restart: () => playGame(game),
+    restart: () => playGame(game, { ...opts, via: 'again' }),
     save(state) {
       const best = store.get(bestKey(game, state.level), 0);
       if (state.score > best) store.set(bestKey(game, state.level), state.score);
@@ -6387,7 +6458,7 @@ function playSession(session) {
   // 놀이 중에 창을 닫거나 다른 주소로 떠남
   const onLeave = () => { if (alive()) logQuit('close'); };
   window.addEventListener('pagehide', onLeave);
-  sendLog({ t: 'start', game: logGame, level });
+  sendLog({ t: 'start', game: logGame, level, page: session.via ?? null });
 
   // ✕를 실수로 눌러도 바로 끝나지 않게 한 번 묻기 (계속하기를 크게)
   const askQuit = () => {
@@ -6705,7 +6776,7 @@ function showResult(session, state) {
         el('span', {}, `서로 다른 날 ${MASTERY.times}번 연속 ${MASTERY.pct}% 넘게 맞혔어요! ${state.level < 2 ? '다음 단계를 해 볼 때예요.' : '정말 잘하고 있어요.'}`),
         levelUpButton(state.level < 2 ? `'${LEVELS[state.level + 1].name}'으로 올리기` : undefined)) : null,
       state.newSticker ? el('div', { class: 'result-sticker pop' }, `⭐ 칭찬 스티커를 받았어요! (모두 ${stickerCount()}개)`) : null,
-      nextGame ? el('button', { class: 'btn-main next-game', onclick: () => { logAct('next', nextGame.id); playGame(nextGame); } },
+      nextGame ? el('button', { class: 'btn-main next-game', onclick: () => { logAct('next', nextGame.id); playGame(nextGame, { via: 'next' }); } },
         el('small', {}, '▶ 다음 놀이'),
         el('b', {}, `${nextGame.icon} ${nextGame.title}`)) : null,
       session.schedule && rewardToday() ? el('div', { class: 'result-reward pop' }, `🎁 약속한 ${rewardToday().join(' ')} 시간이에요!`) : null,
@@ -8102,7 +8173,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 134;
+const APP_VERSION = 135;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
@@ -8114,7 +8185,7 @@ function openFromLink() {
     url.searchParams.delete('play');
     history.replaceState(null, '', url.pathname + url.search + url.hash);
     const game = GAMES.find((g) => g.id === id);
-    if (game) playGame(game);
+    if (game) playGame(game, { via: 'link' });
   } catch {}
 }
 
@@ -8136,6 +8207,7 @@ async function checkForUpdate() {
   } catch {}
 }
 
+countVisitDay();
 showHome();
 logVisit();
 openFromLink();
