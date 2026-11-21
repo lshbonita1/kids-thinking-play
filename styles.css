@@ -2690,3 +2690,20 @@ details.voice-panel > summary::after { content: '›'; color: var(--muted); tran
 details.voice-panel[open] > summary { margin-bottom: 12px; }
 details.voice-panel[open] > summary::after { transform: rotate(90deg); }
 .voice-panel .voice-box > .setting-name:first-child { display: none; }
+
+/* ---------- 결과 화면 '다음 놀이' (버전 134) ---------- */
+.btn-main.next-game { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 20px auto 0; padding: 16px 20px; border-color: var(--good); background: var(--good-bg); color: var(--good); }
+.btn-main.next-game small { font-size: 18px; opacity: .85; }
+.btn-main.next-game b { font-weight: normal; font-size: 28px; color: var(--ink); }
+.result-actions.small { justify-content: center; margin-top: 14px; }
+.result-actions.small .btn-main { max-width: 200px; padding: 12px; font-size: 19px; color: var(--muted); }
+
+/* ---------- 놀이 중 '그만할까요?' ---------- */
+.quit-ask { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(60, 45, 30, .35); animation: fade-in .15s ease-out; }
+.quit-card { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 380px; padding: 24px 22px 18px; border-radius: 28px; background: var(--bg); text-align: center; }
+.quit-card .mascot { width: 72px; height: 72px; }
+.quit-title { margin: 0; font-size: 30px; font-weight: normal; }
+.quit-sub { margin: 0 0 6px; color: var(--muted); font-size: 17px; }
+.quit-stop { padding: 10px 18px; border: 0; background: none; color: var(--muted); font-family: inherit; font-size: 18px; text-decoration: underline; text-underline-offset: 4px; }
+@keyframes fade-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .quit-ask { animation: none; } }

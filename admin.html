@@ -62,6 +62,14 @@
     .log td, .log th { font-size: 14px; padding: 8px 6px; white-space: nowrap; }
     .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--soft); font-size: 13px; }
     .tag.play { background: #e3f3e6; color: var(--good); }
+    .tag.start { background: #e6f0fb; color: #3c6a9c; }
+    .tag.quit { background: #fbe6e0; color: #b0503c; }
+    .tag.result { background: #f1ecfa; color: #6a52a0; }
+    .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 12px; }
+    .flow div { display: grid; gap: 2px; padding: 12px; border-radius: 12px; background: var(--soft); }
+    .flow b { font-family: var(--display); font-weight: 400; font-size: 26px; }
+    .flow small { color: var(--muted); font-size: 13px; }
+    @media (max-width: 560px) { .flow { grid-template-columns: 1fr 1fr; } }
     .muted { color: var(--muted); font-size: 14px; }
     .login { display: flex; flex-direction: column; gap: 12px; max-width: 420px; }
     .login input { padding: 14px; border: 2px solid var(--line); border-radius: 14px; font: inherit; font-size: 18px; background: #fff; color: var(--ink); }
@@ -101,6 +109,7 @@
         <a href="#sec-insta">📸 인스타</a>
         <a href="#sec-visits">📊 방문</a>
         <a href="#sec-regions">🗺️ 지역</a>
+        <a href="#sec-flow">🚶 이용 흐름</a>
         <a href="#sec-games">🧩 놀이</a>
         <a href="#sec-recent">📜 로그</a>
       </nav>
@@ -164,6 +173,15 @@
           <summary>IP별로 자세히 보기</summary>
           <div class="scroll"><table class="log"><thead><tr><th>지역</th><th>통신사</th><th>IP</th><th>방문</th><th>마지막 방문</th></tr></thead><tbody id="ip-list"></tbody></table></div>
         </details>
+      </section>
+
+      <section class="card" id="sec-flow">
+        <h2>🚶 이용 흐름 (최근 2주 · 서로 다른 기기)</h2>
+        <div class="flow" id="flow"></div>
+        <table><tbody id="flow-detail"></tbody></table>
+        <h3 style="margin:16px 0 4px;font-size:16px">중간에 그만둔 놀이</h3>
+        <table><thead><tr><th>놀이</th><th class="num" style="font-size:14px">그만둠 / 시작</th><th class="delta">평균 몇 번째 문제</th></tr></thead><tbody id="quit-games"></tbody></table>
+        <p class="muted" id="flow-note"></p>
       </section>
 
       <section class="card" id="sec-games">
@@ -287,8 +305,31 @@
         : '<tr><td class="muted">최근 2주 기록이 없어요.</td></tr>';
     }
 
+    function renderFlow(f, list) {
+      if (!f) return;
+      const pctOf = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '-');
+      $('flow').innerHTML = [
+        ['방문', f.visitors, ''],
+        ['놀이 시작', f.started, `방문의 ${pctOf(f.started, f.visitors)}`],
+        ['끝까지 함', f.finished, `시작의 ${pctOf(f.finished, f.started)}`],
+        ['다음 놀이로', f.next, `끝낸 기기의 ${pctOf(f.next, f.finished)}`],
+      ].map(([k, v, sub]) => `<div><small>${k}</small><b>${fmt(v)}대</b><small>${sub}</small></div>`).join('');
+      $('flow-detail').innerHTML = [
+        ['놀이 시작 / 끝까지 / 중간에 그만둠', `${fmt(f.starts)} / ${fmt(f.plays)} / ${fmt(f.quits)}번`],
+        ['그만둔 방법 (✕ 확인 · 창 닫음)', `${fmt(f.quitHow.x)} · ${fmt(f.quitHow.close)}번`],
+        ['결과 화면 (다음 놀이 · 다시 하기 · 처음으로)', `${fmt(f.results.next)} · ${fmt(f.results.again)} · ${fmt(f.results.home)}번`],
+      ].map(([k, v]) => `<tr><td>${k}</td><td class="num">${v}</td></tr>`).join('');
+      $('quit-games').innerHTML = list.length
+        ? list.map((g) => `<tr><td>${esc(GAME_NAMES[g.game] || g.game)}</td><td class="num">${fmt(g.quits)} / ${fmt(g.starts)}번</td><td class="delta">${g.avgAt}번째</td></tr>`).join('')
+        : '<tr><td class="muted" colspan="3">아직 중간에 그만둔 기록이 없어요.</td></tr>';
+      $('flow-note').textContent = f.since
+        ? `시작 기록은 ${new Date(f.since).toLocaleDateString('ko-KR')}부터 모았어요(버전 134). 방문 수는 그 전 기록도 포함해서, 처음 2주 동안은 비율이 낮게 보여요.`
+        : '버전 134부터 놀이 시작 · 그만둠 · 결과 버튼을 기록해요. 아직 기록이 없어요.';
+    }
+
     function render(s) {
       renderRegions(s);
+      renderFlow(s.funnel, s.quitGames || []);
       renderQr(s.qr);
       const t = s.todayM, y = s.yesterdayM;
       $('kpi').innerHTML = [
@@ -332,8 +373,14 @@
       $('recent').innerHTML = s.recent.length
         ? s.recent.map((r) => {
           const time = new Date(r.ts).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-          const what = r.type === 'play' ? `${esc(GAME_NAMES[r.game] || r.game)} · ${r.score ?? '-'}점` : esc(r.page || '');
-          return `<tr><td>${time}</td><td><span class="tag ${r.type}">${r.type === 'play' ? '놀이 완료' : '방문'}</span></td><td>${esc(r.device)}</td><td>${what}</td><td>${esc(r.ip || '-')}</td><td>${esc(r.visitor || '-')}</td></tr>`;
+          const name = esc(GAME_NAMES[r.game] || r.game || '');
+          const what = r.type === 'play' ? `${name} · ${r.score ?? '-'}점`
+            : r.type === 'start' ? name
+            : r.type === 'quit' ? `${name} · ${r.score ?? '-'}번째 문제 · ${r.page === 'close' ? '창 닫음' : '✕'}`
+            : r.type === 'result' ? `${name} → ${esc(r.page || '')}`
+            : esc(r.page || '');
+          const label = { play: '놀이 완료', start: '놀이 시작', quit: '그만둠', result: '결과 버튼' }[r.type] || '방문';
+          return `<tr><td>${time}</td><td><span class="tag ${esc(r.type)}">${label}</span></td><td>${esc(r.device)}</td><td>${what}</td><td>${esc(r.ip || '-')}</td><td>${esc(r.visitor || '-')}</td></tr>`;
         }).join('')
         : '<tr><td class="muted" colspan="6">아직 기록이 없어요.</td></tr>';
       $('admin-note').textContent = `오늘 제외된 내 접속 ${fmt(s.adminToday)}건 · 해외 · 봇 ${fmt(s.botToday ?? 0)}건 · 기록은 ${s.keepDays}일 동안 보관해요.`;

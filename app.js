@@ -6375,9 +6375,39 @@ function playSession(session) {
 
   score.hidden = !settings.showScore;
 
-  const myScreen = mount(el('div', { class: 'screen game' },
+  // 이용 흐름 기록: 시작 → (중간에 그만둠 | 끝까지 함). 그만두면 몇 번째 문제였는지 score 칸에 남김
+  const logGame = session.logId ?? (session.schedule ? 'daily' : rounds[0].game.id);
+  let ended = false;
+  const logQuit = (how) => {
+    if (ended) return;
+    ended = true;
+    window.removeEventListener('pagehide', onLeave);
+    sendLog({ t: 'quit', game: logGame, level, score: Math.min(state.index + 1, total), page: how });
+  };
+  // 놀이 중에 창을 닫거나 다른 주소로 떠남
+  const onLeave = () => { if (alive()) logQuit('close'); };
+  window.addEventListener('pagehide', onLeave);
+  sendLog({ t: 'start', game: logGame, level });
+
+  // ✕를 실수로 눌러도 바로 끝나지 않게 한 번 묻기 (계속하기를 크게)
+  const askQuit = () => {
+    if (screenEl.querySelector('.quit-ask')) return;
+    window.speechSynthesis?.cancel();
+    const close = () => box.remove();
+    const box = el('div', { class: 'quit-ask', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'quit-title', onclick: (e) => { if (e.target === box) close(); } },
+      el('div', { class: 'quit-card' },
+        el('div', { class: 'quit-mascot' }, mascot('smile')),
+        el('h2', { class: 'quit-title', id: 'quit-title' }, '그만할까요?'),
+        el('p', { class: 'quit-sub' }, `${total}문제 중 ${Math.min(state.index + 1, total)}번째 문제를 하고 있어요`),
+        el('button', { class: 'btn-main', onclick: close }, '▶ 계속하기'),
+        el('button', { class: 'quit-stop', onclick: () => { logQuit('x'); showHome(); } }, '그만하기')));
+    screenEl.append(box);
+    box.querySelector('.btn-main').focus();
+  };
+
+  const screenEl = el('div', { class: 'screen game' },
     el('header', { class: 'topbar' },
-      el('button', { class: 'icon-btn', 'aria-label': '그만하기', onclick: showHome }, '✕'),
+      el('button', { class: 'icon-btn', 'aria-label': '그만하기', onclick: askQuit }, '✕'),
       counter,
       el('div', { class: 'bar' }, barFill),
       score,
@@ -6386,7 +6416,8 @@ function playSession(session) {
     strip,
     tipBar(),
     stage,
-  ));
+  );
+  const myScreen = mount(screenEl);
   const alive = () => screenId === myScreen;
 
   const ctx = {
@@ -6421,7 +6452,9 @@ function playSession(session) {
       const before = session.logId ? null : GAMES.filter((g) => masteredAt(g.id, state.level));
       if (!session.logId) logSessions(state);
       state.newlyMastered = before ? GAMES.filter((g) => !before.includes(g) && masteredAt(g.id, state.level)) : [];
-      sendLog({ t: 'play', game: session.logId ?? (session.schedule ? 'daily' : rounds[0].game.id), level, score: state.score });
+      ended = true;
+      window.removeEventListener('pagehide', onLeave);
+      sendLog({ t: 'play', game: logGame, level, score: state.score });
       (session.showResult ?? showResult)(session, state);
       return;
     }
@@ -6626,6 +6659,20 @@ function showLevelTestResult(session, state) {
 }
 
 /* ---------- 화면: 결과 ---------- */
+// 결과 화면의 '다음 놀이': 같은 영역에서 아직 안 해 본 놀이 → 없으면 전체에서 안 해 본 놀이 → 모두 해 봤으면 같은 영역에서 가장 오래전에 한 놀이
+function nextGameFor(game) {
+  const ok = (g) => g !== game && (!g.optional || !g.ready || g.ready());
+  const done = store.get(SESSIONS_KEY, []).map((r) => r.g);
+  const played = new Set(done);
+  const area = CATEGORIES.find((c) => c.games.includes(game))?.games ?? [];
+  for (const pool of [area, GAMES]) {
+    const fresh = pool.filter((g) => ok(g) && !played.has(g.id));
+    if (fresh.length) return sample(fresh, 1)[0];
+  }
+  const pool = (area.length > 1 ? area : GAMES).filter(ok);
+  return pool.sort((a, b) => done.lastIndexOf(a.id) - done.lastIndexOf(b.id))[0] ?? null;
+}
+
 function showResult(session, state) {
   const total = state.records.length;
   const { correct } = state;
@@ -6635,6 +6682,13 @@ function showResult(session, state) {
   const message = ['다음엔 더 잘할 수 있어요!', '조금씩 늘고 있어요!', '정말 잘했어요!', '최고예요!'][stars];
   tone([523, 659, 784, 1047], 0.12);
   speak(`${total}개 중에 ${correct}개 맞았어요. ${message}`);
+
+  // 한 가지 놀이를 마쳤을 때만 다음 놀이를 추천 (오늘의 학습은 여러 놀이를 이미 했으니 자랑하기 · 처음으로)
+  const played = [...new Set(state.records.map((r) => r.game))];
+  const nextGame = !session.schedule && played.length === 1 ? nextGameFor(played[0]) : null;
+  const logGame = session.schedule ? 'daily' : played[0]?.id;
+  // 결과 화면에서 무엇을 눌렀는지 (이어서 했는지 보려고)
+  const logAct = (what, to = null) => sendLog({ t: 'result', game: logGame, level: state.level, page: to ? `${what}-${to}` : what });
 
   const badgeOf = (r) => r.game.badge?.(r)
     ?? (r.passed ? ['pass', '패스'] : r.correct ? ['good', '정답'] : r.retried ? ['retry', '다시 해서 맞음'] : ['bad', '오답']);
@@ -6651,6 +6705,9 @@ function showResult(session, state) {
         el('span', {}, `서로 다른 날 ${MASTERY.times}번 연속 ${MASTERY.pct}% 넘게 맞혔어요! ${state.level < 2 ? '다음 단계를 해 볼 때예요.' : '정말 잘하고 있어요.'}`),
         levelUpButton(state.level < 2 ? `'${LEVELS[state.level + 1].name}'으로 올리기` : undefined)) : null,
       state.newSticker ? el('div', { class: 'result-sticker pop' }, `⭐ 칭찬 스티커를 받았어요! (모두 ${stickerCount()}개)`) : null,
+      nextGame ? el('button', { class: 'btn-main next-game', onclick: () => { logAct('next', nextGame.id); playGame(nextGame); } },
+        el('small', {}, '▶ 다음 놀이'),
+        el('b', {}, `${nextGame.icon} ${nextGame.title}`)) : null,
       session.schedule && rewardToday() ? el('div', { class: 'result-reward pop' }, `🎁 약속한 ${rewardToday().join(' ')} 시간이에요!`) : null,
       session.schedule ? el('button', { class: 'brag-btn', onclick: () => shareBrag(stars) }, '💌 가족에게 자랑하기') : null,
       (() => {
@@ -6667,9 +6724,9 @@ function showResult(session, state) {
         const g = [...counts].sort((a, b) => b[1] - a[1]).map(([game]) => game).find((game) => HOME_TRY[game.id]);
         return g ? el('div', { class: 'home-try' }, el('b', {}, '🏠 오늘 집에서 해 보기'), el('p', {}, HOME_TRY[g.id])) : null;
       })(),
-      el('div', { class: 'result-actions' },
-        el('button', { class: 'btn-main', onclick: session.restart }, '다시 하기'),
-        el('button', { class: 'btn-main alt', onclick: showHome }, '처음으로'))),
+      el('div', { class: `result-actions${nextGame ? ' small' : ''}` },
+        el('button', { class: `btn-main${nextGame ? ' alt' : ''}`, onclick: () => { logAct('again'); session.restart(); } }, '다시 하기'),
+        el('button', { class: 'btn-main alt', onclick: () => { logAct('home'); showHome(); } }, '처음으로'))),
     el('section', { class: 'records' },
       state.records.map((r, k) => {
         const [cls, text] = badgeOf(r);
@@ -8045,7 +8102,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 133;
+const APP_VERSION = 134;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

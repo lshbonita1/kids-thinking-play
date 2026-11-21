@@ -53,6 +53,34 @@ export default async function handler(req, res) {
     };
     const recent2w = (list) => list.filter((r) => r.day >= since);
 
+    // 이용 흐름 (최근 2주, 서로 다른 기기 기준): 방문 → 놀이 시작 → 끝까지 → 결과에서 다음 놀이
+    const in2w = recent2w(mine);
+    const ev = (name) => in2w.filter((r) => r.event === name);
+    const starts = ev('start');
+    const quits = ev('quit');
+    const results = ev('result');
+    const nexts = results.filter((r) => String(r.page || '').startsWith('next'));
+    const funnel = {
+      visitors: distinct(recent2w(visits), 'visitor_id'),
+      started: distinct(starts, 'visitor_id'),
+      finished: distinct(ev('play'), 'visitor_id'),
+      next: distinct(nexts, 'visitor_id'),
+      starts: starts.length,
+      quits: quits.length,
+      plays: ev('play').length,
+      results: { next: nexts.length, again: results.filter((r) => r.page === 'again').length, home: results.filter((r) => r.page === 'home').length },
+      quitHow: { x: quits.filter((r) => r.page === 'x').length, close: quits.filter((r) => r.page === 'close').length },
+      // 시작 기록을 넣은 날(버전 134)부터 의미가 있음
+      since: starts.length ? starts[starts.length - 1].ts : null,
+    };
+    // 놀이별 그만둔 횟수 · 평균 몇 번째 문제에서 그만뒀는지
+    const quitGames = [...group(quits, 'game')].map(([game, v]) => ({
+      game,
+      starts: starts.filter((r) => r.game === game).length,
+      quits: v.length,
+      avgAt: Math.round((v.reduce((s, r) => s + (r.score || 0), 0) / v.length) * 10) / 10,
+    })).sort((a, b) => b.quits - a.quits).slice(0, 12);
+
     // QR 코드로 들어온 방문 (page가 'qr-이름')
     const qrVisits = visits.filter((r) => String(r.page || '').startsWith('qr-'));
     const qr = {
@@ -113,6 +141,8 @@ export default async function handler(req, res) {
       botIps: new Set(recent2w(botRows).map((r) => r.ip_address)).size,
       botToday: botRows.filter((r) => r.day === today).length,
       qr,
+      funnel,
+      quitGames,
       adminToday: rows.filter((r) => r.is_admin && r.day === today).length,
       keepDays: KEEP_DAYS,
     });

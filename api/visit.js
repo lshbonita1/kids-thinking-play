@@ -1,8 +1,10 @@
-// POST /api/visit — 방문 · 놀이 완료 기록 (뉴스런 api/dates.js?visit=1과 같은 방식)
-// 사이트가 열릴 때 한 번(visit), 놀이를 끝까지 하면 한 번(play) 불림. 실패해도 사이트에는 영향 없음.
+// POST /api/visit — 방문 · 이용 흐름 기록 (뉴스런 api/dates.js?visit=1과 같은 방식)
+// visit: 사이트를 엶 / start: 놀이 시작 / quit: 중간에 그만둠(score = 몇 번째 문제, page = x | close)
+// play: 끝까지 함 / result: 결과 화면에서 누른 버튼(page = next-놀이 | again | home). 실패해도 사이트에는 영향 없음.
 import { sbInsert, sbDelete, VISITS_TABLE } from '../lib/supabase.js';
 import { getClientIp, readBody } from '../lib/request.js';
 
+const EVENTS = ['visit', 'start', 'quit', 'play', 'result'];
 const KEEP_DAYS = 180; // 개인정보처리방침의 보관 기간 (6개월)
 
 // 브라우저 정보는 기기 종류 · 브라우저 이름만 남김
@@ -49,7 +51,7 @@ export default async function handler(req, res) {
       return;
     }
     const row = {
-      event: body.t === 'play' ? 'play' : 'visit',
+      event: EVENTS.includes(body.t) ? body.t : 'visit',
       ip_address: getClientIp(req),
       visitor_id: clean(body.vid, 100),
       device: deviceOf(req.headers['user-agent'] || ''),
