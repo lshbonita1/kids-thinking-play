@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   }
   try {
     const v = await updateViews();
-    out.views = { checked: v.checked, saved: v.results.filter((r) => r.saved).length, errors: v.results.flatMap((r) => r.errors).slice(0, 5) };
+    out.views = v.off ? { off: true } : { checked: v.checked, saved: v.results.filter((r) => r.saved).length, errors: v.results.flatMap((r) => r.errors).slice(0, 5) };
   } catch (e) {
     console.error('insta-views', e);
     out.views = { error: '조회수를 적지 못했어요.' };

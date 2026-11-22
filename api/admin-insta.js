@@ -1,11 +1,11 @@
 // GET /api/admin-insta — 예약표 + 올린 기록 + 연결된 계정
 // POST /api/admin-insta — { action: 'now', id } 지금 올리기 · { action: 'reset', id } 실패한 것 되돌리기
 //                         { action: 'blog', id, done } 블로그에 올렸다고 체크 · 해제
-//                         { action: 'views', dry } 조회수 읽기 (dry: true면 저장 안 함 — 미리보기)
+//                         { action: 'views', dry } 조회수 읽기 (dry: true면 저장 안 함 — 미리보기) · { action: 'views-on', on } 자동 기록 켜기 · 끄기
 // 둘 다 Authorization: Bearer <ADMIN_TOKEN>
 import { isAdmin, readBody } from '../lib/request.js';
 import { threadsOn, getThreadsToken, threadsAccount, runThreadsOnce, resetThreads } from '../lib/threads.js';
-import { updateViews } from '../lib/insta-views.js';
+import { updateViews, viewsOn, setViewsOn } from '../lib/insta-views.js';
 import { loadQueue, loadRows, getToken, account, runOnce, resetPost, todayKst, loadBlogDone, setBlogDone } from '../lib/insta.js';
 
 export default async function handler(req, res) {
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   }
   try {
     if (req.method === 'GET') {
-      const [queue, rows, blogDone] = await Promise.all([loadQueue(), loadRows().catch(() => null), loadBlogDone().catch(() => ({}))]);
+      const [queue, rows, blogDone, viewsOnNow] = await Promise.all([loadQueue(), loadRows().catch(() => null), loadBlogDone().catch(() => ({})), viewsOn()]);
       let user = null, tokenError = null;
       if (!process.env.INSTAGRAM_TOKEN) tokenError = 'INSTAGRAM_TOKEN이 아직 없어요.';
       else {
@@ -27,11 +27,14 @@ export default async function handler(req, res) {
       else {
         try { thUser = (await threadsAccount(await getThreadsToken())).username; } catch (e) { thError = String(e.message || e); }
       }
-      res.status(200).json({ queue, rows, blogDone, user, tokenError, thUser, thError, today: todayKst(), tableMissing: rows === null });
+      res.status(200).json({ queue, rows, blogDone, viewsOn: viewsOnNow, user, tokenError, thUser, thError, today: todayKst(), tableMissing: rows === null });
       return;
     }
-    const { action, id, done, dry } = readBody(req);
-    if (action === 'views') {
+    const { action, id, done, dry, on } = readBody(req);
+    if (action === 'views-on') {
+      try { res.status(200).json({ viewsOn: await setViewsOn(Boolean(on)) }); }
+      catch (e) { res.status(400).json({ error: String(e.message || e) }); }
+    } else if (action === 'views') {
       res.status(200).json(await updateViews({ dry: dry !== false }));
     } else if (action === 'blog') {
       res.status(200).json({ blogDone: await setBlogDone(String(id), Boolean(done)) });
