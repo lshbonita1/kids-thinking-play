@@ -3325,6 +3325,107 @@ const missingGame = {
     el('div', { class: 'review-note' }, `없어진 것: ${rec.missing}`)),
 };
 
+/* ---------- 놀이: 다른 곳 찾기 (위 · 아래 두 그림 비교) ---------- */
+// 차이는 아주 분명하게만: 그림 하나가 통째로 없어지거나, 색과 모양이 전혀 다른 그림으로 바뀜
+// 난이도는 차이 개수 · 그림 개수로만 올림. 한 장면 안에 같은 색 묶음 그림은 함께 나오지 않게 함
+const DIFF_GROUPS = [
+  [['사과', '🍎'], ['풍선', '🎈'], ['자동차', '🚗']],
+  [['바나나', '🍌'], ['별', '⭐'], ['버스', '🚌']],
+  [['고래', '🐳'], ['나비', '🦋']],
+  [['개구리', '🐸'], ['나무', '🌳']],
+  [['포도', '🍇'], ['우산', '☂️']],
+  [['꽃', '🌸']],
+  [['당근', '🥕']],
+  [['곰 인형', '🧸']],
+  [['공', '⚽']],
+  [['코끼리', '🐘']],
+];
+// 단계별 [앞 5문제, 뒤 5문제]: [그림 수, 다른 곳 수]
+const DIFF_LEVELS = [[[3, 1], [3, 1]], [[4, 1], [4, 2]], [[4, 2], [6, 3]]];
+const subjectParticle = (w) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return c >= 0 && c % 28 ? '이' : '가'; };
+// 받침이 없거나 ㄹ받침이면 '로', 나머지는 '으로'
+const toParticle = (w) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return c >= 0 && c % 28 && c % 28 !== 8 ? '으로' : '로'; };
+
+function diffPanel(items, cols, onPick, mini = false) {
+  return el('div', { class: `diff-panel${mini ? ' mini' : ''}`, style: `--cols:${cols}` },
+    items.map((it, k) => {
+      const attrs = { class: `tile diff-cell${it ? '' : ' blank'}` };
+      if (!mini) {
+        attrs['aria-label'] = it ? it[0] : '빈칸';
+        attrs.onclick = () => onPick(k);
+      }
+      return el(mini ? 'div' : 'button', attrs, it ? it[1] : '');
+    }));
+}
+
+const diffGame = {
+  id: 'diff',
+  title: '다른 곳 찾기',
+  desc: '위와 아래 그림에서 다른 곳을 찾아요',
+  skill: '시각 비교 · 주의집중',
+  icon: '🪞',
+  color: '#f3e3f1',
+
+  round(i, ctx) {
+    const [size, count] = DIFF_LEVELS[ctx.level][i < 5 ? 0 : 1];
+    const changes = range(1, count).map(() => (Math.random() < 0.5 ? 'gone' : 'swap'));
+    const swaps = changes.filter((c) => c === 'swap').length;
+    // 색 묶음마다 그림 하나씩: 앞은 장면, 뒤는 바뀔 그림
+    const picks = sample(DIFF_GROUPS, size + swaps).map((g) => pick(g));
+    const top = picks.slice(0, size);
+    const fresh = picks.slice(size);
+    const diffs = sample(range(0, size - 1), count).sort((a, b) => a - b);
+    const bottom = [...top];
+    diffs.forEach((k, n) => { bottom[k] = changes[n] === 'swap' ? fresh.shift() : null; });
+    const cols = size <= 4 ? size : 3;
+    const rec = { top, bottom, diffs, cols, found: [] };
+
+    const panels = [diffPanel(top, cols, choose), diffPanel(bottom, cols, choose)];
+    const cellsAt = (k) => panels.map((p) => p.children[k]);
+    const dots = el('div', { class: 'diff-dots', 'aria-label': `다른 곳 ${count}개` }, diffs.map(() => el('i')));
+    const say = count === 1 ? '위와 아래에서 다른 곳을 찾아요' : `위와 아래에서 다른 곳 ${count}개를 찾아요`;
+    ctx.stage.append(prompt(say), dots,
+      el('div', { class: 'diff-board' }, panels[0], el('div', { class: 'diff-split', 'aria-hidden': 'true' }), panels[1]));
+
+    const nextDiff = () => diffs.find((k) => !rec.found.includes(k));
+    autoHint(ctx, cellsAt(nextDiff())[1]);
+    let done = false;
+
+    function choose(k) {
+      if (done || rec.found.includes(k)) return;
+      if (!diffs.includes(k)) {
+        const wrong = cellsAt(k);
+        retryChoice(ctx, wrong[0], cellsAt(nextDiff())[1]);
+        wrong[1].classList.add('bad', 'tried');
+        wrong[1].disabled = true;
+        return;
+      }
+      rec.found.push(k);
+      for (const c of cellsAt(k)) {
+        c.classList.remove('hint');
+        c.classList.add('good', 'found', 'pop');
+      }
+      dots.children[rec.found.length - 1].classList.add('on');
+      const [a, b] = [top[k], bottom[k]];
+      speak(b ? `${a[0]}${subjectParticle(a[0])} ${b[0]}${toParticle(b[0])} 바뀌었어요` : `${a[0]}${subjectParticle(a[0])} 없어졌어요`);
+      if (rec.found.length === count) {
+        done = true;
+        ctx.later(() => ctx.finish(true), 1300);
+      } else {
+        autoHint(ctx, cellsAt(nextDiff())[1]);
+      }
+    }
+    return rec;
+  },
+
+  review(rec) {
+    const mark = (panel) => { rec.diffs.forEach((k) => panel.children[k].classList.add('good')); return panel; };
+    return el('div', { class: 'diff-board review' },
+      mark(diffPanel(rec.top, rec.cols, null, true)),
+      mark(diffPanel(rec.bottom, rec.cols, null, true)));
+  },
+};
+
 /* ---------- 놀이: 반쪽 그림 찾기 (부분과 전체) ---------- */
 const HALF_ITEMS = ['🍎', '🐘', '🚗', '🦋', '🐳', '⭐', '🍌', '🐸', '✈️', '🎈', '🌸', '🐧'];
 const halfPic = (e, side) => el('span', { class: `half-pic ${side}` }, el('span', {}, e));
@@ -3608,6 +3709,7 @@ const CATEGORY_TIPS = {
   life: '놀이 속 상황을 실제 생활에서도 같은 말로 다시 이야기해 주세요.',
 };
 const GAME_TIPS = {
+  diff: '위 그림 하나를 짚고 "아래에도 있어?" 하며 같은 자리를 함께 짚어 보세요. 하나씩 차례로 비교하는 습관이 생겨요.',
   gaze: '아이가 쑥쑥이 눈을 먼저 보도록 화면 속 쑥쑥이 얼굴을 함께 짚어 주세요. 정답을 손가락으로 먼저 가리키지 않아요.',
   fill: '보기를 누르기 전에 3~5초 기다려 아이가 말로 먼저 대답해 볼 기회를 주세요.',
   calm: '속상한 순간이 아닌, 편안할 때 연습해요. 고른 방법(숨 쉬기 · 쉬는 곳)을 실제로 함께 해 보세요.',
@@ -3622,6 +3724,7 @@ const GAME_TIPS = {
 };
 // 놀이가 끝난 뒤 '오늘 집에서 해 보기' (화면에서 한 것을 생활 속 실제 물건 · 상황으로 다시 해 보기 = 일반화)
 const HOME_TRY = {
+  diff: '똑같은 컵 두 개 중 하나에만 빨대를 꽂아 두고 "뭐가 달라?" 하고 물어보세요. 장난감 하나를 바꿔 놓아도 좋아요.',
   gaze: '아이 앞에서 장난감 쪽으로 천천히 고개를 돌려 바라보며 "와, 저기!" 해 보세요. 아이가 같은 곳을 보면 크게 칭찬해 주세요.',
   yesno: '간식을 보여 주며 "이거 우유야?" 하고 물어보세요. 고개 끄덕이기 · 젓기나 👍 👎 손짓으로 대답해도 좋아요.',
   fill: '"멍멍…" 하고 멈춰 기다려 보세요. 아이가 "강아지!" 하고 이어 말하면 크게 칭찬해 주세요.',
@@ -3687,6 +3790,7 @@ function gameTip(game) {
 
 // 놀이별로 '같은 문제'를 판단하는 기준 (아이 눈에 같아 보이는 것끼리 같다고 봄)
 const QUESTION_KEYS = {
+  diff: (r) => `${r.top.map((t) => t[1]).join()}|${r.diffs.join()}`,
   gaze: (r) => `${r.spot}|${r.answer}|${r.items.length}`,
   yesno: (r) => `${r.e}|${r.ask}`,
   fill: (r) => `${r.e}|${r.choices.length}`,
@@ -4547,6 +4651,7 @@ const GAMES = [
   familyGame, sayGame,
   fishGame, towerGame, catchGame, dotsGame, eggGame,
   gazeGame, yesnoGame, fillGame, twoGame, realGame, shareGame, calmGame, hiddenGame, whGame, letterGame,
+  diffGame,
 ];
 // 오늘의 학습에 돌아가며 나오는 놀이 (보호자가 준비해야 하는 놀이는 뺌)
 const DAILY_GAMES = GAMES.filter((g) => !g.optional);
@@ -4738,7 +4843,7 @@ function playDaily() {
 /* ---------- 화면: 홈 ---------- */
 // 놀이를 영역별로 묶음 (보호자가 이해하기 쉬운 말로)
 const CATEGORIES = [
-  { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame, imitateGame, realGame, hiddenGame] },
+  { id: 'see', icon: '👀', name: '보고 따라하기', desc: '눈으로 보고 손으로 똑같이 해요', games: [copyGame, shadowGame, oddGame, diffGame, imitateGame, realGame, hiddenGame] },
   { id: 'hand', icon: '✋', name: '손 놀이', desc: '손가락으로 긋고, 끌고, 옮겨요', games: [linesGame, traceGame, sortGame, puzzleGame] },
   { id: 'fun', icon: '🎮', name: '게임 놀이', desc: '톡톡 눌러 신나게 놀아요', games: [balloonGame, moleGame, rhythmGame, fishGame, towerGame, catchGame, dotsGame, eggGame] },
   { id: 'focus', icon: '🧠', name: '기억·집중', desc: '잘 보고 기억해요', games: [memoryGame, flipGame, missingGame] },
@@ -8173,7 +8278,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 135;
+const APP_VERSION = 136;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작

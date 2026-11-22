@@ -9,6 +9,7 @@
     "copy",
     "shadow",
     "odd",
+    "diff",
     "imitate",
     "real",
     "hidden"
@@ -692,6 +693,16 @@
    "color": "#fff0d9",
    "optional": false,
    "tip": "글자를 읽을 때 손가락으로 짚으며 소리 내어 읽어 주세요. 아직 어려워하면 쉬움(똑같은 글자 찾기)에 머물러도 괜찮아요."
+  },
+  {
+   "id": "diff",
+   "title": "다른 곳 찾기",
+   "desc": "위와 아래 그림에서 다른 곳을 찾아요",
+   "skill": "시각 비교 · 주의집중",
+   "icon": "🪞",
+   "color": "#f3e3f1",
+   "optional": false,
+   "tip": "위 그림 하나를 짚고 \"아래에도 있어?\" 하며 같은 자리를 함께 짚어 보세요. 하나씩 차례로 비교하는 습관이 생겨요."
   }
  ],
  "worksheets": [

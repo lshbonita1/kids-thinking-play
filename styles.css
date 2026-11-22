@@ -2730,3 +2730,17 @@ details.voice-panel[open] > summary::after { transform: rotate(90deg); }
 .ib-actions button { padding: 9px 16px; border-radius: 999px; font-size: 15px; }
 .ib-go { background: #3c76b4; color: #fff; }
 .ib-close { background: #fff; color: #5a6f86; border: 1.5px solid #c9dcf0; }
+
+/* ---------- 놀이: 다른 곳 찾기 (버전 136) ---------- */
+.diff-board { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.diff-panel { display: grid; grid-template-columns: repeat(var(--cols), auto); justify-content: center; gap: 10px; padding: 12px; border: 3px solid #e6d9e4; border-radius: 26px; background: #fff; --t: clamp(60px, calc(68vw / var(--cols)), calc(96px * var(--k))); }
+.diff-cell { font-size: calc(var(--t) * .66); }
+.diff-cell.blank { color: transparent; }
+.diff-cell.found { box-shadow: 0 0 0 4px var(--good); }
+.diff-split { width: 60%; border-top: 3px dashed #e6d9e4; }
+.diff-dots { display: flex; justify-content: center; gap: 8px; margin: -4px 0 10px; }
+.diff-dots i { width: 16px; height: 16px; border: 2.5px solid var(--good); border-radius: 50%; }
+.diff-dots i.on { background: var(--good); }
+.diff-board.review { gap: 6px; }
+.diff-panel.mini { gap: 4px; padding: 6px; border-width: 2px; border-radius: 14px; --t: 40px; }
+.diff-panel.mini .diff-cell { font-size: 24px; }
