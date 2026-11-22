@@ -62,6 +62,7 @@
     .log td, .log th { font-size: 14px; padding: 8px 6px; white-space: nowrap; }
     .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--soft); font-size: 13px; }
     .tag.play { background: #e3f3e6; color: var(--good); }
+    .views-tools { display: grid; gap: 6px; margin: 8px 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--soft); }
     .tag.start { background: #e6f0fb; color: #3c6a9c; }
     .tag.quit { background: #fbe6e0; color: #b0503c; }
     .tag.result { background: #f1ecfa; color: #6a52a0; }
@@ -474,11 +475,15 @@
         const folded = (q) => (d.blogDone || {})[q.id] && rows[q.id]?.status === 'published';
         const foldN = d.queue.filter(folded).length;
         const foldBtn = foldN ? ` <button class="btn" data-blogfold>${showBlogDone ? '다 올린 것 접기' : `블로그 · 인스타 다 올린 것 ${foldN}개 펼치기`}</button>` : '';
-        $('ig-admin').innerHTML = head + `<p>📝 블로그 올림: <b>${doneN}</b> / ${withBlog.length}${foldBtn}</p><table><tbody>${d.queue.map((q) => {
+        const viewsTools = `<div class="views-tools"><button class="btn" data-views="dry">👁 조회수 미리보기 (저장 안 함)</button> <button class="btn" data-views="save">조회수 지금 적기</button>
+          <span class="muted">게시 후 7일 동안 하루 한 번(낮 12시 · 저녁 8시 cron) 자동으로 적어요.</span><div id="views-out"></div></div>`;
+        $('ig-admin').innerHTML = head + viewsTools + `<p>📝 블로그 올림: <b>${doneN}</b> / ${withBlog.length}${foldBtn}</p><table><tbody>${d.queue.map((q) => {
           if (!showBlogDone && folded(q)) return '';
           const r = rows[q.id];
           const st = r ? (IG_STATUS[r.status] || r.status) : (q.date <= d.today ? '🕗 곧 올라가요 (낮 12시 · 저녁 8시)' : '📅 예약');
           const link = r?.permalink ? ` <a href="${esc(r.permalink)}" target="_blank" rel="noopener">보기</a>` : '';
+          const vw = r && (r.views != null || r.th_views != null)
+            ? `<div class="muted">👁 인스타 ${r.views != null ? fmt(r.views) : '-'} · 스레드 ${r.th_views != null ? fmt(r.th_views) : '-'}${r.views_at ? ` (${new Date(r.views_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })})` : ''}</div>` : '';
           const err = r?.error ? `<div class="muted">${esc(r.error)}</div>` : '';
           const btn = !r ? `<button class="btn" data-ig="now" data-id="${esc(q.id)}">지금 올리기</button>`
             : r.status !== 'published' ? `<button class="btn" data-ig="reset" data-id="${esc(q.id)}">다시 예약</button>` : '';
@@ -502,13 +507,39 @@
               <div class="blog-head"><b>태그</b><button class="btn" data-copy="tags">복사</button></div>
               <textarea readonly rows="2" data-part="tags">${esc(q.blog.tags)}</textarea>
             </div></td></tr>` : '';
-          return `<tr><td>${esc(q.date.slice(5).replace('-', '/'))}</td><td>${esc(q.caption.split('\n')[0])}${err}</td><td>${st}${link}${th}</td><td>${btn}${thBtn}${blogBtn}</td></tr>${blog}`;
+          return `<tr><td>${esc(q.date.slice(5).replace('-', '/'))}</td><td>${esc(q.caption.split('\n')[0])}${err}</td><td>${st}${link}${th}${vw}</td><td>${btn}${thBtn}${blogBtn}</td></tr>${blog}`;
         }).join('')}</tbody></table>`;
       } catch (e) {
         $('ig-admin').innerHTML = `<p class="muted">불러오지 못했어요. (${esc(e.message)})</p>`;
       }
     }
     $('ig-admin').addEventListener('click', async (e) => {
+      const viewsBtn = e.target.closest('[data-views]');
+      if (viewsBtn) {
+        const dry = viewsBtn.dataset.views === 'dry';
+        if (!dry && !confirm('최근 7일 게시물의 조회수를 지금 읽어서 저장할까요?')) return;
+        viewsBtn.disabled = true;
+        const out = $('views-out');
+        out.innerHTML = '<p class="muted">조회수를 읽는 중…</p>';
+        try {
+          const res = await fetch(`${API}/admin-insta`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'views', dry }),
+          });
+          const d = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(d.detail || d.error || res.status);
+          const n = (v) => (v == null ? '-' : fmt(v));
+          out.innerHTML = `<p><b>${dry ? '미리보기 (저장 안 함)' : '저장했어요 (새로고침하면 아래 목록에도 보여요)'}</b> · ${fmt(d.checked)}개 게시물${d.message ? ` · ${esc(d.message)}` : ''}</p>`
+            + (d.results.length ? `<table><thead><tr><th>게시물</th><th class="num">인스타 (지금 / 저장된 값)</th><th class="num">스레드 (지금 / 저장된 값)</th></tr></thead><tbody>${d.results.map((r) =>
+              `<tr><td>${esc(r.id)}${r.errors.length ? `<div class="muted">${r.errors.map(esc).join('<br>')}</div>` : ''}</td><td class="num">${n(r.views)} / ${n(r.before.views)}</td><td class="num">${n(r.th_views)} / ${n(r.before.th_views)}</td></tr>`).join('')}</tbody></table>` : '');
+        } catch (err) {
+          out.innerHTML = `<p class="error">조회수를 읽지 못했어요. (${esc(err.message)})</p>`;
+        } finally {
+          viewsBtn.disabled = false;
+        }
+        return;
+      }
       const blogBtn = e.target.closest('[data-blog]');
       if (blogBtn) {
         const row = $('ig-admin').querySelector(`[data-blog-row="${CSS.escape(blogBtn.dataset.blog)}"]`);

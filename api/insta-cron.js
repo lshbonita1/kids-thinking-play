@@ -1,6 +1,8 @@
 // Vercel Cron이 하루 두 번(한국 낮 12시 · 저녁 8시쯤) 부름: 부를 때마다 예약표에서 날짜가 된 릴스를 하나씩 올림 (하루 2개)
+// 올린 뒤에는 게시 후 7일 안 된 게시물의 조회수를 하루 한 번 적음 (두 번 불려도 20시간 안에는 다시 안 적음)
 // Vercel이 Authorization: Bearer <CRON_SECRET> 를 붙여 보냄
 import { runOnce } from '../lib/insta.js';
+import { updateViews } from '../lib/insta-views.js';
 import { runThreadsOnce, threadsOn } from '../lib/threads.js';
 import { isAdmin } from '../lib/request.js';
 
@@ -31,6 +33,13 @@ export default async function handler(req, res) {
       console.error('threads-cron', e);
       out.threads = { error: '스레드에 올리지 못했어요.' };
     }
+  }
+  try {
+    const v = await updateViews();
+    out.views = { checked: v.checked, saved: v.results.filter((r) => r.saved).length, errors: v.results.flatMap((r) => r.errors).slice(0, 5) };
+  } catch (e) {
+    console.error('insta-views', e);
+    out.views = { error: '조회수를 적지 못했어요.' };
   }
   res.status(out.instagram.error ? 500 : 200).json(out);
 }

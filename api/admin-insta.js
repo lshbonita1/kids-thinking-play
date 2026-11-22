@@ -1,9 +1,11 @@
 // GET /api/admin-insta — 예약표 + 올린 기록 + 연결된 계정
 // POST /api/admin-insta — { action: 'now', id } 지금 올리기 · { action: 'reset', id } 실패한 것 되돌리기
 //                         { action: 'blog', id, done } 블로그에 올렸다고 체크 · 해제
+//                         { action: 'views', dry } 조회수 읽기 (dry: true면 저장 안 함 — 미리보기)
 // 둘 다 Authorization: Bearer <ADMIN_TOKEN>
 import { isAdmin, readBody } from '../lib/request.js';
 import { threadsOn, getThreadsToken, threadsAccount, runThreadsOnce, resetThreads } from '../lib/threads.js';
+import { updateViews } from '../lib/insta-views.js';
 import { loadQueue, loadRows, getToken, account, runOnce, resetPost, todayKst, loadBlogDone, setBlogDone } from '../lib/insta.js';
 
 export default async function handler(req, res) {
@@ -28,8 +30,10 @@ export default async function handler(req, res) {
       res.status(200).json({ queue, rows, blogDone, user, tokenError, thUser, thError, today: todayKst(), tableMissing: rows === null });
       return;
     }
-    const { action, id, done } = readBody(req);
-    if (action === 'blog') {
+    const { action, id, done, dry } = readBody(req);
+    if (action === 'views') {
+      res.status(200).json(await updateViews({ dry: dry !== false }));
+    } else if (action === 'blog') {
       res.status(200).json({ blogDone: await setBlogDone(String(id), Boolean(done)) });
     } else if (action === 'now') {
       res.status(200).json(await runOnce({ forceId: String(id || '') || null, waitMs: 100000 }));
