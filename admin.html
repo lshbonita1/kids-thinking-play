@@ -468,6 +468,7 @@
         const head = d.tableMissing
           ? '<p class="error">Supabase에 ssuk_insta_posts 표가 없어요. 003_ssuk_insta.sql을 실행해 주세요.</p>'
           : (d.user ? `<p>연결된 계정: <b>@${esc(d.user)}</b></p>` : `<p class="error">인스타 연결 안 됨: ${esc(d.tokenError || '')}</p>`)
+            + (d.tokenInfo ? `<p class="muted">인스타 토큰: ${esc(d.tokenInfo.source)}에서 읽음 · ${esc(d.tokenInfo.prefix)}… · ${fmt(d.tokenInfo.length)}글자</p>` : '')
             + (d.thUser ? `<p>스레드: <b>@${esc(d.thUser)}</b> (인스타에 올라간 게시물을 함께 올려요)</p>` : `<p class="muted">스레드 연결 안 됨: ${esc(d.thError || '')}</p>`);
         const withBlog = d.queue.filter((q) => q.blog);
         const doneN = withBlog.filter((q) => (d.blogDone || {})[q.id]).length;

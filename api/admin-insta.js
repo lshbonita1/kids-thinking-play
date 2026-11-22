@@ -6,7 +6,7 @@
 import { isAdmin, readBody } from '../lib/request.js';
 import { threadsOn, getThreadsToken, threadsAccount, runThreadsOnce, resetThreads } from '../lib/threads.js';
 import { updateViews, viewsOn, setViewsOn } from '../lib/insta-views.js';
-import { loadQueue, loadRows, getToken, account, runOnce, resetPost, todayKst, loadBlogDone, setBlogDone } from '../lib/insta.js';
+import { lastTokenInfo, loadQueue, loadRows, getToken, account, runOnce, resetPost, todayKst, loadBlogDone, setBlogDone } from '../lib/insta.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       else {
         try { thUser = (await threadsAccount(await getThreadsToken())).username; } catch (e) { thError = String(e.message || e); }
       }
-      res.status(200).json({ queue, rows, blogDone, viewsOn: viewsOnNow, user, tokenError, thUser, thError, today: todayKst(), tableMissing: rows === null });
+      res.status(200).json({ queue, rows, blogDone, viewsOn: viewsOnNow, tokenInfo: lastTokenInfo, user, tokenError, thUser, thError, today: todayKst(), tableMissing: rows === null });
       return;
     }
     const { action, id, done, dry, on } = readBody(req);
