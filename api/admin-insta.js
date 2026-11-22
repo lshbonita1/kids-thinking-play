@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       try { res.status(200).json({ viewsOn: await setViewsOn(Boolean(on)) }); }
       catch (e) { res.status(400).json({ error: String(e.message || e) }); }
     } else if (action === 'views') {
-      res.status(200).json(await updateViews({ dry: dry !== false }));
+      res.status(200).json(await updateViews({ dry: dry !== false, force: dry === false }));
     } else if (action === 'blog') {
       res.status(200).json({ blogDone: await setBlogDone(String(id), Boolean(done)) });
     } else if (action === 'now') {
