@@ -4,7 +4,7 @@
 create table if not exists ssuk_site_visits (
   id bigint generated always as identity primary key,
   visited_at timestamptz not null default now(),
-  event text not null default 'visit',        -- visit: 사이트 방문 / start: 놀이 시작 / quit: 중간에 그만둠 / play: 놀이를 끝까지 함 / result: 결과 화면 버튼
+  event text not null default 'visit',        -- visit: 사이트 방문 / start: 놀이 시작 / quit: 중간에 그만둠 / play: 놀이를 끝까지 함 / result: 결과 화면 버튼 / sheet: 학습지 인쇄 버튼
   ip_address text,                             -- 요청 헤더(x-forwarded-for)의 IP
   visitor_id text,                             -- 브라우저에 저장된 무작위 식별자
   device text,                                 -- 예: iPhone · Safari
