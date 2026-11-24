@@ -75,6 +75,15 @@ export default async function handler(req, res) {
       // 시작 기록을 넣은 날(버전 134)부터 의미가 있음
       since: starts.length ? starts[starts.length - 1].ts : null,
     };
+    // 학습지 인쇄 버튼 (최근 2주): 종류별 · 들어온 곳별
+    const sheetRows = ev('sheet');
+    const sheets = {
+      total: sheetRows.length,
+      visitors: distinct(sheetRows, 'visitor_id'),
+      byType: [...group(sheetRows, 'game')].map(([type, v]) => ({ type, count: v.length })).sort((a, b) => b.count - a.count),
+      bySource: [...group(sheetRows, 'page')].map(([source, v]) => ({ source: source || 'home', count: v.length })).sort((a, b) => b.count - a.count),
+    };
+
     // 놀이별 그만둔 횟수 · 평균 몇 번째 문제에서 그만뒀는지
     const quitGames = [...group(quits, 'game')].map(([game, v]) => ({
       game,
@@ -83,14 +92,14 @@ export default async function handler(req, res) {
       avgAt: Math.round((v.reduce((s, r) => s + (r.score || 0), 0) / v.length) * 10) / 10,
     })).sort((a, b) => b.quits - a.quits).slice(0, 12);
 
-    // QR 코드로 들어온 방문 (page가 'qr-이름')
-    const qrVisits = visits.filter((r) => String(r.page || '').startsWith('qr-'));
+    // QR 코드 · 채널 링크로 들어온 방문 (page가 'qr-이름' 또는 'utm-출처-캠페인')
+    const qrVisits = visits.filter((r) => /^(qr|utm)-/.test(String(r.page || '')));
     const qr = {
       today: qrVisits.filter((r) => r.day === today).length,
       week2: recent2w(qrVisits).length,
       total: qrVisits.length,
       visitors: distinct(qrVisits, 'visitor_id'),
-      bySource: [...group(qrVisits, 'page')].map(([page, v]) => ({ source: page.slice(3), visits: v.length, visitors: distinct(v, 'visitor_id') }))
+      bySource: [...group(qrVisits, 'page')].map(([page, v]) => ({ source: page.startsWith('qr-') ? page.slice(3) : page, visits: v.length, visitors: distinct(v, 'visitor_id') }))
         .sort((a, b) => b.visits - a.visits),
       daily: [...group(recent2w(qrVisits), 'day')].map(([day, v]) => ({ day, visits: v.length })).sort((a, b) => (a.day < b.day ? 1 : -1)),
     };
@@ -145,6 +154,7 @@ export default async function handler(req, res) {
       qr,
       funnel,
       quitGames,
+      sheets,
       adminToday: rows.filter((r) => r.is_admin && r.day === today).length,
       keepDays: KEEP_DAYS,
     });

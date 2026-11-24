@@ -1,10 +1,11 @@
 // POST /api/visit — 방문 · 이용 흐름 기록 (뉴스런 api/dates.js?visit=1과 같은 방식)
 // visit: 사이트를 엶 / start: 놀이 시작 / quit: 중간에 그만둠(score = 몇 번째 문제, page = x | close)
-// play: 끝까지 함 / result: 결과 화면에서 누른 버튼(page = next-놀이 | again | home). 실패해도 사이트에는 영향 없음.
+// play: 끝까지 함 / result: 결과 화면에서 누른 버튼(page = next-놀이 | again | home)
+// sheet: 학습지 인쇄 버튼(game = 학습지 종류, page = 이번 방문이 들어온 곳). 실패해도 사이트에는 영향 없음.
 import { sbInsert, sbDelete, VISITS_TABLE } from '../lib/supabase.js';
 import { getClientIp, readBody } from '../lib/request.js';
 
-const EVENTS = ['visit', 'start', 'quit', 'play', 'result'];
+const EVENTS = ['visit', 'start', 'quit', 'play', 'result', 'sheet'];
 const KEEP_DAYS = 180; // 개인정보처리방침의 보관 기간 (6개월)
 
 // 브라우저 정보는 기기 종류 · 브라우저 이름만 남김

@@ -6439,7 +6439,7 @@ function showWorksheets(id = store.get('wsType', 'trace')) {
     preview,
     el('div', { class: 'btn-row ws-actions' },
       el('button', { class: 'btn-main alt', onclick: () => showWorksheets(ws.id) }, '🔀 다른 문제'),
-      el('button', { class: 'btn-main', onclick: printWorksheet }, '🖨️ 인쇄')));
+      el('button', { class: 'btn-main', onclick: () => printWorksheet(ws.id, lv) }, '🖨️ 인쇄')));
   // 미리보기는 학습지를 A4 비율 그대로 그린 뒤 화면 폭에 맞게 줄여서 보여 줌 (좁은 화면에서 그림이 겹치지 않게)
   const fit = () => { page.style.zoom = String(Math.min(1, (preview.clientWidth - 20) / WS_PREVIEW_WIDTH)); };
   fit();
@@ -6449,7 +6449,9 @@ function showWorksheets(id = store.get('wsType', 'trace')) {
 const WS_PREVIEW_WIDTH = 560;
 
 // 학습지 한 장만 인쇄되게 (다른 화면 요소는 숨김)
-function printWorksheet() {
+// 인쇄 버튼을 누를 때마다 기록 (학습지 종류 · 난이도 · 이번 방문이 들어온 곳). 실제로 종이에 인쇄했는지는 알 수 없음
+function printWorksheet(id, level) {
+  sendLog({ t: 'sheet', game: id, level, page: visitSource });
   document.documentElement.classList.add('print-ws');
   const done = () => { document.documentElement.classList.remove('print-ws'); window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
@@ -8254,6 +8256,9 @@ function sendLog(data) {
   } catch {}
 }
 
+// 이번 방문이 어디서 왔는지 (qr-이름 · utm-출처-캠페인 · home). 학습지 인쇄 기록에도 같이 남김
+let visitSource = 'home';
+
 function logVisit() {
   let ref = null;
   try {
@@ -8261,30 +8266,45 @@ function logVisit() {
     if (r && r.hostname !== location.hostname) ref = `${r.hostname}${r.pathname}`.slice(0, 120);
   } catch {}
   // QR 코드로 들어오면 주소에 ?qr=이름 이 붙어 있음 → 'qr-이름'으로 따로 기록하고, 주소창에서는 지움(공유할 때 따라가지 않게)
+  // 인스타 · 스레드 링크는 ?utm_source=instagram|threads (&utm_campaign=sheet|play) → 'utm-threads-sheet'처럼 기록
   let page = 'home';
   try {
     const url = new URL(location.href);
+    const tag = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 16);
     const qr = url.searchParams.get('qr');
+    const utm = tag(url.searchParams.get('utm_source'));
     if (qr && /^[a-z0-9-]{1,20}$/i.test(qr)) page = `qr-${qr.toLowerCase()}`;
+    else if (utm) page = ['utm', utm, tag(url.searchParams.get('utm_campaign'))].filter(Boolean).join('-').slice(0, 40);
     // 놀이 소개 페이지의 '지금 해 보기'로 들어옴
     else if (/^[a-z]{2,12}$/.test(url.searchParams.get('play') || '')) page = `game-${url.searchParams.get('play')}`;
-    if (url.searchParams.has('qr')) {
-      url.searchParams.delete('qr');
-      history.replaceState(null, '', url.pathname + url.search + url.hash);
+    else if (/^[a-z]{2,12}$/.test(url.searchParams.get('ws') || '')) page = `ws-${url.searchParams.get('ws')}`;
+    let changed = false;
+    for (const k of ['qr', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content']) {
+      if (url.searchParams.has(k)) { url.searchParams.delete(k); changed = true; }
     }
+    if (changed) history.replaceState(null, '', url.pathname + url.search + url.hash);
   } catch {}
+  visitSource = page;
   sendLog({ t: 'visit', page, ref });
 }
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 136;
+const APP_VERSION = 137;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
-// 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작
+// 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작 · ?ws=학습지 → 그 학습지를 바로 엶
 function openFromLink() {
   try {
     const url = new URL(location.href);
+    // 학습지 바로가기: ?ws=shadow → 그 학습지 화면을 바로 엶 (인스타 · 스레드 학습지 글에서 옴)
+    const ws = url.searchParams.get('ws');
+    if (ws) {
+      url.searchParams.delete('ws');
+      history.replaceState(null, '', url.pathname + url.search + url.hash);
+      if (WORKSHEETS.some((w) => w.id === ws)) showWorksheets(ws);
+      return;
+    }
     const id = url.searchParams.get('play');
     if (!id) return;
     url.searchParams.delete('play');

@@ -111,6 +111,7 @@
         <a href="#sec-visits">📊 방문</a>
         <a href="#sec-regions">🗺️ 지역</a>
         <a href="#sec-flow">🚶 이용 흐름</a>
+        <a href="#sec-sheets">🖨️ 학습지</a>
         <a href="#sec-games">🧩 놀이</a>
         <a href="#sec-recent">📜 로그</a>
       </nav>
@@ -124,7 +125,7 @@
 
       <section class="card" id="sec-qr">
         <h2>📱 QR · 채널별 방문</h2>
-        <p class="muted">소개 자료 · 인쇄물의 QR 코드와 인스타 · 스레드 · 블로그 · 카페 · 당근 링크(주소에 ?qr=이름)로 들어온 방문만 따로 세요. 내 접속 · 해외 · 봇은 빼고 세요.</p>
+        <p class="muted">소개 자료 · 인쇄물의 QR 코드와 인스타 · 스레드 · 블로그 · 카페 · 당근 링크(주소에 ?qr=이름 또는 ?utm_source=출처)로 들어온 방문만 따로 세요. 내 접속 · 해외 · 봇은 빼고 세요.</p>
         <table><tbody id="qr-kpi"></tbody></table>
         <h3 class="sub-h">QR 종류별</h3>
         <table><tbody id="qr-src"></tbody></table>
@@ -174,6 +175,16 @@
           <summary>IP별로 자세히 보기</summary>
           <div class="scroll"><table class="log"><thead><tr><th>지역</th><th>통신사</th><th>IP</th><th>방문</th><th>마지막 방문</th></tr></thead><tbody id="ip-list"></tbody></table></div>
         </details>
+      </section>
+
+      <section class="card" id="sec-sheets">
+        <h2>🖨️ 학습지 내려받기 (최근 2주)</h2>
+        <p class="muted">학습지 화면의 [🖨️ 인쇄] 버튼을 누른 횟수예요. 실제로 종이에 인쇄했는지는 알 수 없어요. 들어온 곳은 그 방문이 처음 들어온 주소예요.</p>
+        <table><tbody id="sheet-kpi"></tbody></table>
+        <h3 class="sub-h">종류별</h3>
+        <table><tbody id="sheet-type"></tbody></table>
+        <h3 class="sub-h">들어온 곳별</h3>
+        <table><tbody id="sheet-src"></tbody></table>
       </section>
 
       <section class="card" id="sec-flow">
@@ -293,7 +304,7 @@
         : '<tr><td class="muted" colspan="5">아직 기록이 없어요.</td></tr>';
     }
 
-    const QR_NAMES = { flyer: '소개 자료(A4)', print: '인쇄용 QR', poster: '포스터', card: '명함', insta: '인스타그램', threads: '스레드', blog: '네이버 블로그', cafe: '맘카페 · 카페 글', kin: '네이버 지식iN', daangn: '당근', youtube: '유튜브', brag: '자랑하기 카드', teacher: '선생님 안내 페이지' };
+    const QR_NAMES = { flyer: '소개 자료(A4)', print: '인쇄용 QR', poster: '포스터', card: '명함', insta: '인스타그램', threads: '스레드', blog: '네이버 블로그', cafe: '맘카페 · 카페 글', kin: '네이버 지식iN', daangn: '당근', youtube: '유튜브', brag: '자랑하기 카드', teacher: '선생님 안내 페이지', 'utm-instagram': '인스타 프로필 링크', 'utm-threads': '스레드', 'utm-threads-sheet': '스레드 학습지 글', 'utm-threads-play': '스레드 놀이 소개 글', 'utm-instagram-sheet': '인스타 학습지 글' };
     function renderQr(q) {
       if (!q) return;
       $('qr-kpi').innerHTML = [['오늘', q.today, '건'], ['최근 2주', q.week2, '건'], ['전체 (6개월)', q.total, '건'], ['서로 다른 기기', q.visitors, '대']]
@@ -329,8 +340,18 @@
         : '버전 134부터 놀이 시작 · 그만둠 · 결과 버튼을 기록해요. 아직 기록이 없어요.';
     }
 
+    const WS_NAMES = { trace: '🐛 길 따라 그리기', lines: '✏️ 선 따라 긋기', copy: '🎨 똑같이 칠하기', match: '🔗 같은 그림 잇기', shadow: '👤 그림자 잇기', odd: '🔍 다른 하나 찾기', count: '🔢 세어 보기', pattern: '🍎 규칙 찾기', size: '🐘 큰 것 · 작은 것', number: '3️⃣ 숫자와 개수 잇기' };
+    function renderSheets(sh) {
+      if (!sh) return;
+      $('sheet-kpi').innerHTML = `<tr><td>인쇄 버튼</td><td class="num">${fmt(sh.total)}번</td></tr><tr><td>서로 다른 기기</td><td class="num">${fmt(sh.visitors)}대</td></tr>`;
+      $('sheet-type').innerHTML = sh.byType.length ? sh.byType.map((r) => `<tr><td>${esc(WS_NAMES[r.type] || r.type)}</td><td class="num">${fmt(r.count)}번</td></tr>`).join('') : '<tr><td class="muted">아직 기록이 없어요.</td></tr>';
+      const srcName = (p) => (p.startsWith('qr-') ? `QR · ${QR_NAMES[p.slice(3)] || p.slice(3)}` : QR_NAMES[p] || (p === 'home' ? '직접 · 홈 화면' : p));
+      $('sheet-src').innerHTML = sh.bySource.length ? sh.bySource.map((r) => `<tr><td>${esc(srcName(r.source))} <span class="muted">(${esc(r.source)})</span></td><td class="num">${fmt(r.count)}번</td></tr>`).join('') : '<tr><td class="muted">아직 기록이 없어요.</td></tr>';
+    }
+
     function render(s) {
       renderRegions(s);
+      renderSheets(s.sheets);
       renderFlow(s.funnel, s.quitGames || []);
       renderQr(s.qr);
       const t = s.todayM, y = s.yesterdayM;
