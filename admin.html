@@ -304,7 +304,7 @@
         : '<tr><td class="muted" colspan="5">아직 기록이 없어요.</td></tr>';
     }
 
-    const QR_NAMES = { flyer: '소개 자료(A4)', print: '인쇄용 QR', poster: '포스터', card: '명함', insta: '인스타그램', threads: '스레드', blog: '네이버 블로그', cafe: '맘카페 · 카페 글', kin: '네이버 지식iN', daangn: '당근', youtube: '유튜브', brag: '자랑하기 카드', teacher: '선생님 안내 페이지', 'utm-instagram': '인스타 프로필 링크', 'utm-threads': '스레드', 'utm-threads-sheet': '스레드 학습지 글', 'utm-threads-play': '스레드 놀이 소개 글', 'utm-instagram-sheet': '인스타 학습지 글' };
+    const QR_NAMES = { flyer: '소개 자료(A4)', print: '인쇄용 QR', poster: '포스터', card: '명함', insta: '인스타그램', threads: '스레드', blog: '네이버 블로그', cafe: '맘카페 · 카페 글', kin: '네이버 지식iN', daangn: '당근', youtube: '유튜브', brag: '자랑하기 카드', teacher: '선생님 안내 페이지', 'utm-instagram': '인스타 프로필 링크', 'utm-threads': '스레드', 'utm-threads-sheet': '스레드 학습지 글', 'utm-threads-play': '스레드 놀이 소개 글', 'utm-instagram-sheet': '인스타 학습지 글', 'utm-blog-sheet': '블로그 학습지 글', 'utm-blog-play': '블로그 놀이 소개 글' };
     function renderQr(q) {
       if (!q) return;
       $('qr-kpi').innerHTML = [['오늘', q.today, '건'], ['최근 2주', q.week2, '건'], ['전체 (6개월)', q.total, '건'], ['서로 다른 기기', q.visitors, '대']]
