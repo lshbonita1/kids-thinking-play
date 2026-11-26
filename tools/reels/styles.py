@@ -172,6 +172,69 @@ body{background:#f39a4b;color:#fff}
 <div class="next" style="{anim("fade-in", e + 1.3)}">다음 편 · {p["next"]}</div></div>'''
     return doc(css, body), e + 4.0
 
+
+# ---------- 소리: 목소리(맥 한국어 음성 Yuna) · 누르는 소리 ----------
+def make_audio(p, secs, out_wav):
+    d = os.path.join(TMP, 'audio'); os.makedirs(d, exist_ok=True)
+    clips = []
+    for i, (text, t) in enumerate(p.get('voice', [])):
+        a = os.path.join(d, f'v{i}.aiff')
+        subprocess.run(['say', '-v', p.get('voice_name', 'Yuna'), '-r', str(p.get('voice_rate', 175)), '-o', a, text], check=True)
+        clips.append((a, t, 1.0))
+    tap = os.path.join(d, 'tap.wav')
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i', 'sine=frequency=1100:duration=0.08', '-af', 'afade=t=out:st=0.01:d=0.07,volume=0.5', tap], check=True)
+    for (_, _, t) in p.get('taps', []):
+        clips.append((tap, t, 1.0))
+    for t in p.get('pops', []):
+        clips.append((tap, t, 0.6))
+    if not clips:
+        return None
+    args = ['ffmpeg', '-v', 'error', '-y']
+    for a, _, _ in clips:
+        args += ['-i', a]
+    fc = ''.join(f'[{i}:a]aresample=44100,aformat=channel_layouts=stereo,volume={v},adelay={int(t*1000)}|{int(t*1000)}[a{i}];' for i, (_, t, v) in enumerate(clips))
+    fc += ''.join(f'[a{i}]' for i in range(len(clips))) + f'amix=inputs={len(clips)}:normalize=0,apad,atrim=duration={secs:.2f}[out]'
+    args += ['-filter_complex', fc, '-map', '[out]', out_wav]
+    subprocess.run(args, check=True)
+    return out_wav
+
+# ---------- 카루셀: 1080x1350 사진 여러 장 (JPEG) ----------
+def carousel(pid, slides):
+    d = os.path.join(OUT, pid); os.makedirs(d, exist_ok=True)
+    css = """
+html,body{width:1080px;height:1350px}
+body{background:var(--bg,#fff7ec);color:#3b3226;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;padding:80px;text-align:center}
+.tag{display:inline-block;padding:12px 30px;border-radius:999px;background:#3b3226;color:#fff;font-size:40px}
+h1{font-weight:400;font-size:100px;line-height:1.25;word-break:keep-all}
+h2{font-weight:400;font-size:72px;line-height:1.3;word-break:keep-all}
+p{font-size:46px;line-height:1.5;color:#6b5d4b;word-break:keep-all;font-family:'Noto Sans KR',sans-serif;font-weight:500}
+.big{font-size:200px;line-height:1}
+.shot{width:560px;height:720px;border-radius:44px;overflow:hidden;border:14px solid #3b3226;background:#faf8f2}
+.shot img{width:130%;margin-left:-15%;display:block}
+.num{position:absolute;top:60px;right:70px;font-size:40px;color:#9a8c76}
+.url{display:inline-block;padding:24px 60px;border-radius:44px;background:#ffd25c;font-size:60px;box-shadow:0 10px 0 #e2b23c}
+.m{width:200px;height:200px}.m svg{width:100%;height:100%}
+"""
+    files = []
+    for i, sl in enumerate(slides, 1):
+        if sl['kind'] == 'cover':
+            body = f'<span class="tag">{sl["tag"]}</span><div class="big">{sl["emoji"]}</div><h1>{sl["title"]}</h1><p>{sl["sub"]}</p>'
+        elif sl['kind'] == 'shot':
+            body = f'<span class="num">{i} / {len(slides)}</span><h2>{sl["title"]}</h2><div class="shot"><img src="{A(sl["img"])}"></div><p>{sl["sub"]}</p>'
+        else:
+            body = f'<div class="m">{SVG["happy"]}</div><h2>{sl["title"]}</h2><p>{sl["sub"]}</p><span class="url">ssukssuknori.app</span>'
+        html = doc(css, body).replace('<body>', f'<body style="--bg:{sl.get("bg", "#fff7ec")}">')
+        hp = os.path.join(d, f'{i}.html'); open(hp, 'w', encoding='utf-8').write(html)
+        png = os.path.join(d, f'{i}.png')
+        subprocess.run(['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '--headless=new', '--disable-gpu', '--hide-scrollbars',
+                        '--allow-file-access-from-files', f'--user-data-dir={TMP}/ud_car', '--window-size=1080,1350', '--virtual-time-budget=3000',
+                        f'--screenshot={png}', 'file://' + hp], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        from PIL import Image
+        jpg = os.path.join(d, f'{i}.jpg'); Image.open(png).convert('RGB').save(jpg, quality=90)
+        files.append(jpg)
+    print('carousel', pid, len(files))
+    return files
+
 POSTS = {
   '42_play_yesno': ('A', dict(
     hook_label='👍 놀이 하나 소개', hook='말이 아직 어려워도<br>대답할 수 있어요', hook_until=2.6,
@@ -179,7 +242,9 @@ POSTS = {
     taps=[(242, 1312, 4.1), (718, 1312, 9.0)],
     captions=[('"이건 곰인형이에요?"', 2.8), ('👍 맞으면 <b>네</b>', 3.8), ('잘했어요! 바로 칭찬해 줘요', 4.6), ('"이건 강아지예요?"', 6.4), ('아니면 👎 <b>아니요</b>', 8.4), ('고개 젓기도 소중한 대답이에요', 9.8)],
     end_at=11.6, end_title='네? 아니요?', end_sub='놀이 탭 → 말 · 소통<br>놀이 58가지 · 무료 · 가입 없음',
-    next='오늘 저녁 8시 · 목욕 시간은 말 놀이 시간')),
+    next='오늘 저녁 8시 · 목욕 시간은 말 놀이 시간',
+    sound='voice', voice=[('말이 아직 어려워도, 대답할 수 있어요.', 0.3), ('이건 곰인형이에요?', 2.8), ('잘했어요!', 4.5),
+                          ('이건 강아지예요?', 6.4), ('아니요!', 9.2), ('고개를 젓는 것도, 소중한 대답이에요.', 10.0), ('네? 아니요? 쑥쑥 생각놀이', 12.9)])),
   '27_tip_joint': ('B', dict(
     tag='📌 육아 퀴즈', question='아이와 함께 보기(공동주의),<br>어떻게 키울까요?',
     choices=['엄마가 고른 장난감을<br>보여 준다', '아이가 보는 곳을 같이 보며<br>"공이네!"', '"저기 봐" 말로만<br>알려 준다'],
@@ -202,11 +267,29 @@ def build(pid):
     subprocess.run(['rm', '-rf', fr])
     subprocess.run(['node', os.path.join(HERE, 'render.mjs'), hp, str(round(secs, 2)), fr], check=True)
     mp4 = os.path.join(OUT, f'{pid}.mp4')
-    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-framerate', '30', '-i', f'{fr}/%04d.png', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo',
+    wav = make_audio(p, secs, os.path.join(TMP, f'{pid}.wav')) if p.get('sound', 'none') != 'none' else None
+    audio_in = ['-i', wav] if wav else ['-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo']
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-framerate', '30', '-i', f'{fr}/%04d.png', *audio_in,
                     '-shortest', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-r', '30',
                     '-c:a', 'aac', '-b:a', '64k', '-movflags', '+faststart', mp4], check=True)
     print('made', pid, round(secs, 1), 's')
 
+CAROUSELS = {
+  '37_helper': [
+    dict(kind='cover', tag='🧰 생활 도우미', emoji='🧰', title='생활 속에서 쓰는<br>도우미 3가지', sub='처음 가는 곳 · 기다리기 · 속상할 때<br>옆으로 넘겨 보세요 👉', bg='#fff7ec'),
+    dict(kind='shot', title='📖 그림 이야기 18가지', img='help_stories.png', sub='병원 · 미용실 · 버스처럼 처음 가는 곳을<br>가기 전에 그림으로 미리 봐요', bg='#eef5fc'),
+    dict(kind='shot', title='한 장씩 읽어 줘요', img='help_story_page.png', sub='소리로 읽어 줘서<br>아이 혼자 넘겨 봐도 돼요', bg='#eef5fc'),
+    dict(kind='shot', title='➡️ 먼저 · 다음', img='help_firstthen.png', sub='"먼저 양치, 다음 놀이터"<br>다음 할 일을 그림으로 보여 줘요', bg='#eaf6ee'),
+    dict(kind='shot', title='🎈 숨 쉬기', img='help_breath.png', sub='속상할 때 풍선과 함께<br>천천히 숨을 쉬어요', bg='#fdeef0'),
+    dict(kind='cta', title='모두 무료예요', sub='오늘 탭 → 🧰 생활 도우미<br>회원가입 · 광고 없이 바로 써요', bg='#fff7ec'),
+  ],
+}
+
 if __name__ == '__main__':
-    for pid in sys.argv[1:] or list(POSTS):
-        build(pid)
+    args = sys.argv[1:]
+    if args[:1] == ['car']:
+        for pid in args[1:] or list(CAROUSELS):
+            carousel(pid, CAROUSELS[pid])
+    else:
+        for pid in args or list(POSTS):
+            build(pid)
