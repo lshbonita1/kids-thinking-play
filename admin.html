@@ -82,6 +82,11 @@
     .province:hover { opacity: .85; }
     .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; border-radius: 3px; border: 1px solid var(--line); vertical-align: -1px; }
     @media (max-width: 480px) { .chart small { display: none; } .chart .col:nth-child(odd) small { display: block; } }
+    .ig-kind.type { background: #e6eef8; color: #3c6a9c; }
+    .ig-exp { margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .exp-box { margin: 4px 0 12px; padding: 8px 12px; border-radius: 12px; background: var(--soft); color: var(--ink); }
+    .exp-box summary { cursor: pointer; font-family: var(--display); font-size: 16px; }
+    table.exp td { padding: 6px 4px; font-size: 14px; }
     .ig-list { display: grid; }
     .ig-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
     .ig-date { display: grid; gap: 1px; font-variant-numeric: tabular-nums; }
@@ -505,7 +510,8 @@
     });
 
     const IG_STATUS = { published: '✅ 올림', processing: '⏳ 영상 처리 중', creating: '⏳ 올리는 중', error: '⚠️ 실패' };
-    let showBlogDone = false; // 블로그 올린 게시물 펼쳐 보기
+    let showBlogDone = false;
+    let showExp = false; // 블로그 올린 게시물 펼쳐 보기
     async function loadInsta() {
       try {
         const res = await fetch(`${API}/admin-insta`, { headers: { Authorization: `Bearer ${getToken()}` }, cache: 'no-store' });
@@ -527,6 +533,7 @@
           <div>조회수 자동 기록: <b>${d.viewsOn ? '켜짐' : '꺼짐 (아직 아무것도 저장하지 않아요)'}</b></div>
           <div><button class="btn sm" data-views="dry">조회수 미리보기 (저장 안 함)</button>
           ${d.viewsOn ? '<button class="btn sm" data-views="save">조회수 지금 적기</button> <button class="btn sm" data-views-on="0">자동 기록 끄기</button>' : '<button class="btn sm" data-views-on="1">자동 기록 켜기</button>'}</div>
+          <div>하루 게시 수: <b>${d.perDay}개</b>${d.perDay === 1 ? ` <span class="muted">(오늘은 ${d.todaySlot === 'noon' ? '낮 12시' : '저녁 8시'}, 날마다 바뀌어요)</span> <button class="btn sm" data-perday="2">하루 2개로</button>` : ' <button class="btn sm" data-perday="1">하루 1개로</button>'}</div>
           <span class="muted">켜 두면 게시 후 7일 동안 하루 한 번(낮 12시 · 저녁 8시 cron 중 한 번) 인스타 · 스레드 조회수를 적어요.</span><div id="views-out"></div></div>`;
         const hm = (t) => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
         const md = (t) => { const x = new Date(t); return `${x.getMonth() + 1}/${x.getDate()} ${hm(t)}`; };
@@ -539,7 +546,21 @@
           : `<span class="ig-chip ${cls}">${text}</span>`;
         const IG_CHIP = { published: ['ok', '인스타'], processing: ['wait', '인스타 처리 중'], creating: ['wait', '인스타 올리는 중'], error: ['bad', '인스타 실패'] };
         const TH_CHIP = { published: ['ok', '스레드'], processing: ['wait', '스레드 처리 중'], creating: ['wait', '스레드 올리는 중'], error: ['bad', '스레드 실패'] };
-        $('ig-admin').innerHTML = head + viewsTools + `<p>📝 블로그 올림: <b>${doneN}</b> / ${withBlog.length}${foldBtn}</p><div class="ig-list">${d.queue.map((q) => {
+        // 실험 결과: 예약표의 exp(형식 · 스타일 · 소리 · 길이 · 캡션 · 시각)별 평균 조회수 (조회수를 적은 게시물만)
+        const expKeys = [...new Set(d.queue.flatMap((q) => Object.keys(q.exp || {})))];
+        const avg = (a) => (a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null);
+        const expTable = expKeys.length ? `<details class="exp-box"${showExp ? ' open' : ''}><summary>🧪 실험 결과 (항목별 평균 조회수)</summary>${expKeys.map((k) => {
+          const groups = {};
+          for (const q of d.queue) {
+            const v = q.exp?.[k]; const r = rows[q.id];
+            if (!v || !r || r.views == null) continue;
+            (groups[v] ||= { ig: [], th: [] }).ig.push(r.views);
+            if (r.th_views != null) groups[v].th.push(r.th_views);
+          }
+          const list = Object.entries(groups).sort((a, b) => avg(b[1].ig) - avg(a[1].ig));
+          return `<h3 class="sub-h">${esc(k)}</h3><table class="exp">${list.length ? list.map(([v, g]) => `<tr><td>${esc(v)} <span class="muted">${g.ig.length}개</span></td><td class="num">${fmt(avg(g.ig))}</td><td class="delta">스레드 ${g.th.length ? fmt(avg(g.th)) : '-'}</td></tr>`).join('') : '<tr><td class="muted">아직 조회수가 쌓인 게시물이 없어요.</td></tr>'}</table>`;
+        }).join('')}</details>` : '';
+        $('ig-admin').innerHTML = head + viewsTools + expTable + `<p>📝 블로그 올림: <b>${doneN}</b> / ${withBlog.length}${foldBtn}</p><div class="ig-list">${d.queue.map((q) => {
           if (!showBlogDone && folded(q)) return '';
           const r = rows[q.id];
           const [title, ...restLines] = q.caption.split('\n');
@@ -582,7 +603,8 @@
             </div></div>` : '';
           return `<div class="ig-row ${kind}">
             <div class="ig-date"><b>${esc(q.date.slice(5).replace('-', '/'))}</b>${when ? `<small>${esc(when)}</small>` : ''}</div>
-            <div class="ig-main"><div class="ig-title">${esc(title.replace(/\s*📌\s*$/, ''))}${kind === 'tip' ? ' <span class="ig-kind">팁</span>' : ''}</div>
+            <div class="ig-main"><div class="ig-title">${esc(title.replace(/\s*📌\s*$/, ''))}${kind === 'tip' ? ' <span class="ig-kind">팁</span>' : ''}${q.type === 'carousel' ? ' <span class="ig-kind type">카루셀</span>' : q.type === 'image' ? ' <span class="ig-kind type">사진</span>' : ''}</div>
+              ${q.exp ? `<div class="ig-exp">${Object.values(q.exp).map(esc).join(' · ')}</div>` : ''}
               <div class="ig-meta">${chips}${views}</div>${errs}</div>
             <div class="ig-acts">${acts.join('')}</div>
           </div>${blog}`;
@@ -592,6 +614,21 @@
       }
     }
     $('ig-admin').addEventListener('click', async (e) => {
+      const pdBtn = e.target.closest('[data-perday]');
+      if (pdBtn) {
+        const n = Number(pdBtn.dataset.perday);
+        if (!confirm(n === 1 ? '하루 1개로 줄일까요? 날마다 낮 12시나 저녁 8시 중 한 번만 올라가요.' : '하루 2개(낮 12시 · 저녁 8시)로 늘릴까요?')) return;
+        pdBtn.disabled = true;
+        try {
+          const res = await fetch(`${API}/admin-insta`, { method: 'POST', headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'per-day', n }) });
+          const r = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(r.detail || r.error || res.status);
+          await loadInsta();
+        } catch (err) { alert(`바꾸지 못했어요. (${err.message})`); pdBtn.disabled = false; }
+        return;
+      }
+      const expSum = e.target.closest('.exp-box summary');
+      if (expSum) { showExp = !expSum.parentElement.open; return; }
       const onBtn = e.target.closest('[data-views-on]');
       if (onBtn) {
         const on = onBtn.dataset.viewsOn === '1';
