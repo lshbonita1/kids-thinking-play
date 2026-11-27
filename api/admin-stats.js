@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       plays: ev('play').length,
       results: { next: nexts.length, again: results.filter((r) => r.page === 'again').length, home: results.filter((r) => r.page === 'home').length },
       // 어디서 시작했는지 (first: 첫 놀이 카드 · link: 놀이 소개 페이지 · next: 다음 놀이 · again: 다시 하기)
-      via: ['first', 'link', 'next', 'again'].reduce((o, k) => ({ ...o, [k]: starts.filter((r) => r.page === k).length }), {}),
+      via: ['first', 'link', 'next', 'again', 'rec'].reduce((o, k) => ({ ...o, [k]: starts.filter((r) => r.page === k).length }), {}),
       quitHow: { x: quits.filter((r) => r.page === 'x').length, close: quits.filter((r) => r.page === 'close').length },
       // 시작 기록을 넣은 날(버전 134)부터 의미가 있음
       since: starts.length ? starts[starts.length - 1].ts : null,

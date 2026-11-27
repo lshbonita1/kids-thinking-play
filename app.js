@@ -5194,6 +5194,67 @@ function toast(text) {
   setTimeout(() => node.remove(), 2800);
 }
 
+/* ---------- 놀이 탭: 추천 놀이 ---------- */
+// 아이 기록(sessions)을 보고 4가지를 골라 이유와 함께 보여 줘요. 같은 날에는 같은 추천 (새로 그려도 안 바뀜)
+// 순서: 한 단계 올려 볼 놀이 → 다시 연습할 놀이 → 오랜만인 놀이 → 처음 해 볼 놀이(덜 해 본 영역에서). 기록이 없으면 처음 하기 좋은 놀이
+const REC_STARTERS = ['listen', 'match', 'yesno', 'memory'];
+function recommendGames(count = 4) {
+  const ok = (g) => g && (!g.optional || !g.ready || g.ready());
+  const rows = store.get(SESSIONS_KEY, []);
+  const byId = (id) => GAMES.find((g) => g.id === id);
+  if (!rows.length) {
+    const starters = REC_STARTERS.map(byId).filter(ok);
+    return starters.slice(0, count).map((g) => ({ g, why: '🌱 처음 하기 좋아요' }));
+  }
+  const today = dateKey(new Date());
+  return withRng(`rec:${today}:${settings.level}`, () => {
+    const out = [];
+    const used = new Set();
+    const add = (g, why, level) => { if (ok(g) && !used.has(g.id) && out.length < count) { used.add(g.id); out.push({ g, why, level }); } };
+    // 놀이별 최근 기록: 마지막 날, 지금 단계에서 푼 수 · 처음에 맞힌 수
+    const stat = new Map();
+    for (const r of rows) {
+      const t = stat.get(r.g) ?? { last: '', n: 0, f: 0, times: 0 };
+      if (r.d > t.last) t.last = r.d;
+      t.times++;
+      if (r.lv === settings.level) { t.n += r.n; t.f += r.f; }
+      stat.set(r.g, t);
+    }
+    const played = [...stat.keys()].map(byId).filter(ok);
+    // 1. 지금 단계를 잘해요 → 한 단계 위로 (그 놀이만 올려서 해 봄)
+    if (settings.level < 2) for (const g of sample(played.filter((g) => masteredAt(g.id, settings.level)), 1)) add(g, '⬆️ 한 단계 올려 봐요', settings.level + 1);
+    // 2. 처음에 맞힌 비율이 낮은 놀이 → 다시 연습
+    for (const g of sample(played.filter((g) => { const t = stat.get(g.id); return t.n >= 5 && pct(t.f, t.n) < 50; }), 1)) add(g, '🔁 다시 연습해요');
+    // 3. 여러 번 했는데 1주일 넘게 안 한 놀이 → 오랜만이에요
+    const weekAgo = dateKey(daysAgo(7));
+    const old = played.filter((g) => stat.get(g.id).last < weekAgo).sort((a, b) => stat.get(b.id).times - stat.get(a.id).times);
+    for (const g of old.slice(0, 1)) add(g, '👋 오랜만이에요');
+    // 4. 아직 안 해 본 놀이: 덜 해 본 영역부터
+    const areaCount = (c) => c.games.filter((g) => stat.has(g.id)).length;
+    for (const c of [...CATEGORIES].sort((a, b) => areaCount(a) - areaCount(b))) {
+      for (const g of sample(c.games.filter((g) => !stat.has(g.id)), 1)) add(g, `✨ 처음 해 봐요 · ${c.name}`);
+    }
+    // 그래도 모자라면 가장 오래전에 한 놀이
+    for (const g of played.sort((a, b) => (stat.get(a.id).last < stat.get(b.id).last ? -1 : 1))) add(g, '👋 오랜만이에요');
+    return out;
+  });
+}
+
+function recSection() {
+  const recs = recommendGames(4);
+  if (!recs.length) return null;
+  return el('section', { class: 'pick-section rec-section' },
+    el('div', { class: 'pick-head' }, el('h2', {}, '⭐ 추천 놀이')),
+    el('p', { class: 'rec-sub' }, store.get(SESSIONS_KEY, []).length ? '지금까지 한 놀이를 보고 골랐어요' : '처음이라면 이것부터 해 보세요'),
+    el('div', { class: 'pick-grid simple rec-grid' }, recs.map(({ g, why, level }) => el('div', { class: 'card-wrap' },
+      el('button', { class: 'pick-card rec-card', style: `--c:${g.color}`,
+        onclick: () => playGame(g, { via: 'rec', ...(level != null ? { level } : {}) }) },
+      el('span', { class: 'pick-icon' }, g.icon),
+      el('b', {}, g.title),
+      el('em', { class: 'rec-why' }, why)),
+      favButton(g, null)))));
+}
+
 function gamesTab() {
   const current = store.get('gameCat', 'all');
   const tabs = [{ id: 'all', icon: '✨', name: '전체' }, ...CATEGORIES];
@@ -5203,6 +5264,7 @@ function gamesTab() {
     el('button', { class: 'report-link ws-link', onclick: () => showWorksheets() }, '🖨️ 종이 학습지로 인쇄해서 하기 ›'),
     el('div', { class: 'level-label' }, '난이도'),
     levelPicker(),
+    recSection(),
     el('div', { class: 'cat-tabs', role: 'tablist' },
       tabs.map((c) => el('button', {
         class: `cat-tab${c.id === current ? ' on' : ''}`,
@@ -8290,7 +8352,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 137;
+const APP_VERSION = 138;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작 · ?ws=학습지 → 그 학습지를 바로 엶
