@@ -359,7 +359,7 @@
       ].map(([k, v, sub]) => `<div><small>${k}</small><b>${fmt(v)}대</b><small>${sub}</small></div>`).join('');
       $('flow-detail').innerHTML = [
         ['놀이 시작 / 끝까지 / 중간에 그만둠', `${fmt(f.starts)} / ${fmt(f.plays)} / ${fmt(f.quits)}번`],
-        ['시작한 곳 (첫 놀이 카드 · 놀이 소개 · 다음 놀이 · 다시 하기 · 추천 놀이)', f.via ? `${fmt(f.via.first)} · ${fmt(f.via.link)} · ${fmt(f.via.next)} · ${fmt(f.via.again)} · ${fmt(f.via.rec ?? 0)}번` : '-'],
+        ['시작한 곳 (첫 놀이 카드 · 놀이 소개 · 다음 놀이 · 다시 하기 · 추천 놀이 홈 / 놀이 탭)', f.via ? `${fmt(f.via.first)} · ${fmt(f.via.link)} · ${fmt(f.via.next)} · ${fmt(f.via.again)} · ${fmt(f.via['rec-home'] ?? 0)} / ${fmt(f.via.rec ?? 0)}번` : '-'],
         ['그만둔 방법 (✕ 확인 · 창 닫음)', `${fmt(f.quitHow.x)} · ${fmt(f.quitHow.close)}번`],
         ['결과 화면 (다음 놀이 · 다시 하기 · 처음으로)', `${fmt(f.results.next)} · ${fmt(f.results.again)} · ${fmt(f.results.home)}번`],
       ].map(([k, v]) => `<tr><td>${k}</td><td class="num">${v}</td></tr>`).join('');

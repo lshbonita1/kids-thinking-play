@@ -4994,8 +4994,9 @@ function todayTab() {
     // 처음 온 사람: '첫 놀이 해 보기' 하나만 크게. 스티커 · 마을 · 오늘의 학습은 첫 놀이를 마친 뒤에
     ...(isNewcomer()
       ? [firstVisitCard(), levelTestLink(), voiceNotice()]
-      : [levelPicker('compact'), levelTestLink(), voiceNotice(), dailyCard(), stickerCard(true), villageCard(), favSection()]),
-    gamePicks(4),
+      : [levelPicker('compact'), levelTestLink(), voiceNotice(), dailyCard(), recSection('home'), stickerCard(true), villageCard(), favSection()]),
+    // 처음 온 사람은 예시 놀이, 다시 온 사람은 위의 추천 놀이가 그 자리를 대신함
+    isNewcomer() ? gamePicks(4) : null,
     helperCard(),
     el('footer', { class: 'home-foot' },
       // 의견 · 공유 · 질문 · 소개를 한 줄 버튼으로
@@ -5240,19 +5241,22 @@ function recommendGames(count = 4) {
   });
 }
 
-function recSection() {
+// where: 'games'(놀이 탭) · 'home'(오늘 탭, 전체 보기 링크 · 하트 누르면 홈 다시 그림)
+function recSection(where = 'games') {
   const recs = recommendGames(4);
+  const home = where === 'home';
   if (!recs.length) return null;
   return el('section', { class: 'pick-section rec-section' },
-    el('div', { class: 'pick-head' }, el('h2', {}, '⭐ 추천 놀이')),
+    el('div', { class: 'pick-head' }, el('h2', {}, '⭐ 추천 놀이'),
+      home ? el('button', { class: 'pick-all', onclick: () => showHome('games') }, `전체 ${GAMES.length}가지 ›`) : null),
     el('p', { class: 'rec-sub' }, store.get(SESSIONS_KEY, []).length ? '지금까지 한 놀이를 보고 골랐어요' : '처음이라면 이것부터 해 보세요'),
     el('div', { class: 'pick-grid simple rec-grid' }, recs.map(({ g, why, level }) => el('div', { class: 'card-wrap' },
       el('button', { class: 'pick-card rec-card', style: `--c:${g.color}`,
-        onclick: () => playGame(g, { via: 'rec', ...(level != null ? { level } : {}) }) },
+        onclick: () => playGame(g, { via: home ? 'rec-home' : 'rec', ...(level != null ? { level } : {}) }) },
       el('span', { class: 'pick-icon' }, g.icon),
       el('b', {}, g.title),
       el('em', { class: 'rec-why' }, why)),
-      favButton(g, null)))));
+      favButton(g, home ? refreshHomeKeepScroll : null)))));
 }
 
 function gamesTab() {
@@ -8352,7 +8356,7 @@ function logVisit() {
 
 /* ---------- 새 버전 확인 ---------- */
 // index.html의 ?v= 숫자와 항상 같게 맞춰야 함
-const APP_VERSION = 138;
+const APP_VERSION = 139;
 
 // 휴대폰이 예전 페이지를 저장해 두고 쓰는 경우, 새 버전이 올라와 있으면 한 번 새로 불러옴
 // 놀이 소개 페이지(games/*.html)의 '지금 해 보기'(?play=놀이) → 그 놀이를 바로 시작 · ?ws=학습지 → 그 학습지를 바로 엶
