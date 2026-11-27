@@ -173,6 +173,55 @@ body{background:#f39a4b;color:#fff}
     return doc(css, body), e + 4.0
 
 
+# ---------- C2. 빈칸 채우기형 (C 변형, 10초 안팎): 그림이 차례로 놓이고 ❓가 정답으로 바뀜 → 학습지 → 받는 곳 ----------
+def style_f(p):
+    css = """
+body{background:#7b5cc4;color:#fff}
+.stripe{position:absolute;inset:0;background:radial-gradient(circle at 20% 15%,rgba(255,255,255,.12) 0 160px,transparent 161px),radial-gradient(circle at 85% 80%,rgba(255,255,255,.1) 0 220px,transparent 221px)}
+.top{position:absolute;left:0;right:0;top:230px;text-align:center}
+.top .tag{display:inline-block;padding:12px 30px;border-radius:999px;background:#ffd25c;color:#4b3590;font-size:44px}
+.top h1{font-weight:400;font-size:112px;margin-top:30px}
+.row{position:absolute;left:40px;right:40px;top:800px;display:flex;justify-content:center;gap:14px}
+.t{width:180px;height:200px;border-radius:30px;background:#fff;display:grid;place-items:center;font-size:120px;box-shadow:0 12px 0 rgba(0,0,0,.12)}
+.t.q{background:#ffd25c;color:#4b3590;font-size:130px;position:relative}
+.t.q span{position:absolute}
+@keyframes wob{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+@keyframes flip{0%{transform:rotateY(0)}50%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+.say{position:absolute;left:60px;right:60px;top:1180px;text-align:center;font-size:76px}
+.paper{position:absolute;left:150px;right:150px;top:540px;background:#fff;border-radius:30px;padding:26px;box-shadow:0 30px 60px rgba(0,0,0,.25)}
+.paper img{width:100%;display:block}
+@keyframes paper-in{from{opacity:0;transform:translateY(500px) rotate(-8deg)}to{opacity:1;transform:rotate(2deg)}}
+.lbl{position:absolute;left:0;right:0;top:1640px;text-align:center;font-size:60px}
+.end{position:absolute;inset:0;background:#fff;color:#3b3226;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;text-align:center}
+.end h2{font-weight:400;font-size:92px;line-height:1.3}
+.end h2 span{color:#7b5cc4}
+.url{display:inline-block;padding:26px 64px;border-radius:44px;background:#7b5cc4;color:#fff;font-size:64px;box-shadow:0 10px 0 #5a3fa0}
+.next{position:absolute;left:60px;right:60px;bottom:150px;padding:24px 30px;border-radius:28px;background:#efeaf9;font-size:40px;text-align:center}
+"""
+    body = '<div class="stripe"></div>'
+    body += f'<div class="top"><span class="tag" style="{anim("pop", .1)}">{p["tag"]}</span><h1 style="{anim("in-up", .3, .5)}">{p["title"]}</h1></div>'
+    seq = p['seq']; ts = p['seq_at']
+    gone = p['paper_at'] - .3
+    body += f'<div class="row" style="animation:fade-out .3s {gone}s forwards">'
+    for e, t in zip(seq, ts):
+        body += f'<div class="t" style="{anim("pop", t, .4)}">{e}</div>'
+    qa = p['q_at']; ra = p['reveal']
+    body += (f'<div class="t q" style="animation:pop .4s ease {qa}s both, wob .5s ease {qa + .5}s 2, flip .5s ease {ra - .25}s both">'
+             f'<span style="animation:fade-out .01s {ra}s forwards">❓</span><span style="{anim("fade-in", ra, .01)}">{p["answer"]}</span></div></div>')
+    for i, (text, t0) in enumerate(p['says']):
+        t1 = p['says'][i + 1][1] if i + 1 < len(p['says']) else gone
+        body += f'<div class="say" style="animation:in-up .35s cubic-bezier(.2,.8,.2,1) {t0}s both, fade-out .15s {t1 - .15}s forwards">{text}</div>'
+    ps = p['paper_at']
+    body += f'<div class="paper" style="animation:paper-in .7s cubic-bezier(.2,.8,.2,1) {ps}s both"><img src="{A(p["sheet"])}"></div>'
+    body += f'<div class="lbl" style="{anim("in-up", ps + .5)}">{p["sheet_label"]}</div>'
+    e = p['end_at']
+    body += f'''<div class="end" style="{anim("in-up", e, .5)}"><div style="font-size:120px;{anim("pop", e + .2)}">🖨️</div>
+<h2 style="{anim("in-up", e + .3)}">학습지는<br><span>프로필 링크</span>에서<br>받아 가세요</h2>
+<span class="url" style="{anim("pop", e + .6, .5)}">ssukssuknori.app</span>
+<div class="next" style="{anim("fade-in", e + 1.0)}">다음 편 · {p["next"]}</div></div>'''
+    return doc(css, body), e + 3.0
+
+
 # ---------- 소리: 목소리(맥 한국어 음성 Yuna) · 누르는 소리 ----------
 def make_audio(p, secs, out_wav):
     d = os.path.join(TMP, 'audio'); os.makedirs(d, exist_ok=True)
@@ -242,7 +291,7 @@ POSTS = {
     taps=[(242, 1312, 4.1), (718, 1312, 9.0)],
     captions=[('"이건 곰인형이에요?"', 2.8), ('👍 맞으면 <b>네</b>', 3.8), ('잘했어요! 바로 칭찬해 줘요', 4.6), ('"이건 강아지예요?"', 6.4), ('아니면 👎 <b>아니요</b>', 8.4), ('고개 젓기도 소중한 대답이에요', 9.8)],
     end_at=11.6, end_title='네? 아니요?', end_sub='놀이 탭 → 말 · 소통<br>놀이 58가지 · 무료 · 가입 없음',
-    next='오늘 저녁 8시 · 목욕 시간은 말 놀이 시간',
+    next='내일 낮 12시 · 생활 도우미 3가지',
     sound='voice', voice=[('말이 아직 어려워도, 대답할 수 있어요.', 0.3), ('이건 곰인형이에요?', 2.8), ('잘했어요!', 4.5),
                           ('이건 강아지예요?', 6.4), ('아니요!', 9.2), ('고개를 젓는 것도, 소중한 대답이에요.', 10.0), ('네? 아니요? 쑥쑥 생각놀이', 12.9)])),
   '27_tip_joint': ('B', dict(
@@ -251,16 +300,24 @@ POSTS = {
     answer=1, reveal=7.0, panel_title='함께 보기 키우는 4가지',
     tips=[('엄마가 고른 장난감 보여 주기', '아이 시선을 따라가며 "공이네!"'), ('말로만 "저기 봐"', '손으로 가리키며 "저기 비행기!"'),
           ('장난감을 바닥에만 두기', '눈높이로 들고 웃어 주기'), ('장난감만 계속 보기', '장난감 → 아이 눈 → 장난감')],
-    end_title='저장해 두고<br>하나씩 해 봐요', next='내일 낮 12시 · 무료 학습지: 세어 보기')),
+    end_title='정답 맞혔나요?<br>댓글로 알려 주세요', next='내일 낮 12시 · 무료 학습지: 규칙 찾기')),
   '41_sheet_count': ('C', dict(
     tag='🖨️ 이번 주 무료 학습지', title='몇 개일까?', items=['🍓', '🍓', '🍓', '🍓', '🍓'],
     sheet='ws_count.png', sheet_label='세어 보기 학습지 · 숫자에 동그라미',
-    next='오늘 저녁 8시 · 오늘의 학습을 마치면 가족에게 자랑해요')),
+    next='내일 낮 12시 · 놀이 하나: 네? 아니요?',
+    sound='fx', pops=[1.4 + i * .55 for i in range(5)] + [5.65, 6.15])),
+  '43_sheet_pattern': ('F', dict(
+    tag='🖨️ 이번 주 무료 학습지', title='다음은 뭘까?', seq=['🍎', '🍌', '🍎', '🍌'], seq_at=[.9, 1.5, 2.1, 2.7], q_at=3.3, answer='🍎', reveal=5.0,
+    says=[('사과, 바나나, 사과, 바나나…', .9), ('다음은?', 3.4), ('사과! 🍎', 5.1)],
+    paper_at=6.0, sheet='ws_pattern.png', sheet_label='규칙 찾기 학습지 · 빈칸에 동그라미', end_at=8.0,
+    next='내일 저녁 8시 · 가족에게 자랑해요',
+    sound='voice', voice_rate=170, voice=[('사과, 바나나, 사과, 바나나', .9), ('다음은 뭘까?', 3.4), ('사과!', 5.1), ('학습지는 프로필 링크에서 받아 가세요', 8.3)],
+    pops=[.9, 1.5, 2.1, 2.7, 5.0])),
 }
 
 def build(pid):
     kind, p = POSTS[pid]
-    html, secs = {'A': style_a, 'B': style_b, 'C': style_c}[kind](p)
+    html, secs = {'A': style_a, 'B': style_b, 'C': style_c, 'F': style_f}[kind](p)
     hp = os.path.join(OUT, f'{pid}.html')
     open(hp, 'w', encoding='utf-8').write(html)
     fr = os.path.join(TMP, pid)

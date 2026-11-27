@@ -50,3 +50,14 @@ if __name__ == '__main__':
     shot('yesno_ok', "settings.autoHint=true;" + yes + "setTimeout(()=>document.querySelector('.stage .hint')?.click(),11000);", budget=11500)
     sheet('ws_count', 'count')
     print('ok', sorted(os.listdir(OUT)))
+
+def brag(name='brag_card', stars=3, stickers=7, date=(2026, 11, 2, 19, 30)):
+    # 실제 자랑 카드(bragImage)를 그 날짜로 그려 PNG로 저장
+    y, mo, d, h, mi = date
+    js = (f"const RD=Date;window.Date=class extends RD{{constructor(...a){{super(...(a.length?a:[{y},{mo},{d},{h},{mi}]))}}static now(){{return new RD({y},{mo},{d},{h},{mi}).getTime()}}}};"
+          f"bragImage({stars},{stickers}).then(b=>{{const r=new FileReader();r.onload=()=>{{document.body.innerHTML='<pre id=o></pre>';document.getElementById('o').textContent=r.result}};r.readAsDataURL(b)}});")
+    out = subprocess.run([CH, '--headless=new', '--allow-file-access-from-files', f'--user-data-dir={TMP}/ud_{name}', '--virtual-time-budget=4000', '--dump-dom', page(name, js)],
+                         capture_output=True, text=True).stdout
+    import base64
+    b64 = re.search(r'<pre id="o">data:image/png;base64,(.*?)</pre>', out, re.S).group(1)
+    open(f'{OUT}/{name}.png', 'wb').write(base64.b64decode(b64))
